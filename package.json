@@ -12,6 +12,7 @@
         "db:studio": "prisma studio",
         "create:admin": "tsx scripts/create-admin.ts",
         "update:admin": "tsx scripts/update-admin-email.ts",
+        "verify:admin": "tsx scripts/verify-admin.ts",
         "postinstall": "prisma generate"
     },
     "dependencies": {
