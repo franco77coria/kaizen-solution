@@ -26,14 +26,20 @@ export default function LoginPage() {
                 redirect: false,
             })
 
+            console.log('Login result:', result)
+
             if (result?.error) {
-                setError('Email o contraseña incorrectos')
-            } else {
+                console.error('Login error:', result.error)
+                setError(`Error: ${result.error}. Verifica tus credenciales o revisa los logs del servidor.`)
+            } else if (result?.ok) {
                 router.push('/admin')
                 router.refresh()
+            } else {
+                setError('Error desconocido al iniciar sesión')
             }
-        } catch (error) {
-            setError('Error al iniciar sesión')
+        } catch (error: any) {
+            console.error('Login exception:', error)
+            setError(`Error: ${error?.message || 'Error al iniciar sesión'}`)
         } finally {
             setLoading(false)
         }

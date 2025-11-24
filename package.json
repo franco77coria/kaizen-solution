@@ -13,6 +13,7 @@
         "create:admin": "tsx scripts/create-admin.ts",
         "update:admin": "tsx scripts/update-admin-email.ts",
         "verify:admin": "tsx scripts/verify-admin.ts",
+        "test:auth": "tsx scripts/test-auth.ts",
         "postinstall": "prisma generate"
     },
     "dependencies": {
