@@ -4,44 +4,58 @@ import bcrypt from 'bcryptjs'
 const prisma = new PrismaClient()
 
 async function main() {
-    console.log('🔐 Creating admin user...')
+    console.log('🔄 Updating admin user email...')
 
-    const email = 'kaizensolutions@kaizensolution.com'
+    const oldEmail = 'kaizensolutions'
+    const newEmail = 'kaizensolutions@kaizensolution.com'
     const password = 'kaisen2025'
     const hashedPassword = await bcrypt.hash(password, 10)
 
     try {
-        // Check if user exists
+        // Check if old user exists
         const existingUser = await prisma.user.findUnique({
-            where: { email }
+            where: { email: oldEmail }
         })
 
         if (existingUser) {
-            // Update password
+            // Delete old user
+            await prisma.user.delete({
+                where: { email: oldEmail }
+            })
+            console.log('✅ Deleted old user with invalid email')
+        }
+
+        // Check if new user already exists
+        const newUserExists = await prisma.user.findUnique({
+            where: { email: newEmail }
+        })
+
+        if (newUserExists) {
+            // Update existing user
             await prisma.user.update({
-                where: { email },
+                where: { email: newEmail },
                 data: {
                     password: hashedPassword,
                     role: 'SUPER_ADMIN',
                     isActive: true
                 }
             })
-            console.log('✅ Updated existing user password')
+            console.log('✅ Updated existing user')
         } else {
-            // Create new user
+            // Create new user with correct email
             const adminUser = await prisma.user.create({
                 data: {
-                    email,
+                    email: newEmail,
                     name: 'Super Admin',
                     password: hashedPassword,
                     role: 'SUPER_ADMIN',
                     isActive: true,
                 },
             })
-            console.log('✅ Created new admin user:', adminUser.email)
+            console.log('✅ Created new admin user with correct email')
         }
 
-        console.log('📧 Email:', email)
+        console.log('📧 Email:', newEmail)
         console.log('🔑 Password:', password)
         console.log('✅ Admin user ready!')
     } catch (error) {
@@ -52,7 +66,7 @@ async function main() {
 
 main()
     .catch((e) => {
-        console.error('❌ Error creating admin:', e)
+        console.error('❌ Error updating admin:', e)
         process.exit(1)
     })
     .finally(async () => {
