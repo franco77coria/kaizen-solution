@@ -1,0 +1,135 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        --background: 0 0% 100%;
+        --foreground: 222 51% 36%;
+
+        --card: 0 0% 100%;
+        --card-foreground: 222 51% 36%;
+
+        --popover: 0 0% 100%;
+        --popover-foreground: 222 51% 36%;
+
+        --primary: 195 100% 50%;
+        --primary-foreground: 0 0% 100%;
+
+        --secondary: 174 50% 68%;
+        --secondary-foreground: 222 51% 36%;
+
+        --muted: 210 40% 96.1%;
+        --muted-foreground: 215.4 16.3% 46.9%;
+
+        --accent: 174 100% 50%;
+        --accent-foreground: 222 51% 36%;
+
+        --destructive: 0 84.2% 60.2%;
+        --destructive-foreground: 0 0% 98%;
+
+        --border: 214.3 31.8% 91.4%;
+        --input: 214.3 31.8% 91.4%;
+        --ring: 195 100% 50%;
+
+        --radius: 0.5rem;
+    }
+}
+
+@layer base {
+    body {
+        @apply bg-white text-outer-space font-sans antialiased;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        @apply font-heading;
+    }
+}
+
+@layer utilities {
+    .text-balance {
+        text-wrap: balance;
+    }
+
+    .glass {
+        @apply bg-white/80 backdrop-blur-md border border-white/20;
+    }
+
+    .gradient-text {
+        @apply bg-gradient-to-r from-egyptian to-daylight-sky bg-clip-text text-transparent;
+    }
+
+    .gradient-border {
+        position: relative;
+    }
+
+    .gradient-border::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        padding: 2px;
+        background: linear-gradient(135deg, #223F93, #00BFF7);
+        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+    }
+
+    .animate-gradient {
+        background-size: 200% 200%;
+        animation: gradient 3s ease infinite;
+    }
+
+    @keyframes gradient {
+
+        0%,
+        100% {
+            background-position: 0% 50%;
+        }
+
+        50% {
+            background-position: 100% 50%;
+        }
+    }
+
+    .hover-lift {
+        @apply transition-transform duration-300 hover:-translate-y-2;
+    }
+
+    .hover-glow {
+        @apply transition-shadow duration-300 hover:shadow-xl hover:shadow-daylight-sky/20;
+    }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    @apply bg-gray-100;
+}
+
+::-webkit-scrollbar-thumb {
+    @apply bg-gradient-to-b from-egyptian to-daylight-sky rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    @apply from-daylight-sky to-teal;
+}
+
+/* Selection */
+::selection {
+    @apply bg-daylight-sky/30 text-egyptian;
+}
+
+/* Focus visible */
+:focus-visible {
+    @apply outline-none ring-2 ring-daylight-sky ring-offset-2;
+}

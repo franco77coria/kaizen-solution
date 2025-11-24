@@ -1,0 +1,96 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  password      String
+  role          String    @default("VIEWER") // SUPER_ADMIN, ADMIN, VIEWER
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model SiteConfig {
+  id                String   @id @default(cuid())
+  companyName       String   @default("KAIZEN SOLUTION S.A.S.")
+  email             String
+  phone             String?
+  whatsappNumber    String?
+  whatsappMessage   String?
+  address           String?
+  city              String   @default("Bogotá")
+  country           String   @default("Colombia")
+  linkedinUrl       String?
+  instagramUrl      String?
+  facebookUrl       String?
+  twitterUrl        String?
+  heroTitle         String   @default("Transformación Digital con Propósito")
+  heroSubtitle      String   @default("Soluciones digitales a medida para tu negocio y la gestión pública")
+  ctaText           String   @default("Agenda tu Diagnóstico de Madurez Digital")
+  updatedAt         DateTime @updatedAt
+}
+
+model Service {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  icon        String?
+  order       Int      @default(0)
+  isActive    Boolean  @default(true)
+  category    String   @default("general")
+  features    String   @default("[]") // JSON array of feature strings
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  category    String
+  imageUrl    String?
+  tags        String   @default("[]") // JSON array of tags
+  clientName  String?
+  results     String?  // Metrics or results achieved
+  isActive    Boolean  @default(true)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Testimonial {
+  id          String   @id @default(cuid())
+  clientName  String
+  company     String?
+  position    String?
+  content     String
+  rating      Int      @default(5)
+  imageUrl    String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ContactSubmission {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  company   String?
+  message   String
+  source    String   @default("website")
+  status    String   @default("new") // new, contacted, qualified, closed
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
