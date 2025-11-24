@@ -8,16 +8,28 @@ import Benefits from "@/components/sections/benefits";
 import ContactCTA from "@/components/sections/contact-cta";
 import { prisma } from "@/lib/prisma";
 
+// Force dynamic rendering to avoid build-time database queries
+export const dynamic = 'force-dynamic';
+
 export default async function Home() {
-    const siteConfig = await prisma.siteConfig.findFirst();
-    const services = await prisma.service.findMany({
-        where: { isActive: true },
-        orderBy: { order: 'asc' }
-    });
-    const projects = await prisma.project.findMany({
-        where: { isActive: true },
-        orderBy: { order: 'asc' }
-    });
+    let siteConfig = null;
+    let services: any[] = [];
+    let projects: any[] = [];
+
+    try {
+        siteConfig = await prisma.siteConfig.findFirst();
+        services = await prisma.service.findMany({
+            where: { isActive: true },
+            orderBy: { order: 'asc' }
+        });
+        projects = await prisma.project.findMany({
+            where: { isActive: true },
+            orderBy: { order: 'asc' }
+        });
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        // Continue with empty data if database is not available
+    }
 
     return (
         <main className="min-h-screen">
