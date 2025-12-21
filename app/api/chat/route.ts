@@ -1,8 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || "");
-
 const SYSTEM_PROMPT = `Actúa como el Senior Digital Strategist de Kaizen Solutions. Tu misión no es solo informar, sino diagnosticar y proyectar el futuro digital de las empresas que te consultan. Tu comunicación debe ser ejecutiva, empática, técnica pero accesible, y siempre orientada a la mejora continua (Filosofía Kaizen).
 
 1. Misión y Filosofía Institucional:
@@ -29,11 +27,26 @@ const SYSTEM_PROMPT = `Actúa como el Senior Digital Strategist de Kaizen Soluti
 • Limitación: Si el usuario pregunta por servicios fuera de Web, Datos, Workspace o IA, redirígelo amablemente a cómo estas áreas pueden cubrir sus necesidades subyacentes.`;
 
 export async function POST(req: Request) {
-    try {
-        const { messages } = await req.json();
-        const lastMessage = messages[messages.length - 1].content;
+    // Diagnóstico inicial de la API Key
+    const apiKey = process.env.GOOGLE_AI_API_KEY;
 
+    if (!apiKey) {
+        console.error("❌ ERROR: GOOGLE_AI_API_KEY no está configurada en las variables de entorno de Vercel.");
+        return NextResponse.json({ error: "API Key missing" }, { status: 500 });
+    }
+
+    try {
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const { messages } = await req.json();
+
+        if (!messages || messages.length === 0) {
+            return NextResponse.json({ error: "No messages provided" }, { status: 400 });
+        }
+
+        const lastMessage = messages[messages.length - 1].content;
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+        console.log("📨 Procesando mensaje para Gemini...");
 
         const chat = model.startChat({
             history: [
@@ -56,9 +69,13 @@ export async function POST(req: Request) {
         const response = await result.response;
         const text = response.text();
 
+        console.log("✅ Respuesta de Gemini recibida correctamente.");
         return NextResponse.json({ role: "assistant", content: text });
-    } catch (error) {
-        console.error("Chat API Error:", error);
-        return NextResponse.json({ error: "Error processing chat request" }, { status: 500 });
+    } catch (error: any) {
+        console.error("❌ Chat API Error:", error.message || error);
+        return NextResponse.json({
+            error: "Error processing chat request",
+            details: error.message
+        }, { status: 500 });
     }
 }
