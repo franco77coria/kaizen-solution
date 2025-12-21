@@ -39,7 +39,11 @@ export default function Chatbot() {
                 body: JSON.stringify({ messages: [...messages, userMessage] }),
             });
 
-            if (!response.ok) throw new Error('Failed to fetch response');
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                console.error('Server Error:', errorData);
+                throw new Error(errorData.details || errorData.error || 'Failed to fetch response');
+            }
 
             const data = await response.json();
             setMessages((prev) => [...prev, data]);
