@@ -27,6 +27,8 @@ export const metadata: Metadata = {
     },
 };
 
+import Chatbot from "@/components/Chatbot";
+
 export default function RootLayout({
     children,
 }: Readonly<{
@@ -36,6 +38,7 @@ export default function RootLayout({
         <html lang="es" className="scroll-smooth">
             <body className={`${inter.variable} ${manrope.variable} antialiased`}>
                 {children}
+                <Chatbot />
             </body>
         </html>
     );
