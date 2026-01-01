@@ -10,10 +10,11 @@ interface Message {
     timestamp: Date
 }
 
-// Inline SVG Icons
-const MessageCircleIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
+// Inline SVG Icons - Professional Kaizen Design
+const KaizenLogoIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 100 100" fill="none">
+        <circle cx="50" cy="50" r="45" fill="white" fillOpacity="0.15" />
+        <text x="50" y="68" fontSize="60" fontWeight="bold" fontFamily="'Inter', 'Arial', sans-serif" fill="white" textAnchor="middle">K</text>
     </svg>
 )
 
@@ -221,7 +222,7 @@ export default function ChatBot() {
                         >
                             <div className="absolute inset-0 bg-gradient-to-br from-daylight-sky/20 to-turquoise/20 animate-pulse" />
                             <div className="relative z-10 text-white group-hover:scale-110 transition-transform">
-                                <MessageCircleIcon />
+                                <KaizenLogoIcon />
                             </div>
                             <motion.div
                                 animate={{ scale: [1, 1.2, 1] }}
@@ -314,8 +315,8 @@ export default function ChatBot() {
                                     >
                                         <div
                                             className={`max-w-[80%] rounded-2xl px-4 py-3 ${message.role === 'user'
-                                                ? 'bg-gradient-to-br from-egyptian to-azure text-white'
-                                                : 'bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 text-slate-800 dark:text-white'
+                                                    ? 'bg-gradient-to-br from-egyptian to-azure text-white'
+                                                    : 'bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 text-slate-800 dark:text-white'
                                                 }`}
                                         >
                                             <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
