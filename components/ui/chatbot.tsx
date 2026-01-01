@@ -241,14 +241,14 @@ export default function ChatBot() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 100, scale: 0.8 }}
                         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                        className="fixed bottom-6 right-6 z-50 w-[420px] h-[650px] flex flex-col"
+                        className="fixed bottom-6 right-6 z-50 w-[380px] h-[550px] flex flex-col"
                     >
                         <div className="relative h-full rounded-3xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl border border-white/20 shadow-2xl overflow-hidden">
                             <div className="absolute inset-0 bg-gradient-to-br from-egyptian/5 via-tiffany/5 to-azure/5 animate-gradient" />
 
                             {/* Floating particles */}
                             <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                                {[...Array(5)].map((_, i) => (
+                                {[...Array(3)].map((_, i) => (
                                     <motion.div
                                         key={i}
                                         className="absolute w-2 h-2 bg-tiffany/30 rounded-full"
@@ -263,31 +263,31 @@ export default function ChatBot() {
                                             delay: i * 0.5
                                         }}
                                         style={{
-                                            left: `${20 + i * 15}%`,
-                                            top: `${30 + i * 10}%`
+                                            left: `${20 + i * 25}%`,
+                                            top: `${30 + i * 15}%`
                                         }}
                                     />
                                 ))}
                             </div>
 
                             {/* Header */}
-                            <div className="relative z-10 flex items-center justify-between p-6 border-b border-white/10 bg-gradient-to-r from-egyptian to-azure">
+                            <div className="relative z-10 flex items-center justify-between p-4 border-b border-white/10 bg-gradient-to-r from-egyptian to-azure">
                                 <div className="flex items-center space-x-3">
                                     <motion.div
                                         animate={{ rotate: [0, 5, -5, 0] }}
                                         transition={{ repeat: Infinity, duration: 4 }}
                                         className="relative"
                                     >
-                                        <div className="h-12 w-12 rounded-full bg-white/20 backdrop-blur-sm border-2 border-white/40 flex items-center justify-center overflow-hidden">
+                                        <div className="h-10 w-10 rounded-full bg-white/20 backdrop-blur-sm border-2 border-white/40 flex items-center justify-center overflow-hidden">
                                             <div className="text-tiffany">
                                                 <SparklesIcon />
                                             </div>
                                         </div>
-                                        <div className="absolute -bottom-1 -right-1 h-4 w-4 bg-green-500 rounded-full border-2 border-white" />
+                                        <div className="absolute -bottom-1 -right-1 h-3 w-3 bg-green-500 rounded-full border-2 border-white" />
                                     </motion.div>
 
                                     <div>
-                                        <h3 className="font-heading font-bold text-white text-lg">KaiBot</h3>
+                                        <h3 className="font-heading font-bold text-white text-base">KaiBot</h3>
                                         <p className="text-xs text-white/80">Asistente de Kaizen Solution</p>
                                     </div>
                                 </div>
@@ -303,7 +303,7 @@ export default function ChatBot() {
                             </div>
 
                             {/* Messages */}
-                            <div className="relative z-10 flex-1 overflow-y-auto p-6 space-y-4 scrollbar-thin scrollbar-thumb-tiffany/20 scrollbar-track-transparent">
+                            <div className="relative z-10 flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin scrollbar-thumb-tiffany/20 scrollbar-track-transparent">
                                 {messages.map((message, index) => (
                                     <motion.div
                                         key={index}
@@ -419,7 +419,7 @@ export default function ChatBot() {
                             </div>
 
                             {/* Input */}
-                            <div className="relative z-10 p-4 border-t border-white/10 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
+                            <div className="relative z-10 p-3 border-t border-white/10 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
                                 <div className="flex items-end space-x-2">
                                     <div className="flex-1 relative">
                                         <input
@@ -430,13 +430,13 @@ export default function ChatBot() {
                                             onKeyPress={handleKeyPress}
                                             placeholder="Escribí tu mensaje..."
                                             disabled={isLoading}
-                                            className="w-full px-4 py-3 pr-12 rounded-2xl bg-white/80 dark:bg-slate-800/80 border border-white/20 focus:border-tiffany/50 focus:ring-2 focus:ring-tiffany/20 outline-none transition-all disabled:opacity-50 text-sm"
+                                            className="w-full px-4 py-2.5 rounded-2xl bg-white/80 dark:bg-slate-800/80 border border-white/20 focus:border-tiffany/50 focus:ring-2 focus:ring-tiffany/20 outline-none transition-all disabled:opacity-50 text-sm"
                                         />
                                     </div>
                                     <Button
                                         onClick={sendMessage}
                                         disabled={!input.trim() || isLoading}
-                                        className="h-12 w-12 rounded-2xl bg-gradient-to-br from-egyptian to-azure hover:shadow-lg hover:shadow-tiffany/30 transition-all disabled:opacity-50 flex items-center justify-center flex-shrink-0"
+                                        className="h-10 w-10 rounded-2xl bg-gradient-to-br from-egyptian to-azure hover:shadow-lg hover:shadow-tiffany/30 transition-all disabled:opacity-50 flex items-center justify-center flex-shrink-0"
                                     >
                                         <div className="flex-shrink-0">
                                             {isLoading ? <Loader2Icon /> : <SendIcon />}
