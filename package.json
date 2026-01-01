@@ -10,10 +10,6 @@
         "db:push": "prisma db push",
         "db:seed": "tsx prisma/seed.ts",
         "db:studio": "prisma studio",
-        "create:admin": "tsx scripts/create-admin.ts",
-        "update:admin": "tsx scripts/update-admin-email.ts",
-        "verify:admin": "tsx scripts/verify-admin.ts",
-        "test:auth": "tsx scripts/test-auth.ts",
         "postinstall": "prisma generate"
     },
     "dependencies": {
@@ -25,6 +21,7 @@
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "framer-motion": "^11.11.17",
+        "groq-sdk": "^0.37.0",
         "lucide-react": "^0.460.0",
         "next": "14.2.18",
         "next-auth": "^5.0.0-beta.25",

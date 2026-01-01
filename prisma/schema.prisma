@@ -6,8 +6,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
+  relationMode = "prisma"
 }
 
 model User {
@@ -93,4 +94,15 @@ model ContactSubmission {
   status    String   @default("new") // new, contacted, qualified, closed
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model ChatLead {
+  id              String   @id @default(cuid())
+  name            String
+  whatsapp        String
+  conversationSummary String @db.Text // Summary of what the user was interested in
+  status          String   @default("new") // new, contacted, qualified, closed
+  notes           String?  @db.Text // Admin notes
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }

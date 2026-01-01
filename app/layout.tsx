@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Manrope } from "next/font/google";
 import "./globals.css";
+import ChatBot from "@/components/ui/chatbot";
 
 const inter = Inter({
     subsets: ["latin"],
@@ -36,6 +37,7 @@ export default function RootLayout({
         <html lang="es" className="scroll-smooth">
             <body className={`${inter.variable} ${manrope.variable} antialiased`}>
                 {children}
+                <ChatBot />
             </body>
         </html>
     );

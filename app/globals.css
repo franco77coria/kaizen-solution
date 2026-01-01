@@ -104,6 +104,23 @@
     .hover-glow {
         @apply transition-shadow duration-300 hover:shadow-xl hover:shadow-daylight-sky/20;
     }
+
+    /* Thin scrollbar for chat */
+    .scrollbar-thin::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-track {
+        @apply bg-transparent;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+        @apply bg-tiffany/20 rounded-full;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+        @apply bg-tiffany/40;
+    }
 }
 
 /* Custom Scrollbar */

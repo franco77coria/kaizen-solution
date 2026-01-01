@@ -1,0 +1,12 @@
+node_modules\
+.next\
+.git\
+.env
+.env.local
+prisma\dev.db
+prisma\dev.db-journal
+logs\
+backups\
+prepare-upload.bat
+prepare-upload.ps1
+exclude-list.txt

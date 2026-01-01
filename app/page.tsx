@@ -7,14 +7,12 @@ import AISection from "@/components/sections/ai-section";
 import Benefits from "@/components/sections/benefits";
 import ContactCTA from "@/components/sections/contact-cta";
 import { prisma } from "@/lib/prisma";
-
-// Force dynamic rendering to avoid build-time database queries
-export const dynamic = 'force-dynamic';
+import { Service, Project } from "@prisma/client";
 
 export default async function Home() {
-    let siteConfig = null;
-    let services: any[] = [];
-    let projects: any[] = [];
+    let siteConfig;
+    let services: Service[] = [];
+    let projects: Project[] = [];
 
     try {
         siteConfig = await prisma.siteConfig.findFirst();
@@ -26,9 +24,8 @@ export default async function Home() {
             where: { isActive: true },
             orderBy: { order: 'asc' }
         });
-    } catch (error) {
-        console.error('Error fetching data:', error);
-        // Continue with empty data if database is not available
+    } catch (e) {
+        console.warn("Database connection failed during render (likely build time or missing env vars). Rendering with empty data.", e);
     }
 
     return (
