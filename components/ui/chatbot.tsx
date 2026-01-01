@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { MessageCircle, X, Send, Sparkles, Loader2, User, Phone } from 'lucide-react'
 import { Button } from './button'
 
 interface Message {
@@ -10,6 +9,49 @@ interface Message {
     content: string
     timestamp: Date
 }
+
+// Inline SVG Icons
+const MessageCircleIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
+    </svg>
+)
+
+const XIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M18 6 6 18" /><path d="m6 6 12 12" />
+    </svg>
+)
+
+const SendIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="m22 2-7 20-4-9-9-4Z" /><path d="M22 2 11 13" />
+    </svg>
+)
+
+const SparklesIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" /><path d="M5 3v4" /><path d="M19 17v4" /><path d="M3 5h4" /><path d="M17 19h4" />
+    </svg>
+)
+
+const Loader2Icon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="animate-spin">
+        <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+    </svg>
+)
+
+const UserIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
+    </svg>
+)
+
+const PhoneIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+    </svg>
+)
 
 export default function ChatBot() {
     const [isOpen, setIsOpen] = useState(false)
@@ -178,7 +220,9 @@ export default function ChatBot() {
                             className="relative h-16 w-16 rounded-full bg-gradient-to-br from-egyptian via-azure to-tiffany shadow-2xl hover:shadow-tiffany/50 transition-all duration-300 group overflow-hidden"
                         >
                             <div className="absolute inset-0 bg-gradient-to-br from-daylight-sky/20 to-turquoise/20 animate-pulse" />
-                            <MessageCircle className="relative z-10 h-7 w-7 text-white group-hover:scale-110 transition-transform" />
+                            <div className="relative z-10 text-white group-hover:scale-110 transition-transform">
+                                <MessageCircleIcon />
+                            </div>
                             <motion.div
                                 animate={{ scale: [1, 1.2, 1] }}
                                 transition={{ repeat: Infinity, duration: 2 }}
@@ -235,7 +279,9 @@ export default function ChatBot() {
                                         className="relative"
                                     >
                                         <div className="h-12 w-12 rounded-full bg-white/20 backdrop-blur-sm border-2 border-white/40 flex items-center justify-center overflow-hidden">
-                                            <Sparkles className="h-6 w-6 text-tiffany" />
+                                            <div className="text-tiffany">
+                                                <SparklesIcon />
+                                            </div>
                                         </div>
                                         <div className="absolute -bottom-1 -right-1 h-4 w-4 bg-green-500 rounded-full border-2 border-white" />
                                     </motion.div>
@@ -252,7 +298,7 @@ export default function ChatBot() {
                                     size="sm"
                                     className="text-white hover:bg-white/20 rounded-full h-8 w-8 p-0"
                                 >
-                                    <X className="h-5 w-5" />
+                                    <XIcon />
                                 </Button>
                             </div>
 
@@ -268,8 +314,8 @@ export default function ChatBot() {
                                     >
                                         <div
                                             className={`max-w-[80%] rounded-2xl px-4 py-3 ${message.role === 'user'
-                                                    ? 'bg-gradient-to-br from-egyptian to-azure text-white'
-                                                    : 'bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 text-slate-800 dark:text-white'
+                                                ? 'bg-gradient-to-br from-egyptian to-azure text-white'
+                                                : 'bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 text-slate-800 dark:text-white'
                                                 }`}
                                         >
                                             <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
@@ -289,7 +335,7 @@ export default function ChatBot() {
                                         className="bg-gradient-to-br from-egyptian/10 to-tiffany/10 backdrop-blur-sm border-2 border-tiffany/30 rounded-2xl p-4 space-y-3"
                                     >
                                         <div className="flex items-center space-x-2 text-egyptian dark:text-tiffany">
-                                            <Sparkles className="h-5 w-5" />
+                                            <SparklesIcon />
                                             <p className="font-semibold text-sm">¡Me encantaría ayudarte más!</p>
                                         </div>
                                         <p className="text-xs text-slate-600 dark:text-slate-300">
@@ -298,7 +344,9 @@ export default function ChatBot() {
 
                                         <div className="space-y-2">
                                             <div className="relative">
-                                                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-egyptian/50" />
+                                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-egyptian/50">
+                                                    <UserIcon />
+                                                </div>
                                                 <input
                                                     type="text"
                                                     placeholder="Tu nombre"
@@ -308,7 +356,9 @@ export default function ChatBot() {
                                                 />
                                             </div>
                                             <div className="relative">
-                                                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-egyptian/50" />
+                                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-egyptian/50">
+                                                    <PhoneIcon />
+                                                </div>
                                                 <input
                                                     type="tel"
                                                     placeholder="WhatsApp (ej: +57 300 1234567)"
@@ -386,13 +436,11 @@ export default function ChatBot() {
                                     <Button
                                         onClick={sendMessage}
                                         disabled={!input.trim() || isLoading}
-                                        className="h-12 w-12 rounded-2xl bg-gradient-to-br from-egyptian to-azure hover:shadow-lg hover:shadow-tiffany/30 transition-all disabled:opacity-50 flex-shrink-0"
+                                        className="h-12 w-12 rounded-2xl bg-gradient-to-br from-egyptian to-azure hover:shadow-lg hover:shadow-tiffany/30 transition-all disabled:opacity-50 flex items-center justify-center flex-shrink-0"
                                     >
-                                        {isLoading ? (
-                                            <Loader2 className="h-5 w-5 animate-spin" />
-                                        ) : (
-                                            <Send className="h-5 w-5" />
-                                        )}
+                                        <div className="flex-shrink-0">
+                                            {isLoading ? <Loader2Icon /> : <SendIcon />}
+                                        </div>
                                     </Button>
                                 </div>
                             </div>
