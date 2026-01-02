@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { Menu, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import KaizenLogo from '@/components/ui/kaizen-logo'
 
 export default function Navbar() {
     const [isScrolled, setIsScrolled] = useState(false)
@@ -28,14 +29,17 @@ export default function Navbar() {
     return (
         <nav
             className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
-                    ? 'bg-white/95 backdrop-blur-md shadow-lg'
-                    : 'bg-transparent'
+                ? 'bg-white/95 backdrop-blur-md shadow-lg'
+                : 'bg-transparent'
                 }`}
         >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-20">
                     {/* Logo */}
                     <Link href="/" className="flex items-center space-x-3 group">
+                        <div className="transform transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
+                            <KaizenLogo className="h-10 w-10 md:h-12 md:w-12" />
+                        </div>
                         <div className="text-2xl font-heading font-bold">
                             <span className="gradient-text">Kaizen</span>
                             <span className={`ml-2 ${isScrolled ? 'text-egyptian' : 'text-white'} transition-colors`}>

@@ -11,10 +11,14 @@ interface Message {
 }
 
 // Inline SVG Icons - Professional Kaizen Design
-const KaizenLogoIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 100 100" fill="none">
-        <circle cx="50" cy="50" r="45" fill="white" fillOpacity="0.15" />
-        <text x="50" y="68" fontSize="60" fontWeight="bold" fontFamily="'Inter', 'Arial', sans-serif" fill="white" textAnchor="middle">K</text>
+const RobotIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 8V4H8" />
+        <rect width="16" height="12" x="4" y="8" rx="2" />
+        <path d="M2 14h2" />
+        <path d="M20 14h2" />
+        <path d="M15 13v2" />
+        <path d="M9 13v2" />
     </svg>
 )
 
@@ -66,6 +70,7 @@ export default function ChatBot() {
     const [input, setInput] = useState('')
     const [isLoading, setIsLoading] = useState(false)
     const [showLeadForm, setShowLeadForm] = useState(false)
+    const [showQuickActions, setShowQuickActions] = useState(true)
     const [leadData, setLeadData] = useState({ name: '', whatsapp: '' })
     const [conversationSummary, setConversationSummary] = useState('')
     const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -84,6 +89,18 @@ export default function ChatBot() {
             inputRef.current.focus()
         }
     }, [isOpen])
+
+    const quickActions = [
+        { icon: '📞', label: 'Hablar con Ventas', action: () => handleQuickAction('Quiero hablar con el equipo de ventas') },
+        { icon: '💼', label: 'Ver Servicios', action: () => handleQuickAction('¿Qué servicios ofrecen?') },
+        { icon: '💰', label: 'Consultar Precios', action: () => handleQuickAction('¿Cuánto cuestan sus servicios?') },
+    ]
+
+    const handleQuickAction = (message: string) => {
+        setShowQuickActions(false)
+        setInput(message)
+        setTimeout(() => sendMessage(message), 100)
+    }
 
     const saveLead = async () => {
         if (!leadData.name || !leadData.whatsapp) {
@@ -117,12 +134,13 @@ export default function ChatBot() {
         }
     }
 
-    const sendMessage = async () => {
-        if (!input.trim() || isLoading) return
+    const sendMessage = async (customMessage?: string) => {
+        const messageToSend = customMessage || input
+        if (!messageToSend.trim() || isLoading) return
 
         const userMessage: Message = {
             role: 'user',
-            content: input,
+            content: messageToSend,
             timestamp: new Date()
         }
 
@@ -213,21 +231,21 @@ export default function ChatBot() {
                         initial={{ scale: 0, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0, opacity: 0 }}
-                        className="fixed bottom-6 right-6 z-50"
+                        className="fixed bottom-8 right-8 z-50"
                     >
                         <Button
                             onClick={() => setIsOpen(true)}
                             size="lg"
-                            className="relative h-16 w-16 rounded-full bg-gradient-to-br from-egyptian via-azure to-tiffany shadow-2xl hover:shadow-tiffany/50 transition-all duration-300 group overflow-hidden"
+                            className="relative h-16 w-16 rounded-full bg-white hover:bg-gray-50 shadow-2xl hover:shadow-3xl transition-all duration-300 group overflow-hidden border-2 border-gray-100"
                         >
-                            <div className="absolute inset-0 bg-gradient-to-br from-daylight-sky/20 to-turquoise/20 animate-pulse" />
-                            <div className="relative z-10 text-white group-hover:scale-110 transition-transform">
-                                <KaizenLogoIcon />
+                            <div className="absolute inset-0 bg-gradient-to-br from-egyptian/5 via-azure/5 to-tiffany/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                            <div className="relative z-10 text-egyptian group-hover:text-azure group-hover:scale-110 transition-all duration-300">
+                                <RobotIcon />
                             </div>
                             <motion.div
                                 animate={{ scale: [1, 1.2, 1] }}
                                 transition={{ repeat: Infinity, duration: 2 }}
-                                className="absolute -top-1 -right-1 h-4 w-4 bg-orange-500 rounded-full border-2 border-white"
+                                className="absolute -top-1 -right-1 h-4 w-4 bg-green-500 rounded-full border-2 border-white shadow-lg"
                             />
                         </Button>
                     </motion.div>
@@ -242,10 +260,10 @@ export default function ChatBot() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 100, scale: 0.8 }}
                         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                        className="fixed bottom-6 right-6 z-50 w-[380px] h-[550px] flex flex-col"
+                        className="fixed inset-y-0 right-8 my-auto z-50 w-[380px] h-[580px] max-h-[calc(100vh-80px)] flex flex-col"
                     >
-                        <div className="relative h-full rounded-3xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl border border-white/20 shadow-2xl overflow-hidden">
-                            <div className="absolute inset-0 bg-gradient-to-br from-egyptian/5 via-tiffany/5 to-azure/5 animate-gradient" />
+                        <div className="relative h-full rounded-3xl bg-white dark:bg-slate-900 backdrop-blur-2xl border border-gray-200 dark:border-slate-700 shadow-2xl flex flex-col">
+                            <div className="absolute inset-0 bg-gradient-to-br from-egyptian/3 via-tiffany/3 to-azure/3" />
 
                             {/* Floating particles */}
                             <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -271,16 +289,16 @@ export default function ChatBot() {
                                 ))}
                             </div>
 
-                            {/* Header */}
-                            <div className="relative z-10 flex items-center justify-between p-4 border-b border-white/10 bg-gradient-to-r from-egyptian to-azure">
+                            {/* Header - Sticky */}
+                            <div className="sticky top-0 z-20 flex items-center justify-between p-4 border-b border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-t-3xl">
                                 <div className="flex items-center space-x-3">
                                     <motion.div
                                         animate={{ rotate: [0, 5, -5, 0] }}
                                         transition={{ repeat: Infinity, duration: 4 }}
                                         className="relative"
                                     >
-                                        <div className="h-10 w-10 rounded-full bg-white/20 backdrop-blur-sm border-2 border-white/40 flex items-center justify-center overflow-hidden">
-                                            <div className="text-tiffany">
+                                        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-egyptian/10 to-tiffany/10 border-2 border-tiffany/30 flex items-center justify-center overflow-hidden">
+                                            <div className="text-egyptian">
                                                 <SparklesIcon />
                                             </div>
                                         </div>
@@ -288,8 +306,8 @@ export default function ChatBot() {
                                     </motion.div>
 
                                     <div>
-                                        <h3 className="font-heading font-bold text-white text-base">KaiBot</h3>
-                                        <p className="text-xs text-white/80">Asistente de Kaizen Solution</p>
+                                        <h3 className="font-heading font-bold text-egyptian dark:text-white text-base">KaiBot</h3>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">Asistente de Kaizen Solution</p>
                                     </div>
                                 </div>
 
@@ -297,14 +315,14 @@ export default function ChatBot() {
                                     onClick={() => setIsOpen(false)}
                                     variant="ghost"
                                     size="sm"
-                                    className="text-white hover:bg-white/20 rounded-full h-8 w-8 p-0"
+                                    className="text-slate-600 hover:text-egyptian hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full h-8 w-8 p-0"
                                 >
                                     <XIcon />
                                 </Button>
                             </div>
 
                             {/* Messages */}
-                            <div className="relative z-10 flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin scrollbar-thumb-tiffany/20 scrollbar-track-transparent">
+                            <div className="relative z-10 flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50/50 dark:bg-slate-800/50 scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent hover:scrollbar-thumb-gray-500 dark:hover:scrollbar-thumb-slate-500">
                                 {messages.map((message, index) => (
                                     <motion.div
                                         key={index}
@@ -314,9 +332,9 @@ export default function ChatBot() {
                                         className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                                     >
                                         <div
-                                            className={`max-w-[80%] rounded-2xl px-4 py-3 ${message.role === 'user'
-                                                    ? 'bg-gradient-to-br from-egyptian to-azure text-white'
-                                                    : 'bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 text-slate-800 dark:text-white'
+                                            className={`max-w-[80%] rounded-2xl px-4 py-3 shadow-sm ${message.role === 'user'
+                                                ? 'bg-gradient-to-br from-egyptian to-azure text-white shadow-egyptian/20'
+                                                : 'bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-slate-800 dark:text-white shadow-gray-200/50 dark:shadow-slate-800/50'
                                                 }`}
                                         >
                                             <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
@@ -327,6 +345,29 @@ export default function ChatBot() {
                                         </div>
                                     </motion.div>
                                 ))}
+
+                                {/* Quick Actions */}
+                                {showQuickActions && messages.length === 1 && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="space-y-2"
+                                    >
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Acciones rápidas:</p>
+                                        <div className="grid grid-cols-1 gap-2">
+                                            {quickActions.map((action, idx) => (
+                                                <button
+                                                    key={idx}
+                                                    onClick={action.action}
+                                                    className="flex items-center space-x-2 px-4 py-2.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl hover:border-tiffany hover:bg-tiffany/5 transition-all text-left shadow-sm hover:shadow-md"
+                                                >
+                                                    <span className="text-lg">{action.icon}</span>
+                                                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{action.label}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </motion.div>
+                                )}
 
                                 {/* Lead Capture Form */}
                                 {showLeadForm && (
@@ -394,20 +435,20 @@ export default function ChatBot() {
                                         animate={{ opacity: 1 }}
                                         className="flex justify-start"
                                     >
-                                        <div className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/20 rounded-2xl px-4 py-3">
+                                        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl px-4 py-3 shadow-sm">
                                             <div className="flex space-x-2">
                                                 <motion.div
-                                                    animate={{ scale: [1, 1.2, 1] }}
+                                                    animate={{ scale: [1, 1.3, 1], opacity: [0.5, 1, 0.5] }}
                                                     transition={{ repeat: Infinity, duration: 1, delay: 0 }}
                                                     className="w-2 h-2 bg-tiffany rounded-full"
                                                 />
                                                 <motion.div
-                                                    animate={{ scale: [1, 1.2, 1] }}
+                                                    animate={{ scale: [1, 1.3, 1], opacity: [0.5, 1, 0.5] }}
                                                     transition={{ repeat: Infinity, duration: 1, delay: 0.2 }}
                                                     className="w-2 h-2 bg-azure rounded-full"
                                                 />
                                                 <motion.div
-                                                    animate={{ scale: [1, 1.2, 1] }}
+                                                    animate={{ scale: [1, 1.3, 1], opacity: [0.5, 1, 0.5] }}
                                                     transition={{ repeat: Infinity, duration: 1, delay: 0.4 }}
                                                     className="w-2 h-2 bg-egyptian rounded-full"
                                                 />
@@ -420,7 +461,7 @@ export default function ChatBot() {
                             </div>
 
                             {/* Input */}
-                            <div className="relative z-10 p-3 border-t border-white/10 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
+                            <div className="relative z-10 p-3 border-t border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900">
                                 <div className="flex items-end space-x-2">
                                     <div className="flex-1 relative">
                                         <input
@@ -431,11 +472,11 @@ export default function ChatBot() {
                                             onKeyPress={handleKeyPress}
                                             placeholder="Escribí tu mensaje..."
                                             disabled={isLoading}
-                                            className="w-full px-4 py-2.5 rounded-2xl bg-white/80 dark:bg-slate-800/80 border border-white/20 focus:border-tiffany/50 focus:ring-2 focus:ring-tiffany/20 outline-none transition-all disabled:opacity-50 text-sm"
+                                            className="w-full px-4 py-2.5 rounded-2xl bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 focus:border-tiffany focus:ring-2 focus:ring-tiffany/20 outline-none transition-all disabled:opacity-50 text-sm"
                                         />
                                     </div>
                                     <Button
-                                        onClick={sendMessage}
+                                        onClick={() => sendMessage()}
                                         disabled={!input.trim() || isLoading}
                                         className="h-10 w-10 rounded-2xl bg-gradient-to-br from-egyptian to-azure hover:shadow-lg hover:shadow-tiffany/30 transition-all disabled:opacity-50 flex items-center justify-center flex-shrink-0"
                                     >
