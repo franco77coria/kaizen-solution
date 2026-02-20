@@ -6,7 +6,7 @@ import crypto from "crypto"
 const ALGORITHM = "aes-256-gcm"
 
 function getEncryptionKey(): Buffer {
-    const secret = process.env.NEXTAUTH_SECRET || "fallback-secret-key-change-me"
+    const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || "fallback-secret-key-change-me"
     return crypto.scryptSync(secret, "whatsapp-salt", 32)
 }
 
