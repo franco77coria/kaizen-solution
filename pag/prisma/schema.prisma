@@ -154,3 +154,29 @@ model WhatsAppLog {
   payload   String   @db.Text
   createdAt DateTime @default(now())
 }
+
+// ─── ElevenLabs Integration ───
+
+model ElevenLabsConfig {
+  id           String   @id @default(cuid())
+  apiKey       String   @db.Text // encrypted
+  voiceId      String   @default("21m00Tcm4TlvDq8ikWAM") // Rachel
+  modelId      String   @default("eleven_multilingual_v2")
+  isConfigured Boolean  @default(false)
+  updatedAt    DateTime @updatedAt
+}
+
+// ─── API Usage Tracking ───
+
+model ApiUsageLog {
+  id        String   @id @default(cuid())
+  service   String   // "whatsapp" | "elevenlabs"
+  operation String   // "send_template", "send_text", "send_audio", "tts_generate", "bulk_template"
+  cost      Float    @default(0)
+  units     Int      @default(0) // chars for ElevenLabs, messages for WA
+  metadata  String?  @db.Text    // JSON
+  createdAt DateTime @default(now())
+
+  @@index([service])
+  @@index([createdAt])
+}

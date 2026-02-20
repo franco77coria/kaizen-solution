@@ -12,6 +12,8 @@ const navItems = [
     { href: '/admin/whatsapp/enviar', label: 'Enviar', icon: '📤' },
     { href: '/admin/whatsapp/contactos', label: 'Contactos', icon: '👥' },
     { href: '/admin/whatsapp/config', label: 'Configuración', icon: '⚙️' },
+    { href: '/admin/whatsapp/config-elevenlabs', label: 'Audio IA', icon: '🎙️' },
+    { href: '/admin/whatsapp/uso-api', label: 'Uso API', icon: '📈' },
 ]
 
 function WhatsAppSidebar() {
@@ -44,8 +46,8 @@ function WhatsAppSidebar() {
                             key={item.href}
                             href={item.href}
                             className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${isActive
-                                    ? 'bg-green-50 text-green-700 shadow-sm'
-                                    : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+                                ? 'bg-green-50 text-green-700 shadow-sm'
+                                : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
                                 }`}
                         >
                             <span className="text-base">{item.icon}</span>
