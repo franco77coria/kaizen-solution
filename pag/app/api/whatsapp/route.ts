@@ -10,15 +10,21 @@ export async function GET(request: NextRequest) {
     const challenge = searchParams.get("hub.challenge")
 
     if (mode === "subscribe") {
-        const config = await getWhatsAppConfig()
-        const verifyToken = config?.verifyToken || "kaizen_whatsapp_2026"
+        // Try to get verify token from DB, fallback to hardcoded
+        let verifyToken = "kaizen_whatsapp_2026"
+        try {
+            const config = await getWhatsAppConfig()
+            if (config?.verifyToken) verifyToken = config.verifyToken
+        } catch {
+            // DB not available, use default
+        }
 
         if (token === verifyToken) {
-            await logWhatsApp("webhook_verified", { mode, token: "***" })
+            try { await logWhatsApp("webhook_verified", { mode, token: "***" }) } catch { }
             return new NextResponse(challenge, { status: 200 })
         }
 
-        await logWhatsApp("webhook_verify_failed", { mode, token })
+        try { await logWhatsApp("webhook_verify_failed", { mode, token }) } catch { }
         return NextResponse.json({ error: "Token inválido" }, { status: 403 })
     }
 
