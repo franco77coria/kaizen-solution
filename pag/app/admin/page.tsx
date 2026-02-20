@@ -210,6 +210,14 @@ export default function AdminPage() {
                                         <p className="text-sm text-slate">Gestiona administradores</p>
                                     </button>
                                 )}
+
+                                <button
+                                    onClick={() => router.push('/admin/whatsapp')}
+                                    className="p-6 border-2 border-green-500/20 rounded-xl hover:border-green-500 hover:bg-green-50 transition-all text-left"
+                                >
+                                    <h3 className="font-semibold text-egyptian text-lg mb-2">💬 WhatsApp</h3>
+                                    <p className="text-sm text-slate">Dashboard de mensajería</p>
+                                </button>
                             </div>
                         </CardContent>
                     </Card>
