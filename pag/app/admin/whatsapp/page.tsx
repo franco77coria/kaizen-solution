@@ -47,6 +47,14 @@ export default function WhatsAppDashboard() {
     const [error, setError] = useState('')
     const [dateRange, setDateRange] = useState('ALL') // ALL, TODAY, 7DAYS, 30DAYS
 
+    // Calculadora dinámica
+    const [isCalcOpen, setIsCalcOpen] = useState(false)
+    const [calcData, setCalcData] = useState({
+        contacts: 1000,
+        type: 'template', // 'template' | 'audio'
+        characters: 150
+    })
+
     const fetchData = async () => {
         try {
             setError('')
@@ -231,6 +239,15 @@ export default function WhatsAppDashboard() {
                         </div>
                     </div>
                 </div>
+
+                <div className="mt-4 flex justify-end">
+                    <button
+                        onClick={() => setIsCalcOpen(true)}
+                        className="text-sm font-medium text-teal-600 bg-teal-50 px-4 py-2 rounded-lg hover:bg-teal-100 transition-colors border border-teal-200 flex items-center gap-2"
+                    >
+                        <span>🧮</span> Abrir Calculadora de Presupuesto
+                    </button>
+                </div>
             </div>
 
             {/* Unread badge */}
@@ -341,6 +358,94 @@ export default function WhatsAppDashboard() {
                     </CardContent>
                 </Card>
             </div>
+            {/* Calculator Modal */}
+            {isCalcOpen && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden flex flex-col border border-gray-100">
+                        <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                            <div>
+                                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2"><span>🧮</span> Proyección de Presupuesto</h3>
+                                <p className="text-sm text-gray-500 mt-1">Calcula cuánto te costará una campaña específica según tu propia audiencia.</p>
+                            </div>
+                            <button onClick={() => setIsCalcOpen(false)} className="text-gray-400 hover:text-gray-600 p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                                ✕
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-5">
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Cantidad de Personas a impactar</label>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    value={calcData.contacts}
+                                    onChange={e => setCalcData({ ...calcData, contacts: parseInt(e.target.value) || 0 })}
+                                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none text-sm transition-all bg-gray-50/50 focus:bg-white"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Tipo de Campaña</label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button
+                                        onClick={() => setCalcData({ ...calcData, type: 'template' })}
+                                        className={`px-4 py-2.5 rounded-xl border text-sm font-medium transition-all ${calcData.type === 'template' ? 'bg-teal-50 border-teal-500 text-teal-700 shadow-sm' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                                    >
+                                        📄 Plantilla Texto
+                                    </button>
+                                    <button
+                                        onClick={() => setCalcData({ ...calcData, type: 'audio' })}
+                                        className={`px-4 py-2.5 rounded-xl border text-sm font-medium transition-all ${calcData.type === 'audio' ? 'bg-purple-50 border-purple-500 text-purple-700 shadow-sm' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                                    >
+                                        🎙️ Audio IA
+                                    </button>
+                                </div>
+                            </div>
+
+                            {calcData.type === 'audio' && (
+                                <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Longitud del texto (Caracteres)</label>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        value={calcData.characters}
+                                        onChange={e => setCalcData({ ...calcData, characters: parseInt(e.target.value) || 0 })}
+                                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none text-sm transition-all bg-gray-50/50 focus:bg-white"
+                                    />
+                                    <p className="text-xs text-gray-500 mt-2">ElevenLabs cobra por cada caracter generado (~$0.00015 USD). Afecta el precio final de la nota de voz.</p>
+                                </div>
+                            )}
+
+                            {(() => {
+                                const baseMeta = calcData.contacts * 0.06; // Conversation Template / Utility latam average
+                                const baseEleven = calcData.type === 'audio' ? (calcData.contacts * calcData.characters * 0.00015) : 0;
+                                const total = baseMeta + baseEleven;
+
+                                return (
+                                    <div className="mt-6 pt-6 border-t border-gray-100">
+                                        <div className={`p-5 rounded-xl border ${calcData.type === 'audio' ? 'bg-gradient-to-br from-purple-50 to-teal-50 border-purple-100' : 'bg-teal-50 border-teal-100'}`}>
+                                            <div className="flex justify-between items-end mb-2">
+                                                <p className="text-sm font-bold text-gray-700">Costo Final Proyectado</p>
+                                                <p className="text-3xl font-black text-gray-900">${total.toFixed(2)} <span className="text-sm font-semibold text-gray-500">USD</span></p>
+                                            </div>
+                                            <div className="flex justify-between text-xs font-medium">
+                                                <span className="text-gray-500">WhatsApp API: <span className="text-teal-700 font-bold">${baseMeta.toFixed(2)}</span></span>
+                                                {calcData.type === 'audio' && <span className="text-gray-500">ElevenLabs: <span className="text-purple-700 font-bold">${baseEleven.toFixed(2)}</span></span>}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )
+                            })()}
+                        </div>
+
+                        <div className="p-4 border-t border-gray-100 bg-gray-50/50">
+                            <button onClick={() => setIsCalcOpen(false)} className="w-full px-4 py-2.5 bg-gray-900 border border-transparent rounded-xl text-white text-sm font-medium hover:bg-gray-800 transition-colors shadow-sm">
+                                Cerrar Proyección
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
