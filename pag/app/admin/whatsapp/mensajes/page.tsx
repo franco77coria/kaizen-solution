@@ -37,12 +37,19 @@ export default function MensajesPage() {
     const [selectedFile, setSelectedFile] = useState<File | null>(null)
     const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false)
     const [newChatPhone, setNewChatPhone] = useState('')
+
+    // Plantillas (Para conversaciones vacías o iniciales)
+    const [templates, setTemplates] = useState<{ id: string, name: string, language: string, bodyText: string }[]>([])
+    const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false)
+    const [selectedTemplate, setSelectedTemplate] = useState('')
+
     const chatEndRef = useRef<HTMLDivElement>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     useEffect(() => {
         loadConversations()
         loadVoices()
+        loadTemplates()
     }, [])
 
     useEffect(() => {
@@ -75,6 +82,16 @@ export default function MensajesPage() {
             }
         } catch (e) {
             console.error("No se pudieron cargar voces", e)
+        }
+    }
+
+    const loadTemplates = async () => {
+        try {
+            const res = await fetch('/api/whatsapp/templates')
+            const data = await res.json()
+            setTemplates(data.filter((t: any) => t.status === 'APPROVED'))
+        } catch (e) {
+            console.error('Error loading templates', e)
         }
     }
 
@@ -156,6 +173,35 @@ export default function MensajesPage() {
             }
         } catch (e) {
             alert('Error al enviar')
+        } finally {
+            setSending(false)
+        }
+    }
+
+    const sendManualTemplate = async () => {
+        if (!selectedPhone || !selectedTemplate) return
+        setSending(true)
+        try {
+            const res = await fetch('/api/whatsapp/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    tipo: 'plantilla',
+                    numero: selectedPhone,
+                    mensaje: selectedTemplate, // selectedTemplate guarda el string 'name' de la plantilla
+                }),
+            })
+
+            const data = await res.json()
+            if (data.success) {
+                setIsTemplateModalOpen(false)
+                setSelectedTemplate('')
+                loadMessages(selectedPhone)
+            } else {
+                alert(data.error || 'Error enviando la plantilla oficial')
+            }
+        } catch (e) {
+            alert('Error de conexión al enviar plantilla')
         } finally {
             setSending(false)
         }
@@ -251,16 +297,25 @@ export default function MensajesPage() {
                 ) : (
                     <>
                         {/* Chat header */}
-                        <div className="px-6 py-4 bg-white border-b border-gray-200 flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center text-xs font-bold text-green-700">
-                                {getInitials(selectedContact?.name || selectedPhone)}
+                        <div className="px-6 py-4 bg-white border-b border-gray-200 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center text-xs font-bold text-green-700">
+                                    {getInitials(selectedContact?.name || selectedPhone)}
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-semibold text-gray-900">
+                                        {selectedContact?.name || formatPhone(selectedPhone)}
+                                    </h3>
+                                    <p className="text-[11px] text-gray-400">+{selectedPhone}</p>
+                                </div>
                             </div>
-                            <div>
-                                <h3 className="text-sm font-semibold text-gray-900">
-                                    {selectedContact?.name || formatPhone(selectedPhone)}
-                                </h3>
-                                <p className="text-[11px] text-gray-400">+{selectedPhone}</p>
-                            </div>
+                            <button
+                                onClick={() => setIsTemplateModalOpen(true)}
+                                className="text-xs font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-md transition-colors border border-amber-200"
+                                title="Enviar mensaje oficial pre-aprobado (Regla 24h)"
+                            >
+                                ⚡ Enviar Plantilla Oficial
+                            </button>
                         </div>
 
                         {/* Messages */}
@@ -394,16 +449,73 @@ export default function MensajesPage() {
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 text-sm"
                                     autoFocus
                                 />
-                                <p className="text-xs text-amber-600 mt-2 bg-amber-50 p-2 rounded-md border border-amber-100">
-                                    <strong>Nota de Meta:</strong> Si este usuario hace más de 24hs que no te escribe, primero debes enviarle una plantilla oficial pre-aprobada para abrir una sesión.
-                                </p>
                             </div>
                             <button
                                 onClick={startNewChat}
                                 disabled={!newChatPhone.trim()}
                                 className="w-full bg-green-500 hover:bg-green-600 text-white font-medium py-2 rounded-lg text-sm transition-colors disabled:opacity-50"
                             >
-                                Iniciar Chat Manual
+                                Abrir Carpeta de Chat
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal de Plantillas Rápidas (Para iniciar chats) */}
+            {isTemplateModalOpen && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[80vh]">
+                        <div className="p-4 border-b border-amber-200 bg-amber-50 flex justify-between items-center">
+                            <div>
+                                <h3 className="font-bold text-amber-900 flex items-center gap-2">⚡ Enviar Plantilla (Regla 24h)</h3>
+                                <p className="text-xs text-amber-700/80 mt-1">Usa esto si Meta te rechaza mensajes libres porque el cliente no te contactó recientemente.</p>
+                            </div>
+                            <button onClick={() => setIsTemplateModalOpen(false)} className="text-amber-500 hover:text-amber-700">✕</button>
+                        </div>
+
+                        <div className="p-5 flex-1 overflow-y-auto space-y-4">
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">Selecciona un modelo oficial aprobado:</label>
+                                <select
+                                    className="w-full border border-gray-300 p-2.5 rounded-lg text-sm bg-gray-50 focus:bg-white transition-colors"
+                                    value={selectedTemplate}
+                                    onChange={(e) => setSelectedTemplate(e.target.value)}
+                                >
+                                    <option value="" disabled>-- Elige una Plantilla --</option>
+                                    {templates.map(t => (
+                                        <option key={t.id} value={t.name}>{t.name} ({t.language})</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {selectedTemplate && (
+                                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                    <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Previsualización del texto a enviar:</p>
+                                    <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                                        {templates.find(t => t.name === selectedTemplate)?.bodyText || 'Sin contenido'}
+                                    </p>
+                                </div>
+                            )}
+
+                            <p className="text-[11px] text-gray-400 italic">
+                                Nota: Si tu plantilla seleccionada posee variables dinámicas (como "Hola {"{{"}1{"}}"}"), este envío inicial rápido podría fallar ya que Meta espera que le pases las variables exactas por Campañas Masivas. Escoge preferiblemente modelos estáticos para envío manual rápido.
+                            </p>
+                        </div>
+
+                        <div className="p-4 border-t border-gray-100 flex justify-end gap-3 bg-white">
+                            <button
+                                onClick={() => setIsTemplateModalOpen(false)}
+                                className="px-4 py-2 text-gray-600 text-sm font-medium hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={sendManualTemplate}
+                                disabled={!selectedTemplate || sending}
+                                className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50"
+                            >
+                                {sending ? 'Enviando...' : 'Despachar Plantilla'}
                             </button>
                         </div>
                     </div>
