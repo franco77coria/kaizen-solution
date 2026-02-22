@@ -35,6 +35,8 @@ export default function MensajesPage() {
     const [voices, setVoices] = useState<{ voice_id: string, name: string }[]>([])
     const [selectedVoice, setSelectedVoice] = useState<string>('')
     const [selectedFile, setSelectedFile] = useState<File | null>(null)
+    const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false)
+    const [newChatPhone, setNewChatPhone] = useState('')
     const chatEndRef = useRef<HTMLDivElement>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -159,6 +161,15 @@ export default function MensajesPage() {
         }
     }
 
+    const startNewChat = () => {
+        if (!newChatPhone.trim()) return;
+        // Limpiamos el número de posibles espacios o + 
+        const cleanPhone = newChatPhone.replace(/\D/g, '');
+        setSelectedPhone(cleanPhone);
+        setIsNewChatModalOpen(false);
+        setNewChatPhone('');
+    }
+
     const filtered = conversations.filter((c) => {
         if (!search) return true
         const q = search.toLowerCase()
@@ -168,11 +179,20 @@ export default function MensajesPage() {
     const selectedContact = conversations.find(c => c.phone === selectedPhone)
 
     return (
-        <div className="flex h-[calc(100vh-0px)]">
+        <div className="flex h-[calc(100vh-0px)] relative">
             {/* Conversation list */}
-            <div className="w-80 border-r border-gray-200 bg-white flex flex-col">
+            <div className="w-80 border-r border-gray-200 bg-white flex flex-col z-10">
                 <div className="p-4 border-b border-gray-100">
-                    <h2 className="text-base font-bold text-gray-900 mb-3">Mensajes</h2>
+                    <div className="flex items-center justify-between mb-3">
+                        <h2 className="text-base font-bold text-gray-900">Mensajes</h2>
+                        <button
+                            onClick={() => setIsNewChatModalOpen(true)}
+                            className="w-8 h-8 rounded-full bg-green-50 text-green-600 hover:bg-green-100 flex items-center justify-center transition-colors"
+                            title="Nueva Conversación"
+                        >
+                            +
+                        </button>
+                    </div>
                     <input
                         type="text"
                         placeholder="Buscar conversación..."
@@ -354,6 +374,41 @@ export default function MensajesPage() {
                     </>
                 )}
             </div>
+
+            {/* Modal Nueva Conversación */}
+            {isNewChatModalOpen && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden">
+                        <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                            <h3 className="font-bold text-gray-900">Nueva Conversación</h3>
+                            <button onClick={() => setIsNewChatModalOpen(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+                        </div>
+                        <div className="p-4 space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Número de WhatsApp (con código de país)</label>
+                                <input
+                                    type="text"
+                                    placeholder="Ej: 54911223344"
+                                    value={newChatPhone}
+                                    onChange={(e) => setNewChatPhone(e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 text-sm"
+                                    autoFocus
+                                />
+                                <p className="text-xs text-amber-600 mt-2 bg-amber-50 p-2 rounded-md border border-amber-100">
+                                    <strong>Nota de Meta:</strong> Si este usuario hace más de 24hs que no te escribe, primero debes enviarle una plantilla oficial pre-aprobada para abrir una sesión.
+                                </p>
+                            </div>
+                            <button
+                                onClick={startNewChat}
+                                disabled={!newChatPhone.trim()}
+                                className="w-full bg-green-500 hover:bg-green-600 text-white font-medium py-2 rounded-lg text-sm transition-colors disabled:opacity-50"
+                            >
+                                Iniciar Chat Manual
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
