@@ -69,13 +69,19 @@ export async function saveWhatsAppConfig(data: {
     apiVersion?: string
 }): Promise<void> {
     const existing = await prisma.whatsAppConfig.findFirst()
-    const encrypted = encrypt(data.apiToken)
 
     if (existing) {
+        // Si el frontend envía el token enmascarado (con asteriscos), mantenemos el existente.
+        // Si envía uno nuevo limpio, lo encriptamos.
+        let finalApiToken = existing.apiToken;
+        if (data.apiToken && !data.apiToken.includes('****')) {
+            finalApiToken = encrypt(data.apiToken);
+        }
+
         await prisma.whatsAppConfig.update({
             where: { id: existing.id },
             data: {
-                apiToken: encrypted,
+                apiToken: finalApiToken,
                 phoneNumberId: data.phoneNumberId,
                 wabaId: data.wabaId || null,
                 verifyToken: data.verifyToken || "kaizen_whatsapp_2026",
@@ -84,6 +90,7 @@ export async function saveWhatsAppConfig(data: {
             },
         })
     } else {
+        const encrypted = encrypt(data.apiToken)
         await prisma.whatsAppConfig.create({
             data: {
                 apiToken: encrypted,
