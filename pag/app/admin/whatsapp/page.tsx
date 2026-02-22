@@ -12,6 +12,23 @@ interface Stats {
     enviadosHoy: number
     noLeidos: number
     tasaRespuesta: number
+    campaigns: {
+        total: number
+        delivered: number
+        read: number
+        failed: number
+    }
+    financials?: {
+        meta: number
+        elevenlabs: number
+        total: number
+        templateJobs: number
+        audioJobs: number
+    }
+    health?: {
+        status: string
+        qualityRating: string
+    }
 }
 
 interface Message {
@@ -28,11 +45,27 @@ export default function WhatsAppDashboard() {
     const [recentMessages, setRecentMessages] = useState<Message[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
+    const [dateRange, setDateRange] = useState('ALL') // ALL, TODAY, 7DAYS, 30DAYS
 
     const fetchData = async () => {
         try {
             setError('')
-            const res = await fetch('/api/whatsapp/stats')
+            setLoading(true)
+
+            let qs = ''
+            const now = new Date()
+            if (dateRange === 'TODAY') {
+                now.setHours(0, 0, 0, 0)
+                qs = `?startDate=${now.toISOString()}`
+            } else if (dateRange === '7DAYS') {
+                now.setDate(now.getDate() - 7)
+                qs = `?startDate=${now.toISOString()}`
+            } else if (dateRange === '30DAYS') {
+                now.setDate(now.getDate() - 30)
+                qs = `?startDate=${now.toISOString()}`
+            }
+
+            const res = await fetch('/api/whatsapp/stats' + qs)
             if (!res.ok) throw new Error('Error al cargar')
             const data = await res.json()
             setStats(data.stats)
@@ -48,7 +81,7 @@ export default function WhatsAppDashboard() {
         fetchData()
         const interval = setInterval(fetchData, 30000)
         return () => clearInterval(interval)
-    }, [])
+    }, [dateRange])
 
     if (loading) {
         return (
@@ -71,17 +104,42 @@ export default function WhatsAppDashboard() {
     return (
         <div className="p-8 max-w-7xl mx-auto space-y-8">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
                     <p className="text-sm text-gray-400 mt-1">Resumen de tu actividad en WhatsApp Business</p>
                 </div>
-                <button
-                    onClick={() => { setLoading(true); fetchData() }}
-                    className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                    ↻ Actualizar
-                </button>
+
+                <div className="flex items-center gap-3">
+                    {stats?.health && (
+                        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-medium ${stats.health.qualityRating === 'GREEN' ? 'bg-green-50 border-green-200 text-green-700' :
+                            stats.health.qualityRating === 'YELLOW' ? 'bg-yellow-50 border-yellow-200 text-yellow-700' :
+                                stats.health.qualityRating === 'RED' ? 'bg-red-50 border-red-200 text-red-700' :
+                                    'bg-gray-50 border-gray-200 text-gray-600'
+                            }`}>
+                            <span className="w-2 h-2 rounded-full bg-current"></span>
+                            <span>Calidad WABA: {stats.health.qualityRating}</span>
+                        </div>
+                    )}
+
+                    <select
+                        value={dateRange}
+                        onChange={(e) => setDateRange(e.target.value)}
+                        className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg outline-none cursor-pointer focus:ring-2 focus:ring-green-500/20"
+                    >
+                        <option value="ALL">Histórico Global</option>
+                        <option value="TODAY">Hoy</option>
+                        <option value="7DAYS">Últimos 7 días</option>
+                        <option value="30DAYS">Últimos 30 días</option>
+                    </select>
+
+                    <button
+                        onClick={() => { fetchData() }}
+                        className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                        ↻ Actualizar
+                    </button>
+                </div>
             </div>
 
             {error && (
@@ -106,6 +164,73 @@ export default function WhatsAppDashboard() {
                         </CardContent>
                     </Card>
                 ))}
+            </div>
+
+            {/* Panel de Campañas Masivas */}
+            <div className="bg-[#1A1D24] border border-[#2A2D35] rounded-2xl p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                    <div>
+                        <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                            <span className="text-teal-400">📢</span> Rendimiento de Campañas Masivas
+                        </h2>
+                        <p className="text-xs text-gray-400 mt-1">Acumuado histórico de los envíos programados usando plantillas.</p>
+                    </div>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-[#111318] border border-[#2A2D35] rounded-xl p-4 flex flex-col items-center justify-center">
+                        <span className="text-2xl font-bold tracking-tight text-white">{stats?.campaigns?.total || 0}</span>
+                        <span className="text-xs text-gray-500 uppercase font-semibold mt-1 tracking-wider">Total Generados</span>
+                    </div>
+                    <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 flex flex-col items-center justify-center">
+                        <span className="text-2xl font-bold tracking-tight text-blue-400">{stats?.campaigns?.delivered || 0}</span>
+                        <span className="text-xs text-blue-500/80 uppercase font-semibold mt-1 tracking-wider">Entregados</span>
+                    </div>
+                    <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 flex flex-col items-center justify-center">
+                        <span className="text-2xl font-bold tracking-tight text-green-400">{stats?.campaigns?.read || 0}</span>
+                        <span className="text-xs text-green-500/80 uppercase font-semibold mt-1 tracking-wider">Leídos</span>
+                    </div>
+                    <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 flex flex-col items-center justify-center">
+                        <span className="text-2xl font-bold tracking-tight text-red-400">{stats?.campaigns?.failed || 0}</span>
+                        <span className="text-xs text-red-500/80 uppercase font-semibold mt-1 tracking-wider">Errores / Bounce</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Dashboard Financiero */}
+            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                    <div>
+                        <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                            <span>💸</span> Visibilidad Financiera
+                        </h2>
+                        <p className="text-xs text-gray-500 mt-1">Costo estimado incurrido en el período seleccionado. Basado en facturación por uso de APIs (Promedio Latam).</p>
+                    </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="flex border border-gray-100 rounded-xl overflow-hidden shadow-sm">
+                        <div className="bg-gray-50 p-4 border-r border-gray-100 w-16 flex items-center justify-center text-3xl">🧩</div>
+                        <div className="p-4 bg-white flex-1 flex flex-col justify-center">
+                            <span className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-1">Costo Meta (WhatsApp)</span>
+                            <span className="text-2xl font-black text-gray-900">${stats?.financials?.meta?.toFixed(2) || '0.00'} <span className="text-sm font-medium text-gray-400">USD</span></span>
+                        </div>
+                    </div>
+
+                    <div className="flex border border-gray-100 rounded-xl overflow-hidden shadow-sm">
+                        <div className="bg-purple-50 p-4 border-r border-purple-100 w-16 flex items-center justify-center text-3xl">🎙️</div>
+                        <div className="p-4 bg-white flex-1 flex flex-col justify-center">
+                            <span className="text-xs font-semibold text-purple-600 uppercase tracking-widest mb-1">Costo ElevenLabs</span>
+                            <span className="text-2xl font-black text-gray-900">${stats?.financials?.elevenlabs?.toFixed(2) || '0.00'} <span className="text-sm font-medium text-gray-400">USD</span></span>
+                        </div>
+                    </div>
+
+                    <div className="flex border-2 border-green-500 rounded-xl overflow-hidden shadow-md">
+                        <div className="bg-green-500 p-4 w-16 flex items-center justify-center text-3xl text-white">💰</div>
+                        <div className="p-4 bg-white flex-1 flex flex-col justify-center">
+                            <span className="text-xs font-bold text-green-600 uppercase tracking-widest mb-1">Gasto Total</span>
+                            <span className="text-2xl font-black text-green-700">${stats?.financials?.total?.toFixed(2) || '0.00'} <span className="text-sm font-medium text-gray-500">USD</span></span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {/* Unread badge */}

@@ -141,11 +141,106 @@ model WhatsAppContact {
   id            String    @id @default(cuid())
   phone         String    @unique
   name          String?
+  source        String?   // "CSV", "WEBHOOK", "MANUAL"
+  externalId    String?   // Para cruzar con otras bases de datos del cliente
+  tags          String    @default("[]") // JSON array
+  optInStatus   Boolean   @default(true) // Si false, está en la lista de supresión
   lastMessageAt DateTime?
   totalMessages Int       @default(0)
   notes         String?   @db.Text
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+
+  // Relaciones
+  listSubscriptions ListSubscriber[]
+}
+
+model ContactList {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relaciones
+  subscribers ListSubscriber[]
+  campaigns   WhatsAppCampaign[]
+}
+
+model ListSubscriber {
+  id        String   @id @default(cuid())
+  listId    String
+  contactId String
+  createdAt DateTime @default(now())
+
+  // Relaciones
+  list      ContactList     @relation(fields: [listId], references: [id], onDelete: Cascade)
+  contact   WhatsAppContact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@unique([listId, contactId])
+  @@index([listId])
+  @@index([contactId])
+}
+
+model WhatsAppTemplate {
+  id          String   @id @default(cuid())
+  wabaId      String   // ID del template en Meta
+  name        String
+  language    String
+  status      String   // APPROVED, PENDING, REJECTED
+  category    String?
+  bodyText    String   @db.Text
+  components  String   @db.Text // JSON con toda la estructura (header, body, buttons)
+  variables   String   @default("[]") // JSON array de los nombres de variables mapeables
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relaciones
+  campaigns WhatsAppCampaign[]
+
+  @@unique([name, language])
+}
+
+model WhatsAppCampaign {
+  id           String    @id @default(cuid())
+  name         String
+  type         String    @default("template") // "template" | "audio"
+  listId       String
+  templateId   String?
+  status       String    @default("draft") // draft, scheduled, running, paused, completed, failed
+  scheduledFor DateTime?
+  stats        String    @default("{}") // JSON: { total: 0, sent: 0, delivered: 0, read: 0, failed: 0 }
+  mapping      String    @default("{}") // JSON: mapeo de variables ej. { "1": "name", "2": "custom_field" }
+  audioConfig  String?   @db.Text // JSON: metadata para campañas tipo "audio"
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // Relaciones
+  list         ContactList        @relation(fields: [listId], references: [id])
+  template     WhatsAppTemplate?  @relation(fields: [templateId], references: [id])
+  jobs         CampaignJob[]
+
+  @@index([listId])
+  @@index([templateId])
+}
+
+model CampaignJob {
+  id           String   @id @default(cuid())
+  campaignId   String
+  phone        String
+  messageId    String?  @unique // Se llena cuando Meta nos da el ID
+  status       String   @default("pending") // pending, sent, delivered, read, failed
+  errorMessage String?  @db.Text
+  processedAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relaciones
+  campaign     WhatsAppCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId])
+  @@index([phone])
+  @@index([status])
 }
 
 model WhatsAppLog {
@@ -164,6 +259,15 @@ model ElevenLabsConfig {
   modelId      String   @default("eleven_multilingual_v2")
   isConfigured Boolean  @default(false)
   updatedAt    DateTime @updatedAt
+}
+
+model AudioMessageCache {
+  id        String   @id @default(cuid())
+  hash      String   @unique // Hash sha256 de (texto + voiceId)
+  mediaUrl  String   @db.Text // URL pública donde está guardado temporalmente
+  mediaId   String?  // ID que devuelve WhatsApp al subirlo (opcional, dura 30 días)
+  createdAt DateTime @default(now())
+  expiresAt DateTime? // Si usamos un storage que expira
 }
 
 // ─── API Usage Tracking ───

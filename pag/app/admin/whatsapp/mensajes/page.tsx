@@ -31,10 +31,16 @@ export default function MensajesPage() {
     const [replyText, setReplyText] = useState('')
     const [sending, setSending] = useState(false)
     const [search, setSearch] = useState('')
+    const [isAudioMode, setIsAudioMode] = useState(false)
+    const [voices, setVoices] = useState<{ voice_id: string, name: string }[]>([])
+    const [selectedVoice, setSelectedVoice] = useState<string>('')
+    const [selectedFile, setSelectedFile] = useState<File | null>(null)
     const chatEndRef = useRef<HTMLDivElement>(null)
+    const fileInputRef = useRef<HTMLInputElement>(null)
 
     useEffect(() => {
         loadConversations()
+        loadVoices()
     }, [])
 
     useEffect(() => {
@@ -54,6 +60,19 @@ export default function MensajesPage() {
             console.error(e)
         } finally {
             setLoading(false)
+        }
+    }
+
+    const loadVoices = async () => {
+        try {
+            const res = await fetch('/api/elevenlabs/voices')
+            const data = await res.json()
+            if (data.success && data.voices?.length > 0) {
+                setVoices(data.voices)
+                setSelectedVoice(data.voices[0].voice_id)
+            }
+        } catch (e) {
+            console.error("No se pudieron cargar voces", e)
         }
     }
 
@@ -78,21 +97,57 @@ export default function MensajesPage() {
     }
 
     const handleReply = async () => {
-        if (!replyText.trim() || !selectedPhone || sending) return
+        if ((!replyText.trim() && !selectedFile) || !selectedPhone || sending) return
+
+        if (isAudioMode && !selectedVoice) {
+            alert('Por favor selecciona una voz primero')
+            return
+        }
+
+        if (selectedFile && isAudioMode) {
+            alert('No puedes enviar un archivo adjunto y un Audio IA al mismo tiempo.');
+            return;
+        }
+
         setSending(true)
         try {
-            const res = await fetch('/api/whatsapp/send', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    tipo: 'texto',
-                    numero: selectedPhone,
-                    mensaje: replyText,
-                }),
-            })
+            let res;
+            if (isAudioMode) {
+                res = await fetch('/api/whatsapp/send-audio', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        numero: selectedPhone,
+                        text: replyText,
+                        voiceId: selectedVoice
+                    }),
+                })
+            } else if (selectedFile) {
+                const formData = new FormData()
+                formData.append("numero", selectedPhone)
+                formData.append("file", selectedFile)
+                if (replyText) formData.append("text", replyText)
+
+                res = await fetch('/api/whatsapp/send-media', {
+                    method: 'POST',
+                    body: formData,
+                })
+            } else {
+                res = await fetch('/api/whatsapp/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tipo: 'texto',
+                        numero: selectedPhone,
+                        mensaje: replyText,
+                    }),
+                })
+            }
+
             const data = await res.json()
             if (data.success) {
                 setReplyText('')
+                setSelectedFile(null)
                 loadMessages(selectedPhone)
             } else {
                 alert(data.error || 'Error al enviar')
@@ -204,8 +259,8 @@ export default function MensajesPage() {
                                     >
                                         <div
                                             className={`max-w-[70%] px-4 py-2.5 rounded-2xl text-sm ${msg.direction === 'outbound'
-                                                    ? 'bg-green-500 text-white rounded-br-md'
-                                                    : 'bg-white text-gray-800 border border-gray-200 rounded-bl-md shadow-sm'
+                                                ? 'bg-green-500 text-white rounded-br-md'
+                                                : 'bg-white text-gray-800 border border-gray-200 rounded-bl-md shadow-sm'
                                                 }`}
                                         >
                                             <p className="whitespace-pre-wrap break-words">{msg.content}</p>
@@ -227,22 +282,72 @@ export default function MensajesPage() {
 
                         {/* Reply input */}
                         <div className="px-6 py-4 bg-white border-t border-gray-200">
-                            <div className="flex gap-3">
+                            {isAudioMode && (
+                                <div className="mb-3 flex items-center gap-2">
+                                    <span className="text-xs font-semibold text-purple-600 bg-purple-50 px-2 py-1 rounded-md border border-purple-100">Modo Audio IA Activado 🎙️</span>
+                                    {voices.length > 0 ? (
+                                        <select
+                                            value={selectedVoice}
+                                            onChange={(e) => setSelectedVoice(e.target.value)}
+                                            className="text-xs bg-gray-50 border border-gray-200 rounded px-2 py-1 outline-none text-gray-700 max-w-[200px]"
+                                        >
+                                            {voices.map(v => <option key={v.voice_id} value={v.voice_id}>{v.name}</option>)}
+                                        </select>
+                                    ) : (
+                                        <span className="text-xs text-amber-600">No hay voces configuradas</span>
+                                    )}
+                                </div>
+                            )}
+                            {selectedFile && (
+                                <div className="mb-2 bg-blue-50/50 border border-blue-100 rounded-lg p-2 px-3 flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xl">📎</span>
+                                        <span className="text-sm text-blue-800 font-medium truncate max-w-[200px]">{selectedFile.name}</span>
+                                        <span className="text-xs text-blue-500">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</span>
+                                    </div>
+                                    <button onClick={() => setSelectedFile(null)} className="text-gray-400 hover:text-red-500 font-bold p-1">×</button>
+                                </div>
+                            )}
+                            <div className="flex gap-2">
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    style={{ display: 'none' }}
+                                    onChange={(e) => {
+                                        if (e.target.files && e.target.files.length > 0) setSelectedFile(e.target.files[0])
+                                    }}
+                                    accept="image/*,video/*,audio/*,.pdf,.doc,.docx"
+                                />
+                                <button
+                                    onClick={() => fileInputRef.current?.click()}
+                                    title="Adjuntar archivo"
+                                    disabled={isAudioMode || sending}
+                                    className="w-10 flex-shrink-0 flex items-center justify-center rounded-xl border bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100 transition-colors disabled:opacity-50"
+                                >
+                                    📎
+                                </button>
+                                <button
+                                    onClick={() => setIsAudioMode(!isAudioMode)}
+                                    title={isAudioMode ? "Cambiar a Texto" : "Cambiar a Audio IA"}
+                                    className={`w-10 flex-shrink-0 flex items-center justify-center rounded-xl border transition-colors ${isAudioMode ? 'bg-purple-100 border-purple-200 text-purple-600' : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100'}`}
+                                >
+                                    {isAudioMode ? '🎙️' : '⌨️'}
+                                </button>
                                 <input
                                     type="text"
-                                    placeholder="Escribir mensaje... (solo funciona en ventana 24h)"
+                                    placeholder={isAudioMode ? "Escribí el texto que la IA narrará (se enviará como nota de voz)..." : "Escribir mensaje... (solo funciona en ventana 24h)"}
                                     value={replyText}
                                     onChange={(e) => setReplyText(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && handleReply()}
-                                    className="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-400"
+                                    className={`flex-1 px-4 py-2.5 bg-gray-50 border rounded-xl text-sm focus:outline-none transition-colors ${isAudioMode ? 'border-purple-200 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-400' : 'border-gray-200 focus:ring-2 focus:ring-green-500/20 focus:border-green-400'}`}
                                     disabled={sending}
                                 />
                                 <button
                                     onClick={handleReply}
-                                    disabled={sending || !replyText.trim()}
-                                    className="px-5 py-2.5 bg-green-500 text-white rounded-xl text-sm font-medium hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    disabled={sending || (!replyText.trim() && !selectedFile) || (isAudioMode && !selectedVoice)}
+                                    className={`px-5 py-2.5 text-white rounded-xl text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${isAudioMode ? 'bg-purple-600 hover:bg-purple-700' : 'bg-green-500 hover:bg-green-600'}`}
                                 >
-                                    {sending ? '...' : 'Enviar'}
+                                    {sending ? '...' : (isAudioMode ? 'Narrar y Enviar' : 'Enviar')}
                                 </button>
                             </div>
                         </div>

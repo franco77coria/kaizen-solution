@@ -48,9 +48,21 @@ export async function POST(request: NextRequest) {
         // Handle status updates
         if (value.statuses) {
             for (const status of value.statuses) {
+                // Update standalone messages
                 await prisma.whatsAppMessage.updateMany({
                     where: { messageId: status.id },
                     data: { status: status.status },
+                })
+
+                // Update Campaign Jobs (Massive Sends) to track read/delivered/failed
+                await prisma.campaignJob.updateMany({
+                    where: { messageId: status.id },
+                    data: {
+                        status: status.status,
+                        ...(status.status === 'failed' && status.errors?.length > 0
+                            ? { errorMessage: status.errors[0].message || "Error desconocido" }
+                            : {})
+                    },
                 })
             }
         }
@@ -111,6 +123,19 @@ export async function POST(request: NextRequest) {
 
                 // Update contact
                 await upsertContact(msg.from, contactName)
+
+                // AUTO OPT-OUT LOGIC
+                if (msg.type === "text" && content) {
+                    const txt = content.trim().toLowerCase();
+                    if (txt === "stop" || txt === "baja" || txt === "cancelar") {
+                        await prisma.whatsAppContact.updateMany({
+                            where: { phone: msg.from },
+                            data: { optInStatus: false }
+                        });
+                        await logWhatsApp("opt_out_received", { phone: msg.from, message: content });
+                        // Opcional: Podrías disparar un mensaje de vuelta confirmando la baja aquí
+                    }
+                }
             }
         }
 

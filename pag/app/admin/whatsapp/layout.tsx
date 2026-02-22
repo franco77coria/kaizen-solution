@@ -9,8 +9,10 @@ import { useEffect } from 'react'
 const navItems = [
     { href: '/admin/whatsapp', label: 'Dashboard', icon: '📊' },
     { href: '/admin/whatsapp/mensajes', label: 'Mensajes', icon: '💬' },
-    { href: '/admin/whatsapp/enviar', label: 'Enviar', icon: '📤' },
-    { href: '/admin/whatsapp/contactos', label: 'Contactos', icon: '👥' },
+    { href: '/admin/whatsapp/enviar', label: 'Envío Masivo', icon: '📤' },
+    { href: '/admin/whatsapp/contactos', label: 'Agenda / CRM', icon: '👥' },
+    { href: '/admin/whatsapp/listas', label: 'Listas', icon: '📋' },
+    { href: '/admin/whatsapp/plantillas', label: 'Plantillas', icon: '📨' },
     { href: '/admin/whatsapp/config', label: 'Configuración', icon: '⚙️' },
     { href: '/admin/whatsapp/config-elevenlabs', label: 'Audio IA', icon: '🎙️' },
     { href: '/admin/whatsapp/uso-api', label: 'Uso API', icon: '📈' },

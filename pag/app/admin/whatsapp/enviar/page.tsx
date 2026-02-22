@@ -1,554 +1,430 @@
-'use client'
+"use client"
 
-import { useEffect, useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useState, useEffect } from "react"
+import { SendHorizonal, Plus, PlayCircle, PauseCircle, Trash2 } from "lucide-react"
 
-interface Template {
-    name: string
-    language: string
-    category: string
-    status: string
-}
+export default function CampanasPage() {
+    const [campaigns, setCampaigns] = useState<any[]>([])
+    const [lists, setLists] = useState<any[]>([])
+    const [templates, setTemplates] = useState<any[]>([])
+    const [voices, setVoices] = useState<any[]>([])
+    const [loading, setLoading] = useState(true)
 
-interface WindowContact {
-    id: string
-    phone: string
-    name: string | null
-    hasWindow: boolean
-    windowEnd: string | null
-    lastMessageAt: string | null
-}
+    const [isModalOpen, setIsModalOpen] = useState(false)
+    const [newCampaign, setNewCampaign] = useState({
+        name: "",
+        type: "template" as "template" | "audio",
+        listId: "",
+        templateId: "",
+        mapping: {} as Record<string, string>,
+        audioConfig: { voiceId: "", prompt: "" }
+    })
 
-interface Voice {
-    voice_id: string
-    name: string
-    category: string
-}
-
-interface BulkResult {
-    numero: string
-    success: boolean
-    error?: string
-}
-
-export default function EnviarPage() {
-    const [templates, setTemplates] = useState<Template[]>([])
-    const [contacts, setContacts] = useState<WindowContact[]>([])
-    const [voices, setVoices] = useState<Voice[]>([])
-    const [loadingTemplates, setLoadingTemplates] = useState(false)
-    const [loadingContacts, setLoadingContacts] = useState(true)
-    const [loadingVoices, setLoadingVoices] = useState(false)
-
-    // Template form (single)
-    const [tPhone, setTPhone] = useState('')
-    const [tTemplate, setTTemplate] = useState('')
-    const [tLang, setTLang] = useState('es')
-    const [sendingTemplate, setSendingTemplate] = useState(false)
-
-    // Bulk form
-    const [bulkNumbers, setBulkNumbers] = useState('')
-    const [bulkTemplate, setBulkTemplate] = useState('')
-    const [bulkLang, setBulkLang] = useState('es')
-    const [sendingBulk, setSendingBulk] = useState(false)
-    const [bulkProgress, setBulkProgress] = useState<{ total: number; enviados: number; errores: number; detalles: BulkResult[] } | null>(null)
-
-    // Free text form
-    const [fPhone, setFPhone] = useState('')
-    const [fMessage, setFMessage] = useState('')
-    const [sendingText, setSendingText] = useState(false)
-
-    // Audio form
-    const [audioText, setAudioText] = useState('')
-    const [audioPhone, setAudioPhone] = useState('')
-    const [audioVoice, setAudioVoice] = useState('')
-    const [audioPreview, setAudioPreview] = useState<string | null>(null)
-    const [generatingAudio, setGeneratingAudio] = useState(false)
-    const [sendingAudio, setSendingAudio] = useState(false)
-    const [audioVars, setAudioVars] = useState<Record<string, string>>({})
-
-
-    const [toast, setToast] = useState<{ msg: string; type: 'ok' | 'err' } | null>(null)
-    const [activeTab, setActiveTab] = useState<'template' | 'bulk' | 'text' | 'audio'>('template')
+    const [selectedTemplate, setSelectedTemplate] = useState<any>(null)
+    const mockColumns = ["phone", "name", "tags", "source", "externalId"]
 
     useEffect(() => {
-        loadTemplates()
-        loadContacts()
+        fetchData()
     }, [])
 
-    const showToast = (msg: string, type: 'ok' | 'err' = 'ok') => {
-        setToast({ msg, type })
-        setTimeout(() => setToast(null), 4000)
-    }
-
-    const loadTemplates = async () => {
-        setLoadingTemplates(true)
+    const fetchData = async () => {
+        setLoading(true)
         try {
-            const res = await fetch('/api/whatsapp/templates')
-            const data = await res.json()
-            if (data.success) setTemplates(data.templates)
-            else showToast(data.error || 'Error al cargar templates', 'err')
-        } catch { showToast('Error de conexión', 'err') }
-        finally { setLoadingTemplates(false) }
-    }
+            const [campRes, listRes, tempRes, voiceRes] = await Promise.all([
+                fetch("/api/whatsapp/campaigns"),
+                fetch("/api/whatsapp/lists"),
+                fetch("/api/whatsapp/templates/sync"),
+                fetch("/api/elevenlabs/voices")
+            ])
 
-    const loadContacts = async () => {
-        try {
-            const res = await fetch('/api/whatsapp/contacts')
-            const data = await res.json()
-            setContacts(data.filter((c: WindowContact) => c.hasWindow))
-        } catch { } finally { setLoadingContacts(false) }
-    }
+            const [campData, listData, tempData, voiceData] = await Promise.all([
+                campRes.json(), listRes.json(), tempRes.json(), voiceRes.json()
+            ])
 
-    const loadVoices = async () => {
-        setLoadingVoices(true)
-        try {
-            const res = await fetch('/api/elevenlabs/voices')
-            const data = await res.json()
-            if (data.success) setVoices(data.voices)
-            else showToast(data.error || 'ElevenLabs no configurado', 'err')
-        } catch { showToast('Error al cargar voces', 'err') }
-        finally { setLoadingVoices(false) }
-    }
-
-    // Single template send
-    const handleSendTemplate = async () => {
-        if (!tPhone || !tTemplate) return showToast('Completá número y template', 'err')
-        setSendingTemplate(true)
-        try {
-            const res = await fetch('/api/whatsapp/send', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tipo: 'template', numero: tPhone, template: tTemplate, idioma: tLang }),
-            })
-            const data = await res.json()
-            if (data.success) { showToast('✅ Template enviado'); setTPhone('') }
-            else showToast(data.error || 'Error al enviar', 'err')
-        } catch { showToast('Error de conexión', 'err') }
-        finally { setSendingTemplate(false) }
-    }
-
-    // Bulk template send
-    const handleSendBulk = async () => {
-        if (!bulkTemplate) return showToast('Seleccioná un template', 'err')
-        const nums = bulkNumbers.split('\n').map(n => n.trim()).filter(n => n.length > 0)
-        if (nums.length === 0) return showToast('Ingresá al menos un número', 'err')
-
-        if (!confirm(`¿Enviar template "${bulkTemplate}" a ${nums.length} números?`)) return
-
-        setSendingBulk(true)
-        setBulkProgress(null)
-        try {
-            const res = await fetch('/api/whatsapp/send-bulk', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ template: bulkTemplate, idioma: bulkLang, numeros: nums }),
-            })
-            const data = await res.json()
-            if (data.success) {
-                setBulkProgress({ total: data.total, enviados: data.enviados, errores: data.errores, detalles: data.detalles })
-                showToast(`✅ ${data.enviados}/${data.total} enviados`)
-            } else showToast(data.error || 'Error en envío masivo', 'err')
-        } catch { showToast('Error de conexión', 'err') }
-        finally { setSendingBulk(false) }
-    }
-
-    // Free text send
-    const handleSendText = async () => {
-        if (!fPhone || !fMessage.trim()) return showToast('Seleccioná contacto y escribí el mensaje', 'err')
-        setSendingText(true)
-        try {
-            const res = await fetch('/api/whatsapp/send', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tipo: 'texto', numero: fPhone, mensaje: fMessage }),
-            })
-            const data = await res.json()
-            if (data.success) { showToast('✅ Mensaje enviado'); setFMessage('') }
-            else showToast(data.error || 'Error al enviar', 'err')
-        } catch { showToast('Error de conexión', 'err') }
-        finally { setSendingText(false) }
-    }
-
-    // Resolve template variables in audio text
-    const resolveVars = (text: string): string => {
-        let result = text
-        for (const [key, value] of Object.entries(audioVars)) {
-            result = result.replace(new RegExp(`\\{${key}\\}`, 'gi'), value || `{${key}}`)
+            setCampaigns(Array.isArray(campData) ? campData : [])
+            setLists(Array.isArray(listData) ? listData : [])
+            setTemplates(Array.isArray(tempData) ? tempData.filter((t: any) => t.status === 'APPROVED') : [])
+            if (voiceData?.success && voiceData?.voices?.length > 0) {
+                setVoices(voiceData.voices)
+                // Set default voice id
+                setNewCampaign(prev => ({ ...prev, audioConfig: { ...prev.audioConfig, voiceId: voiceData.voices[0].voice_id } }))
+            }
+        } catch (e) {
+            console.error(e)
+        } finally {
+            setLoading(false)
         }
-        return result
     }
 
-    // Detect variables in audioText
-    const detectedVars = (() => {
-        const matches = audioText.match(/\{(\w+)\}/g)
-        if (!matches) return [] as string[]
-        return Array.from(new Set(matches.map(m => m.replace(/[{}]/g, ''))))
-    })()
+    const handleTemplateSelect = (tempId: string) => {
+        const temp = templates.find(t => t.id === tempId)
+        setSelectedTemplate(temp)
+        setNewCampaign({ ...newCampaign, templateId: tempId, mapping: {} })
+    }
 
-    const resolvedAudioText = resolveVars(audioText)
-
-    // Audio preview
-    const handlePreviewAudio = async () => {
-        if (!audioText.trim()) return showToast('Escribí el texto para el audio', 'err')
-        setGeneratingAudio(true)
+    const handleCreateCampaign = async (e: React.FormEvent) => {
+        e.preventDefault()
         try {
-            const res = await fetch('/api/elevenlabs/generate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: resolvedAudioText, voiceId: audioVoice || undefined }),
-            })
-            const data = await res.json()
-            if (data.success) {
-                setAudioPreview(`data:audio/mpeg;base64,${data.audio}`)
-                showToast(`✅ Audio generado (${data.characterCount} chars, ~$${data.estimatedCost})`)
-            } else showToast(data.error || 'Error al generar audio', 'err')
-        } catch { showToast('Error de conexión', 'err') }
-        finally { setGeneratingAudio(false) }
-    }
+            // Validaciones
+            if (newCampaign.type === "template" && !newCampaign.templateId) {
+                return alert("Seleccioná una plantilla")
+            }
+            if (newCampaign.type === "audio" && (!newCampaign.audioConfig.voiceId || !newCampaign.audioConfig.prompt)) {
+                return alert("Falta configurar la voz o el texto del audio")
+            }
 
-    // Audio send
-    const handleSendAudio = async () => {
-        if (!audioPhone || !audioText.trim()) return showToast('Completá número y texto', 'err')
-        setSendingAudio(true)
-        try {
-            const res = await fetch('/api/whatsapp/send-audio', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ numero: audioPhone, text: resolvedAudioText, voiceId: audioVoice || undefined }),
-            })
-            const data = await res.json()
-            if (data.success) {
-                showToast('✅ Audio enviado por WhatsApp')
-                setAudioText('')
-                setAudioPreview(null)
-                setAudioVars({})
-            } else showToast(data.error || 'Error al enviar audio', 'err')
-        } catch { showToast('Error de conexión', 'err') }
-        finally { setSendingAudio(false) }
-    }
+            const payload = { ...newCampaign }
+            if (payload.type === "template") {
+                payload.audioConfig = { voiceId: "", prompt: "" }; // Clear
+            } else {
+                payload.templateId = ""; // Clear
+            }
 
-    // CSV upload handler
-    const handleCSVUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0]
-        if (!file) return
-        const reader = new FileReader()
-        reader.onload = (event) => {
-            const text = event.target?.result as string
-            const lines = text.split('\n').map(l => l.trim()).filter(l => l)
-            // Extract first column (phone numbers), skip header if non-numeric
-            const numbers = lines
-                .map(l => l.split(',')[0].replace(/[^0-9]/g, '').trim())
-                .filter(n => n.length >= 10)
-            setBulkNumbers(numbers.join('\n'))
-            showToast(`📋 ${numbers.length} números cargados del CSV`)
+            const res = await fetch("/api/whatsapp/campaigns", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            })
+            if (res.ok) {
+                setIsModalOpen(false)
+                setNewCampaign({
+                    name: "", type: "template", listId: "", templateId: "", mapping: {},
+                    audioConfig: { voiceId: voices[0]?.voice_id || "", prompt: "" }
+                })
+                fetchData()
+            } else {
+                alert("Error creando la campaña")
+            }
+        } catch (e) {
+            console.error(e)
         }
-        reader.readAsText(file)
     }
 
-    const tabs = [
-        { id: 'template' as const, label: '📋 Template', desc: 'Envío individual' },
-        { id: 'bulk' as const, label: '📢 Masivo', desc: 'A múltiples números' },
-        { id: 'text' as const, label: '💬 Texto', desc: 'Ventana 24h' },
-        { id: 'audio' as const, label: '🎙️ Audio IA', desc: 'ElevenLabs' },
-    ]
+    const handleTestCampaign = async (e: React.FormEvent) => {
+        e.preventDefault()
+        const testPhone = prompt("Ingrese su número de WhatsApp con código de país para probar (Ej: 5491122334455):")
+        if (!testPhone) return;
+
+        try {
+            // Validaciones
+            if (newCampaign.type === "template" && !newCampaign.templateId) {
+                return alert("Seleccioná una plantilla")
+            }
+            if (newCampaign.type === "audio" && (!newCampaign.audioConfig.voiceId || !newCampaign.audioConfig.prompt)) {
+                return alert("Falta configurar la voz o el texto del audio")
+            }
+
+            const payload = { ...newCampaign, testPhone }
+            if (payload.type === "template") {
+                payload.audioConfig = { voiceId: "", prompt: "" };
+            } else {
+                payload.templateId = "";
+            }
+
+            const res = await fetch("/api/whatsapp/campaigns/test", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            })
+            if (res.ok) {
+                alert("Prueba enviada exitosamente")
+            } else {
+                const data = await res.json()
+                alert(`Error en prueba: ${data.error || 'Desconocido'}`)
+            }
+        } catch (e) {
+            console.error(e)
+            alert("Error ejecutando la prueba")
+        }
+    }
+
+    const handleStatusChange = async (id: string, action: 'start' | 'pause' | 'cancel') => {
+        try {
+            await fetch(`/api/whatsapp/campaigns/${id}/${action}`, { method: 'POST' })
+            fetchData()
+        } catch (e) { console.error(e) }
+    }
+
+    const getStatusBadge = (status: string) => {
+        switch (status) {
+            case 'running': return <span className="px-2 py-1 bg-blue-500/10 text-blue-400 text-xs rounded-full border border-blue-500/20">En Progreso</span>
+            case 'completed': return <span className="px-2 py-1 bg-green-500/10 text-green-400 text-xs rounded-full border border-green-500/20">Completada</span>
+            case 'paused': return <span className="px-2 py-1 bg-yellow-500/10 text-yellow-400 text-xs rounded-full border border-yellow-500/20">Pausada</span>
+            case 'failed': return <span className="px-2 py-1 bg-red-500/10 text-red-400 text-xs rounded-full border border-red-500/20">Fallida</span>
+            default: return <span className="px-2 py-1 bg-gray-500/10 text-gray-400 text-xs rounded-full border border-gray-500/20">Borrador</span>
+        }
+    }
 
     return (
-        <div className="p-8 max-w-7xl mx-auto space-y-6">
-            <div>
-                <h1 className="text-2xl font-bold text-gray-900">Enviar Mensaje</h1>
-                <p className="text-sm text-gray-400 mt-1">Templates, envío masivo, texto libre y mensajes de audio IA</p>
+        <div className="p-6 max-w-7xl mx-auto space-y-6">
+            <div className="flex justify-between items-center bg-[#1A1D24] border border-[#2A2D35] p-6 rounded-2xl">
+                <div>
+                    <h1 className="text-2xl font-bold text-white flex items-center gap-3">
+                        <SendHorizonal className="text-teal-400" />
+                        Campañas Masivas
+                    </h1>
+                    <p className="text-gray-400 mt-1">Crea secuencias de envío programadas usando tus listas y plantillas.</p>
+                </div>
+                <button
+                    onClick={() => setIsModalOpen(true)}
+                    className="flex items-center gap-2 bg-teal-500 hover:bg-teal-600 text-white px-5 py-2.5 rounded-lg transition-all font-medium shadow-lg shadow-teal-500/20"
+                >
+                    <Plus size={18} />
+                    Nueva Campaña
+                </button>
             </div>
 
-            {/* Toast */}
-            {toast && (
-                <div className={`fixed top-6 right-6 z-50 px-5 py-3 rounded-xl shadow-lg text-sm font-medium transition-all ${toast.type === 'ok' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
-                    {toast.msg}
+            {loading ? (
+                <div className="flex justify-center py-20"><div className="w-8 h-8 border-4 border-teal-500 border-t-transparent rounded-full animate-spin"></div></div>
+            ) : campaigns.length === 0 ? (
+                <div className="text-center py-20 bg-[#1A1D24] border border-[#2A2D35] rounded-xl flex flex-col items-center">
+                    <SendHorizonal className="h-16 w-16 text-gray-600 mb-4" />
+                    <h3 className="text-xl font-medium text-white mb-2">Empieza a enviar mensajes</h3>
+                    <p className="text-gray-400 max-w-sm">No tienes campañas creadas. Asegúrate de tener Listas y Plantillas listas antes de empezar.</p>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 gap-4">
+                    {campaigns.map((camp) => {
+                        const stats = JSON.parse(camp.stats || "{}")
+                        const progress = stats.total > 0 ? Math.round((stats.sent / stats.total) * 100) : 0
+
+                        return (
+                            <div key={camp.id} className="bg-[#1A1D24] border border-[#2A2D35] p-5 rounded-xl flex items-center justify-between hover:border-teal-500/50 transition-colors group">
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-3 mb-1">
+                                        <h3 className="text-lg font-bold text-white">{camp.name}</h3>
+                                        {getStatusBadge(camp.status)}
+                                        {camp.type === 'audio' && <span className="text-[10px] bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-md border border-purple-500/30">🎙️ Audio IA Libre</span>}
+                                    </div>
+                                    <div className="text-sm text-gray-500 flex gap-4">
+                                        <span>Lista: <strong className="text-gray-300">{camp.list?.name || 'Desconocida'}</strong></span>
+                                        <span>Template: <strong className="text-gray-300">{camp.type === 'audio' ? 'Ninguno (Audio Libre)' : (camp.template?.name || 'Desconocido')}</strong></span>
+                                    </div>
+                                </div>
+
+                                <div className="w-48 px-6 border-l border-[#2A2D35]">
+                                    <div className="flex justify-between text-xs text-gray-400 mb-1">
+                                        <span>Progreso</span>
+                                        <span>{progress}%</span>
+                                    </div>
+                                    <div className="w-full bg-[#111318] rounded-full h-2">
+                                        <div className="bg-teal-500 h-2 rounded-full" style={{ width: `${progress}%` }}></div>
+                                    </div>
+                                    <div className="mt-2 text-[10px] text-gray-500 flex justify-between">
+                                        <span className="text-green-400" title="Entregados">{stats.delivered || 0} D</span>
+                                        <span className="text-blue-400" title="Leídos">{stats.read || 0} R</span>
+                                        <span className="text-red-400" title="Fallidos">{stats.failed || 0} F</span>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-2 pl-6">
+                                    {camp.status === 'draft' || camp.status === 'paused' ? (
+                                        <button onClick={() => handleStatusChange(camp.id, 'start')} className="p-2 text-teal-400 hover:bg-teal-500/10 rounded-lg transition-colors" title="Iniciar Envío">
+                                            <PlayCircle size={24} />
+                                        </button>
+                                    ) : camp.status === 'running' ? (
+                                        <button onClick={() => handleStatusChange(camp.id, 'pause')} className="p-2 text-yellow-500 hover:bg-yellow-500/10 rounded-lg transition-colors" title="Pausar Envío">
+                                            <PauseCircle size={24} />
+                                        </button>
+                                    ) : null}
+                                    <button onClick={() => handleStatusChange(camp.id, 'cancel')} className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors" title="Cancelar / Eliminar">
+                                        <Trash2 size={20} />
+                                    </button>
+                                </div>
+                            </div>
+                        )
+                    })}
                 </div>
             )}
 
-            {/* Tabs */}
-            <div className="flex gap-2 p-1 bg-gray-100 rounded-xl">
-                {tabs.map(tab => (
-                    <button
-                        key={tab.id}
-                        onClick={() => {
-                            setActiveTab(tab.id)
-                            if (tab.id === 'audio' && voices.length === 0) loadVoices()
-                        }}
-                        className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-all ${activeTab === tab.id
-                            ? 'bg-white shadow-sm text-gray-900'
-                            : 'text-gray-500 hover:text-gray-700'
-                            }`}
-                    >
-                        <span className="block">{tab.label}</span>
-                        <span className="block text-[10px] mt-0.5 opacity-60">{tab.desc}</span>
-                    </button>
-                ))}
-            </div>
+            {/* MODAL CREAR CAMPAÑA */}
+            {isModalOpen && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-[#1A1D24] border border-[#2A2D35] rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                        <h2 className="text-xl font-bold text-white mb-6">Configurar Nueva Campaña</h2>
 
-            {/* Template Tab */}
-            {activeTab === 'template' && (
-                <Card className="border-0 shadow-sm">
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-base font-semibold flex items-center gap-2">
-                            <span>📋</span> Enviar Template (Individual)
-                        </CardTitle>
-                        <p className="text-xs text-gray-400 mt-1">Enviá un template aprobado a un número específico.</p>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1.5">Número de destino</label>
-                            <input type="text" value={tPhone} onChange={(e) => setTPhone(e.target.value)} placeholder="5491123456789 (sin + ni espacios)"
-                                className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-400" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1.5">Template</label>
-                            <select value={tTemplate} onChange={(e) => setTTemplate(e.target.value)}
-                                className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-400">
-                                <option value="">{loadingTemplates ? 'Cargando...' : 'Seleccionar template'}</option>
-                                {templates.map(t => <option key={`${t.name}-${t.language}`} value={t.name}>{t.name} ({t.language})</option>)}
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1.5">Idioma</label>
-                            <select value={tLang} onChange={(e) => setTLang(e.target.value)}
-                                className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-400">
-                                <option value="es">Español</option>
-                                <option value="es_AR">Español (AR)</option>
-                                <option value="en_US">English (US)</option>
-                                <option value="pt_BR">Português (BR)</option>
-                            </select>
-                        </div>
-                        <button onClick={handleSendTemplate} disabled={sendingTemplate}
-                            className="w-full py-3 bg-green-500 text-white rounded-xl text-sm font-semibold hover:bg-green-600 disabled:opacity-50 transition-colors">
-                            {sendingTemplate ? 'Enviando...' : '📤 Enviar Template'}
-                        </button>
-                    </CardContent>
-                </Card>
-            )}
-
-            {/* Bulk Tab */}
-            {activeTab === 'bulk' && (
-                <Card className="border-0 shadow-sm">
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-base font-semibold flex items-center gap-2">
-                            <span>📢</span> Envío Masivo de Templates
-                        </CardTitle>
-                        <p className="text-xs text-gray-400 mt-1">Enviá un template a múltiples números. Pegá los números o subí un CSV.</p>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1.5">Template</label>
-                            <select value={bulkTemplate} onChange={(e) => setBulkTemplate(e.target.value)}
-                                className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-400">
-                                <option value="">{loadingTemplates ? 'Cargando...' : 'Seleccionar template'}</option>
-                                {templates.map(t => <option key={`bulk-${t.name}-${t.language}`} value={t.name}>{t.name} ({t.language})</option>)}
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1.5">Idioma</label>
-                            <select value={bulkLang} onChange={(e) => setBulkLang(e.target.value)}
-                                className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-400">
-                                <option value="es">Español</option>
-                                <option value="es_AR">Español (AR)</option>
-                                <option value="en_US">English (US)</option>
-                            </select>
-                        </div>
-                        <div>
-                            <div className="flex items-center justify-between mb-1.5">
-                                <label className="text-xs font-medium text-gray-600">Números (uno por línea)</label>
-                                <label className="text-xs text-green-600 hover:text-green-700 font-medium cursor-pointer">
-                                    📁 Subir CSV
-                                    <input type="file" accept=".csv,.txt" className="hidden" onChange={handleCSVUpload} />
-                                </label>
-                            </div>
-                            <textarea
-                                value={bulkNumbers}
-                                onChange={(e) => setBulkNumbers(e.target.value)}
-                                placeholder={"5491123456789\n5491198765432\n573001234567"}
-                                rows={8}
-                                className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-400 resize-none"
-                            />
-                            <p className="text-[11px] text-gray-400 mt-1">
-                                {bulkNumbers.split('\n').filter(n => n.trim().length >= 10).length} números válidos detectados
-                            </p>
-                        </div>
-
-                        <button onClick={handleSendBulk} disabled={sendingBulk}
-                            className="w-full py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl text-sm font-semibold hover:from-green-600 hover:to-emerald-700 disabled:opacity-50 transition-all">
-                            {sendingBulk ? '⏳ Enviando... (esto puede tardar)' : `📢 Enviar a ${bulkNumbers.split('\n').filter(n => n.trim().length >= 10).length} números`}
-                        </button>
-
-                        {/* Progress/Results */}
-                        {bulkProgress && (
-                            <div className="space-y-3">
-                                <div className="flex gap-3">
-                                    <div className="flex-1 bg-green-50 border border-green-200 rounded-lg p-3 text-center">
-                                        <p className="text-2xl font-bold text-green-700">{bulkProgress.enviados}</p>
-                                        <p className="text-xs text-green-600">Enviados</p>
+                        <form onSubmit={handleCreateCampaign} className="space-y-6">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="col-span-2">
+                                    <label className="block text-sm font-medium text-gray-300 mb-1">Tipo de Envío</label>
+                                    <div className="flex bg-[#111318] rounded-xl border border-[#2A2D35] p-1 gap-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => setNewCampaign({ ...newCampaign, type: "template", mapping: {} })}
+                                            className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${newCampaign.type === 'template' ? 'bg-teal-500/20 text-teal-400 border border-teal-500/30' : 'text-gray-400 hover:text-white hover:bg-[#1A1D24]'}`}
+                                        >
+                                            📨 Plantilla Aprobada (Meta)
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setNewCampaign({ ...newCampaign, type: "audio", mapping: {} })}
+                                            className={`flex-1 flex flex-col items-center justify-center py-2 text-sm font-medium rounded-lg transition-colors ${newCampaign.type === 'audio' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' : 'text-gray-400 hover:text-white hover:bg-[#1A1D24]'}`}
+                                        >
+                                            🎙️ Audio Dinámico IA (Libre)
+                                        </button>
                                     </div>
-                                    <div className="flex-1 bg-red-50 border border-red-200 rounded-lg p-3 text-center">
-                                        <p className="text-2xl font-bold text-red-700">{bulkProgress.errores}</p>
-                                        <p className="text-xs text-red-600">Errores</p>
-                                    </div>
-                                    <div className="flex-1 bg-gray-50 border border-gray-200 rounded-lg p-3 text-center">
-                                        <p className="text-2xl font-bold text-gray-700">{bulkProgress.total}</p>
-                                        <p className="text-xs text-gray-600">Total</p>
-                                    </div>
+                                    {newCampaign.type === 'audio' && (
+                                        <p className="text-xs text-yellow-500/80 mt-2 text-center bg-yellow-500/10 py-1.5 rounded-lg border border-yellow-500/20">
+                                            ⚠️ Requiere que el cliente haya respondido en las últimas 24hs para que le llegue.
+                                        </p>
+                                    )}
                                 </div>
-                                {/* Progress bar */}
-                                <div className="w-full bg-gray-200 rounded-full h-2">
-                                    <div className="bg-green-500 h-2 rounded-full transition-all" style={{ width: `${(bulkProgress.enviados / bulkProgress.total) * 100}%` }} />
+
+                                <div className="col-span-2">
+                                    <label className="block text-sm font-medium text-gray-300 mb-1">Nombre de la Campaña</label>
+                                    <input
+                                        type="text" required
+                                        value={newCampaign.name}
+                                        onChange={(e) => setNewCampaign({ ...newCampaign, name: e.target.value })}
+                                        className="w-full bg-[#111318] border border-[#2A2D35] rounded-lg px-4 py-2 text-white focus:border-teal-500 outline-none"
+                                        placeholder="Ej. Promoción Verano 2026"
+                                    />
                                 </div>
-                                {/* Error details */}
-                                {bulkProgress.detalles.filter(d => !d.success).length > 0 && (
-                                    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                                        <p className="text-xs font-medium text-red-700 mb-2">Errores:</p>
-                                        {bulkProgress.detalles.filter(d => !d.success).map((d, i) => (
-                                            <p key={i} className="text-xs text-red-600">{d.numero}: {d.error}</p>
-                                        ))}
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-1">Audiencia (Lista)</label>
+                                    <select required value={newCampaign.listId} onChange={(e) => setNewCampaign({ ...newCampaign, listId: e.target.value })} className="w-full bg-[#111318] border border-[#2A2D35] rounded-lg px-4 py-2 text-white outline-none">
+                                        <option value="">Seleccione una lista...</option>
+                                        {lists.map(l => <option key={l.id} value={l.id}>{l.name} ({l._count?.subscribers || 0} contactos)</option>)}
+                                    </select>
+                                </div>
+
+                                {newCampaign.type === 'template' ? (
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-300 mb-1">Plantilla de Meta</label>
+                                        <select required={newCampaign.type === 'template'} value={newCampaign.templateId} onChange={(e) => handleTemplateSelect(e.target.value)} className="w-full bg-[#111318] border border-[#2A2D35] rounded-lg px-4 py-2 text-white outline-none">
+                                            <option value="">Seleccione aprobada...</option>
+                                            {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                                        </select>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-300 mb-1">Voz (ElevenLabs)</label>
+                                        <select required={newCampaign.type === 'audio'} value={newCampaign.audioConfig.voiceId} onChange={(e) => setNewCampaign({ ...newCampaign, audioConfig: { ...newCampaign.audioConfig, voiceId: e.target.value } })} className="w-full bg-[#111318] border border-[#2A2D35] rounded-lg px-4 py-2 text-white outline-none">
+                                            {voices.length === 0 && <option value="">Sin configurar</option>}
+                                            {voices.map(v => <option key={v.voice_id} value={v.voice_id}>{v.name}</option>)}
+                                        </select>
                                     </div>
                                 )}
                             </div>
-                        )}
-                    </CardContent>
-                </Card>
-            )}
 
-            {/* Text Tab */}
-            {activeTab === 'text' && (
-                <Card className="border-0 shadow-sm">
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-base font-semibold flex items-center gap-2">
-                            <span>💬</span> Texto Libre
-                        </CardTitle>
-                        <p className="text-xs text-gray-400 mt-1">Solo para contactos que respondieron en las últimas 24hs.</p>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1.5">Contactos con ventana abierta</label>
-                            <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg divide-y divide-gray-100">
-                                {loadingContacts ? (
-                                    <div className="text-center py-6 text-xs text-gray-400">Cargando...</div>
-                                ) : contacts.length === 0 ? (
-                                    <div className="text-center py-6 text-xs text-gray-400 px-4">No hay contactos con ventana 24h abierta</div>
-                                ) : contacts.map(c => (
-                                    <button key={c.phone} onClick={() => setFPhone(c.phone)}
-                                        className={`w-full text-left px-3 py-2.5 hover:bg-gray-50 transition-colors flex items-center justify-between ${fPhone === c.phone ? 'bg-green-50' : ''}`}>
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-2 h-2 bg-green-500 rounded-full" />
-                                            <span className="text-sm text-gray-700">{c.name || c.phone}</span>
-                                        </div>
-                                        <span className="text-[10px] text-gray-400">{getRemainingTime(c.windowEnd)}</span>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1.5">Mensaje</label>
-                            <textarea value={fMessage} onChange={(e) => setFMessage(e.target.value)} placeholder="Escribí tu mensaje..." rows={4}
-                                className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-400 resize-none" />
-                        </div>
-                        <button onClick={handleSendText} disabled={sendingText || !fPhone}
-                            className="w-full py-3 bg-green-500 text-white rounded-xl text-sm font-semibold hover:bg-green-600 disabled:opacity-50 transition-colors">
-                            {sendingText ? 'Enviando...' : '💬 Enviar Texto Libre'}
-                        </button>
-                    </CardContent>
-                </Card>
-            )}
-
-            {/* Audio Tab */}
-            {activeTab === 'audio' && (
-                <Card className="border-0 shadow-sm">
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-base font-semibold flex items-center gap-2">
-                            <span>🎙️</span> Mensaje de Audio con IA
-                        </CardTitle>
-                        <p className="text-xs text-gray-400 mt-1">Generá un audio con ElevenLabs y envialo por WhatsApp. Usá {'{'}<em>nombre</em>{'}'} para personalizar.</p>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1.5">Número de destino</label>
-                            <input type="text" value={audioPhone} onChange={(e) => setAudioPhone(e.target.value)} placeholder="5491123456789"
-                                className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-400" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1.5">Voz</label>
-                            <select value={audioVoice} onChange={(e) => setAudioVoice(e.target.value)}
-                                className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-400">
-                                <option value="">{loadingVoices ? 'Cargando voces...' : 'Voz por defecto'}</option>
-                                {voices.map(v => <option key={v.voice_id} value={v.voice_id}>{v.name} ({v.category})</option>)}
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1.5">Texto a convertir en audio</label>
-                            <textarea value={audioText} onChange={(e) => setAudioText(e.target.value)}
-                                placeholder={'Hola {nombre}, te saluda Kaizen Solution. Queríamos contarte sobre {servicio}...'}
-                                rows={5}
-                                className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-400 resize-none" />
-                            <p className="text-[11px] text-gray-400 mt-1">
-                                {audioText.length}/5000 chars — Usá {'{'}<span className="font-mono text-purple-500">nombre</span>{'}'} {'{'}<span className="font-mono text-purple-500">empresa</span>{'}'} etc. para personalizar
-                            </p>
-                        </div>
-
-                        {/* Template variables */}
-                        {detectedVars.length > 0 && (
-                            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 space-y-3">
-                                <p className="text-xs font-semibold text-purple-700">🏷️ Variables detectadas:</p>
-                                <div className="grid grid-cols-2 gap-3">
-                                    {detectedVars.map(v => (
-                                        <div key={v}>
-                                            <label className="block text-[11px] font-medium text-purple-600 mb-1">{`{${v}}`}</label>
-                                            <input
-                                                type="text"
-                                                value={audioVars[v] || ''}
-                                                onChange={(e) => setAudioVars(prev => ({ ...prev, [v]: e.target.value }))}
-                                                placeholder={`Valor para ${v}`}
-                                                className="w-full px-2.5 py-2 bg-white border border-purple-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-400"
-                                            />
-                                        </div>
-                                    ))}
+                            {newCampaign.type === 'audio' && (
+                                <div className="col-span-2">
+                                    <label className="block text-sm font-medium text-gray-300 mb-1">Texto a Narrar Automáticamente (Podés usar variables como <code className="bg-[#2A2D35] px-1 rounded">{'{name}'}</code>)</label>
+                                    <textarea
+                                        required={newCampaign.type === 'audio'}
+                                        value={newCampaign.audioConfig.prompt}
+                                        onChange={(e) => {
+                                            const prompt = e.target.value
+                                            setNewCampaign(prev => ({ ...prev, audioConfig: { ...prev.audioConfig, prompt } }))
+                                        }}
+                                        rows={4}
+                                        className="w-full bg-[#111318] border border-[#2A2D35] rounded-lg p-4 text-white focus:border-purple-500 outline-none resize-none font-mono text-sm"
+                                        placeholder="Hola {name}, te recordamos tu cita en Kaizen Solution para el día..."
+                                    ></textarea>
                                 </div>
-                                {/* Resolved preview */}
-                                <div className="bg-white rounded-lg p-3 border border-purple-100">
-                                    <p className="text-[10px] uppercase font-semibold text-purple-400 mb-1">Preview del texto final:</p>
-                                    <p className="text-sm text-gray-700">{resolvedAudioText}</p>
+                            )}
+
+                            {/* Variables mapping para Type = Template */}
+                            {newCampaign.type === 'template' && selectedTemplate && (
+                                <div className="p-4 bg-[#111318] rounded-xl border border-[#2A2D35] space-y-4">
+                                    <h4 className="text-sm font-medium text-teal-400">Personalización de Variables de Plantilla</h4>
+                                    <p className="text-xs text-gray-500">Mapea las variables de la plantilla <code>{"{{1}}, {{2}}"}</code> a columnas de tu lista.</p>
+
+                                    {JSON.parse(selectedTemplate.variables || "[]").length === 0 ? (
+                                        <div className="text-sm text-gray-400 italic">Esta plantilla no requiere variables personalizadas.</div>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            {JSON.parse(selectedTemplate.variables || "[]").map((v: string) => (
+                                                <div key={v} className="flex items-center gap-4">
+                                                    <span className="w-16 text-center bg-[#2A2D35] px-2 py-1 rounded text-gray-300 text-xs font-mono">{`{{${v}}}`}</span>
+                                                    <span className="text-gray-500 text-sm">reemplazar con</span>
+                                                    <select
+                                                        required
+                                                        value={newCampaign.mapping[v] || ""}
+                                                        onChange={(e) => setNewCampaign({ ...newCampaign, mapping: { ...newCampaign.mapping, [v]: e.target.value } })}
+                                                        className="flex-1 bg-[#1A1D24] border border-[#2A2D35] rounded-lg px-3 py-1.5 text-white text-sm outline-none"
+                                                    >
+                                                        <option value="">Columna del CSV/Contacto</option>
+                                                        {mockColumns.map(mc => <option key={mc} value={mc}>{mc}</option>)}
+                                                    </select>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    <div className="mt-4 p-3 bg-black/40 border border-teal-500/20 rounded-lg">
+                                        <p className="text-xs font-mono text-gray-400 whitespace-pre-wrap">{selectedTemplate.bodyText}</p>
+                                    </div>
                                 </div>
-                            </div>
-                        )}
+                            )}
 
-                        {/* Audio preview */}
-                        {audioPreview && (
-                            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                                <p className="text-xs font-medium text-purple-700 mb-2">🔊 Preview del audio:</p>
-                                <audio controls src={audioPreview} className="w-full" />
-                            </div>
-                        )}
+                            {/* Variables mapping para Type = Audio */}
+                            {newCampaign.type === 'audio' && (() => {
+                                const matches = newCampaign.audioConfig.prompt.match(/\{(\w+)\}/g)
+                                const vars = matches ? Array.from(new Set(matches.map((m: string) => m.replace(/[{}]/g, "")))) : []
+                                if (vars.length === 0) return null
 
-                        <div className="grid grid-cols-2 gap-3">
-                            <button onClick={handlePreviewAudio} disabled={generatingAudio || !audioText.trim()}
-                                className="py-3 bg-purple-100 text-purple-700 rounded-xl text-sm font-semibold hover:bg-purple-200 disabled:opacity-50 transition-colors">
-                                {generatingAudio ? '⏳ Generando...' : '🔊 Preview Audio'}
-                            </button>
-                            <button onClick={handleSendAudio} disabled={sendingAudio || !audioPhone || !audioText.trim()}
-                                className="py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl text-sm font-semibold hover:from-purple-600 hover:to-purple-700 disabled:opacity-50 transition-all">
-                                {sendingAudio ? '⏳ Enviando...' : '📤 Enviar Audio'}
-                            </button>
-                        </div>
-                    </CardContent>
-                </Card>
+                                return (
+                                    <div className="p-4 bg-[#111318] rounded-xl border border-[#2A2D35] space-y-4">
+                                        <h4 className="text-sm font-medium text-purple-400">Personalización de Variables de Audio IA</h4>
+                                        <p className="text-xs text-gray-500">Hemos detectado estas variables en tu texto. Mapealas a Excel.</p>
+                                        <div className="space-y-3">
+                                            {vars.map((v: string) => (
+                                                <div key={v} className="flex items-center gap-4">
+                                                    <span className="w-auto min-w-[4rem] text-center bg-[#2A2D35] px-2 py-1 rounded text-gray-300 text-xs font-mono">{`{${v}}`}</span>
+                                                    <span className="text-gray-500 text-sm">reemplazar con</span>
+                                                    <select
+                                                        required
+                                                        value={newCampaign.mapping[v] || ""}
+                                                        onChange={(e) => setNewCampaign({ ...newCampaign, mapping: { ...newCampaign.mapping, [v]: e.target.value } })}
+                                                        className="flex-1 bg-[#1A1D24] border border-[#2A2D35] rounded-lg px-3 py-1.5 text-white text-sm outline-none focus:border-purple-500"
+                                                    >
+                                                        <option value="">Columna del CSV/Contacto</option>
+                                                        {mockColumns.map(mc => <option key={mc} value={mc}>{mc}</option>)}
+                                                    </select>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )
+                            })()}
+
+                            {(() => {
+                                const selectedListObj = lists.find(l => l.id === newCampaign.listId);
+                                const subsCount = selectedListObj?._count?.subscribers || 0;
+                                if (subsCount === 0) return null;
+                                const estMeta = subsCount * 0.06;
+                                const estEleven = newCampaign.type === 'audio' ? subsCount * 0.015 : 0;
+                                const estTotal = estMeta + estEleven;
+
+                                return (
+                                    <div className="col-span-2 flex items-center justify-between p-4 bg-teal-500/10 border border-teal-500/30 rounded-lg">
+                                        <div>
+                                            <p className="text-sm font-medium text-teal-400">💡 Inversión Estimada</p>
+                                            <p className="text-xs text-teal-500/80 mt-0.5">Calculado para impactar a {subsCount} contactos en base a tarifas promedio.</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-xl font-black text-teal-400">${estTotal.toFixed(2)} <span className="text-sm font-medium">USD</span></p>
+                                            {newCampaign.type === 'audio' && <p className="text-[10px] text-teal-500/70 font-medium tracking-wide">META: ${estMeta.toFixed(2)} + ELEVENLABS: ${estEleven.toFixed(2)}</p>}
+                                        </div>
+                                    </div>
+                                )
+                            })()}
+
+                            <div className="col-span-2 flex gap-3 justify-end pt-4 border-t border-[#2A2D35]">
+                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-5 py-2 text-sm text-gray-400 hover:text-white">Cancelar</button>
+                                <button type="button" onClick={handleTestCampaign} disabled={!newCampaign.listId || (newCampaign.type === 'template' && !newCampaign.templateId)} className="px-5 py-2 text-sm bg-blue-500/20 text-blue-400 border border-blue-500/30 hover:bg-blue-500 hover:text-white disabled:opacity-50 rounded-lg transition-colors">
+                                    Enviar Prueba a Mi WA
+                                </button>
+                                <button type="submit" disabled={!newCampaign.listId || (newCampaign.type === 'template' && !newCampaign.templateId)} className="px-5 py-2 text-sm bg-teal-500 hover:bg-teal-600 disabled:opacity-50 text-white rounded-lg transition-colors">
+                                    Guardar Borrador
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             )}
         </div>
     )
-}
-
-function getRemainingTime(windowEnd: string | null): string {
-    if (!windowEnd) return ''
-    const end = new Date(windowEnd)
-    const now = new Date()
-    const diff = end.getTime() - now.getTime()
-    if (diff <= 0) return 'expirado'
-    const hours = Math.floor(diff / 3600000)
-    const mins = Math.floor((diff % 3600000) / 60000)
-    return `${hours}h ${mins}min`
 }

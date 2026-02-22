@@ -168,6 +168,61 @@ export async function sendWhatsAppText(phone: string, message: string) {
     return callWhatsAppAPI(`${config.phoneNumberId}/messages`, "POST", body)
 }
 
+// ─── Native Audio (Voice Message) helpers ───
+
+/**
+ * Uploads a media buffer (e.g. an Ogg Opus file) to Meta's servers.
+ * Returns the media ID required to send it.
+ */
+export async function uploadMediaToWhatsApp(buffer: Buffer, mimeType: string): Promise<string> {
+    const config = await getWhatsAppConfig()
+    if (!config || !config.isConfigured) {
+        throw new Error("WhatsApp no está configurado")
+    }
+
+    const url = `https://graph.facebook.com/${config.apiVersion}/${config.phoneNumberId}/media`
+
+    // We must use FormData for multipart/form-data upload
+    const formData = new FormData()
+    formData.append("messaging_product", "whatsapp")
+
+    // Create a Blob from the Node.js Buffer
+    const blob = new Blob([new Uint8Array(buffer)], { type: mimeType })
+    formData.append("file", blob, "voice_message.ogg")
+
+    const response = await fetch(url, {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${config.apiToken}`,
+        },
+        body: formData,
+    })
+
+    const data = await response.json()
+    if (!response.ok) {
+        throw new Error(data?.error?.message || `Error subiendo media: ${response.status}`)
+    }
+
+    return data.id // Returns the media ID (valid for 30 days)
+}
+
+/**
+ * Sends a previously uploaded audio using its media ID.
+ */
+export async function sendWhatsAppAudio(phone: string, mediaId: string) {
+    const config = await getWhatsAppConfig()
+    if (!config) throw new Error("WhatsApp no configurado")
+
+    const body = {
+        messaging_product: "whatsapp",
+        to: phone,
+        type: "audio",
+        audio: { id: mediaId },
+    }
+
+    return callWhatsAppAPI(`${config.phoneNumberId}/messages`, "POST", body)
+}
+
 export async function getTemplatesFromMeta() {
     const config = await getWhatsAppConfig()
     if (!config || !config.wabaId) {
