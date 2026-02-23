@@ -184,14 +184,14 @@ export async function generateAudio(
 /**
  * Genera audio en formato OGG Opus directamente desde ElevenLabs.
  * Ideal para WhatsApp, que requiere Opus para renderizarse como "nota de voz".
- * Usa output_format=opus_16000 nativo de la API — sin necesidad de ffmpeg.
+ * Usa output_format=opus_48000_32 nativo de la API — sin necesidad de ffmpeg.
  */
 export async function generateAudioForWhatsApp(
     text: string,
     voiceId?: string,
     modelId?: string
 ): Promise<{ audioBuffer: Buffer; characterCount: number }> {
-    return generateAudio(text, voiceId, modelId, "opus_16000")
+    return generateAudio(text, voiceId, modelId, "opus_48000_32")
 }
 
 // ─── Template variable substitution ───
