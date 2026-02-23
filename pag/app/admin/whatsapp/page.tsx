@@ -361,7 +361,7 @@ export default function WhatsAppDashboard() {
             {/* Calculator Modal */}
             {isCalcOpen && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden flex flex-col border border-gray-100">
+                    <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] shadow-2xl overflow-y-auto flex flex-col border border-gray-100">
                         <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
                             <div>
                                 <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2"><span>🧮</span> Proyección de Presupuesto</h3>
