@@ -5,23 +5,42 @@ import { usePathname } from 'next/navigation'
 import { SessionProvider, useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
-import { LogOut } from 'lucide-react'
+import {
+    LayoutDashboard,
+    MessageCircle,
+    Send,
+    Users,
+    List,
+    FileText,
+    Settings,
+    Mic,
+    BarChart3,
+    LogOut,
+    ArrowLeft,
+    type LucideIcon
+} from 'lucide-react'
+
+interface NavItem {
+    href: string
+    label: string
+    icon: LucideIcon
+}
 
 // Items visibles para todos los usuarios
-const publicNavItems = [
-    { href: '/admin/whatsapp', label: 'Dashboard', icon: '📊' },
-    { href: '/admin/whatsapp/mensajes', label: 'Mensajes', icon: '💬' },
-    { href: '/admin/whatsapp/enviar', label: 'Envío Masivo', icon: '📤' },
-    { href: '/admin/whatsapp/contactos', label: 'Agenda / CRM', icon: '👥' },
-    { href: '/admin/whatsapp/listas', label: 'Listas', icon: '📋' },
-    { href: '/admin/whatsapp/plantillas', label: 'Plantillas', icon: '📨' },
+const publicNavItems: NavItem[] = [
+    { href: '/admin/whatsapp', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/admin/whatsapp/mensajes', label: 'Mensajes', icon: MessageCircle },
+    { href: '/admin/whatsapp/enviar', label: 'Envío Masivo', icon: Send },
+    { href: '/admin/whatsapp/contactos', label: 'Agenda / CRM', icon: Users },
+    { href: '/admin/whatsapp/listas', label: 'Listas', icon: List },
+    { href: '/admin/whatsapp/plantillas', label: 'Plantillas', icon: FileText },
 ]
 
 // Items solo visibles para ADMIN y SUPER_ADMIN
-const adminOnlyNavItems = [
-    { href: '/admin/whatsapp/config', label: 'Configuración', icon: '⚙️' },
-    { href: '/admin/whatsapp/config-elevenlabs', label: 'Audio IA', icon: '🎙️' },
-    { href: '/admin/whatsapp/uso-api', label: 'Uso API', icon: '📈' },
+const adminOnlyNavItems: NavItem[] = [
+    { href: '/admin/whatsapp/config', label: 'Configuración', icon: Settings },
+    { href: '/admin/whatsapp/config-elevenlabs', label: 'Audio IA', icon: Mic },
+    { href: '/admin/whatsapp/uso-api', label: 'Uso API', icon: BarChart3 },
 ]
 
 function WhatsAppSidebar() {
@@ -42,8 +61,8 @@ function WhatsAppSidebar() {
             {/* Logo */}
             <div className="p-6 border-b border-gray-100">
                 <Link href="/admin" className="flex items-center gap-3 group">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-white text-lg shadow-sm">
-                        💬
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-sm">
+                        <MessageCircle className="w-5 h-5 text-white" />
                     </div>
                     <div>
                         <h1 className="text-base font-bold text-gray-900 group-hover:text-green-600 transition-colors">Kaizen WA</h1>
@@ -57,6 +76,7 @@ function WhatsAppSidebar() {
                 {navItems.map((item) => {
                     const isActive = pathname === item.href ||
                         (item.href !== '/admin/whatsapp' && pathname.startsWith(item.href))
+                    const Icon = item.icon
                     return (
                         <Link
                             key={item.href}
@@ -66,7 +86,7 @@ function WhatsAppSidebar() {
                                 : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
                                 }`}
                         >
-                            <span className="text-base">{item.icon}</span>
+                            <Icon size={18} />
                             {item.label}
                         </Link>
                     )
@@ -77,13 +97,14 @@ function WhatsAppSidebar() {
             <div className="p-4 border-t border-gray-100 space-y-2">
                 <button
                     onClick={() => router.push('/admin')}
-                    className="w-full text-left px-4 py-2 text-xs text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-50"
+                    className="w-full flex items-center gap-2 text-left px-4 py-2 text-xs text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-50"
                 >
-                    ← Volver al Admin
+                    <ArrowLeft size={14} />
+                    Volver al Admin
                 </button>
                 <div className="px-4 py-2 flex items-center justify-between">
                     <div>
-                        <div className="text-[10px] text-gray-300">
+                        <div className="text-[10px] text-gray-300 truncate max-w-[160px]">
                             {session?.user?.email}
                         </div>
                         {!isAdmin && (

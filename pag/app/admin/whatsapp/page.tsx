@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
+import { Inbox, Send, Users, TrendingUp, Megaphone, DollarSign, Mic, Calculator, RefreshCw, MessageCircle, Settings } from 'lucide-react'
 
 interface Stats {
     totalRecibidos: number
@@ -103,10 +104,10 @@ export default function WhatsAppDashboard() {
     }
 
     const statCards = [
-        { label: 'Recibidos', value: stats?.totalRecibidos || 0, sub: `+${stats?.recibidosHoy || 0} hoy`, color: 'bg-green-500', icon: '📩' },
-        { label: 'Enviados', value: stats?.totalEnviados || 0, sub: `+${stats?.enviadosHoy || 0} hoy`, color: 'bg-blue-500', icon: '📤' },
-        { label: 'Contactos', value: stats?.totalContactos || 0, sub: 'activos', color: 'bg-purple-500', icon: '👥' },
-        { label: 'Tasa Respuesta', value: `${stats?.tasaRespuesta || 0}%`, sub: 'respondidos', color: 'bg-amber-500', icon: '📈' },
+        { label: 'Recibidos', value: stats?.totalRecibidos || 0, sub: `+${stats?.recibidosHoy || 0} hoy`, color: 'bg-green-500', icon: Inbox },
+        { label: 'Enviados', value: stats?.totalEnviados || 0, sub: `+${stats?.enviadosHoy || 0} hoy`, color: 'bg-blue-500', icon: Send },
+        { label: 'Contactos', value: stats?.totalContactos || 0, sub: 'activos', color: 'bg-purple-500', icon: Users },
+        { label: 'Tasa Respuesta', value: `${stats?.tasaRespuesta || 0}%`, sub: 'respondidos', color: 'bg-amber-500', icon: TrendingUp },
     ]
 
     return (
@@ -143,9 +144,9 @@ export default function WhatsAppDashboard() {
 
                     <button
                         onClick={() => { fetchData() }}
-                        className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                        className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-1.5"
                     >
-                        ↻ Actualizar
+                        <RefreshCw size={14} /> Actualizar
                     </button>
                 </div>
             </div>
@@ -164,8 +165,8 @@ export default function WhatsAppDashboard() {
                                     <p className="text-2xl font-bold text-gray-900">{s.value}</p>
                                     <p className="text-sm font-medium text-gray-500 mt-1">{s.label}</p>
                                 </div>
-                                <div className={`w-10 h-10 rounded-xl ${s.color} bg-opacity-10 flex items-center justify-center text-lg`}>
-                                    {s.icon}
+                                <div className={`w-10 h-10 rounded-xl ${s.color} bg-opacity-10 flex items-center justify-center`}>
+                                    <s.icon size={20} className={s.color.replace('bg-', 'text-')} />
                                 </div>
                             </div>
                             <p className="text-xs text-gray-400 mt-3">{s.sub}</p>
@@ -179,7 +180,7 @@ export default function WhatsAppDashboard() {
                 <div className="flex items-center justify-between mb-4">
                     <div>
                         <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                            <span>📢</span> Rendimiento de Campañas Masivas
+                            <Megaphone size={20} className="text-gray-400" /> Rendimiento de Campañas Masivas
                         </h2>
                         <p className="text-xs text-gray-500 mt-1">Acumulado histórico de los envíos programados usando plantillas.</p>
                     </div>
@@ -209,14 +210,14 @@ export default function WhatsAppDashboard() {
                 <div className="flex items-center justify-between mb-4">
                     <div>
                         <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                            <span>💸</span> Visibilidad Financiera
+                            <DollarSign size={20} className="text-gray-400" /> Visibilidad Financiera
                         </h2>
                         <p className="text-xs text-gray-500 mt-1">Costo estimado incurrido en el período seleccionado. Basado en facturación por uso de APIs (Promedio Latam).</p>
                     </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="flex border border-gray-100 rounded-xl overflow-hidden shadow-sm">
-                        <div className="bg-gray-50 p-4 border-r border-gray-100 w-16 flex items-center justify-center text-3xl">🧩</div>
+                        <div className="bg-gray-50 p-4 border-r border-gray-100 w-16 flex items-center justify-center"><MessageCircle size={24} className="text-green-600" /></div>
                         <div className="p-4 bg-white flex-1 flex flex-col justify-center">
                             <span className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-1">Costo Meta (WhatsApp)</span>
                             <span className="text-2xl font-black text-gray-900">${stats?.financials?.meta?.toFixed(2) || '0.00'} <span className="text-sm font-medium text-gray-400">USD</span></span>
@@ -224,7 +225,7 @@ export default function WhatsAppDashboard() {
                     </div>
 
                     <div className="flex border border-gray-100 rounded-xl overflow-hidden shadow-sm">
-                        <div className="bg-purple-50 p-4 border-r border-purple-100 w-16 flex items-center justify-center text-3xl">🎙️</div>
+                        <div className="bg-purple-50 p-4 border-r border-purple-100 w-16 flex items-center justify-center"><Mic size={24} className="text-purple-600" /></div>
                         <div className="p-4 bg-white flex-1 flex flex-col justify-center">
                             <span className="text-xs font-semibold text-purple-600 uppercase tracking-widest mb-1">Costo ElevenLabs</span>
                             <span className="text-2xl font-black text-gray-900">${stats?.financials?.elevenlabs?.toFixed(2) || '0.00'} <span className="text-sm font-medium text-gray-400">USD</span></span>
@@ -232,7 +233,7 @@ export default function WhatsAppDashboard() {
                     </div>
 
                     <div className="flex border-2 border-green-500 rounded-xl overflow-hidden shadow-md">
-                        <div className="bg-green-500 p-4 w-16 flex items-center justify-center text-3xl text-white">💰</div>
+                        <div className="bg-green-500 p-4 w-16 flex items-center justify-center"><DollarSign size={24} className="text-white" /></div>
                         <div className="p-4 bg-white flex-1 flex flex-col justify-center">
                             <span className="text-xs font-bold text-green-600 uppercase tracking-widest mb-1">Gasto Total</span>
                             <span className="text-2xl font-black text-green-700">${stats?.financials?.total?.toFixed(2) || '0.00'} <span className="text-sm font-medium text-gray-500">USD</span></span>
@@ -243,9 +244,9 @@ export default function WhatsAppDashboard() {
                 <div className="mt-4 flex justify-end">
                     <button
                         onClick={() => setIsCalcOpen(true)}
-                        className="text-sm font-medium text-teal-600 bg-teal-50 px-4 py-2 rounded-lg hover:bg-teal-100 transition-colors border border-teal-200 flex items-center gap-2"
+                        className="text-sm font-medium text-green-600 bg-green-50 px-4 py-2 rounded-lg hover:bg-green-100 transition-colors border border-green-200 flex items-center gap-2"
                     >
-                        <span>🧮</span> Abrir Calculadora de Presupuesto
+                        <Calculator size={16} /> Abrir Calculadora de Presupuesto
                     </button>
                 </div>
             </div>
@@ -325,7 +326,7 @@ export default function WhatsAppDashboard() {
                         <Link href="/admin/whatsapp/enviar">
                             <div className="p-4 rounded-xl border-2 border-dashed border-gray-200 hover:border-green-300 hover:bg-green-50/50 transition-all cursor-pointer group">
                                 <div className="flex items-center gap-3">
-                                    <span className="text-xl">📤</span>
+                                    <Send size={20} className="text-green-500" />
                                     <div>
                                         <p className="text-sm font-medium text-gray-700 group-hover:text-green-700">Enviar Mensaje</p>
                                         <p className="text-[11px] text-gray-400">Template o texto libre</p>
@@ -336,7 +337,7 @@ export default function WhatsAppDashboard() {
                         <Link href="/admin/whatsapp/contactos">
                             <div className="p-4 rounded-xl border-2 border-dashed border-gray-200 hover:border-purple-300 hover:bg-purple-50/50 transition-all cursor-pointer group mt-3">
                                 <div className="flex items-center gap-3">
-                                    <span className="text-xl">👥</span>
+                                    <Users size={20} className="text-purple-500" />
                                     <div>
                                         <p className="text-sm font-medium text-gray-700 group-hover:text-purple-700">Ver Contactos</p>
                                         <p className="text-[11px] text-gray-400">Gestionar la lista</p>
@@ -347,7 +348,7 @@ export default function WhatsAppDashboard() {
                         <Link href="/admin/whatsapp/config">
                             <div className="p-4 rounded-xl border-2 border-dashed border-gray-200 hover:border-blue-300 hover:bg-blue-50/50 transition-all cursor-pointer group mt-3">
                                 <div className="flex items-center gap-3">
-                                    <span className="text-xl">⚙️</span>
+                                    <Settings size={20} className="text-blue-500" />
                                     <div>
                                         <p className="text-sm font-medium text-gray-700 group-hover:text-blue-700">Configuración</p>
                                         <p className="text-[11px] text-gray-400">API y webhook</p>
@@ -364,7 +365,7 @@ export default function WhatsAppDashboard() {
                     <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] shadow-2xl overflow-y-auto flex flex-col border border-gray-100">
                         <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
                             <div>
-                                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2"><span>🧮</span> Proyección de Presupuesto</h3>
+                                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2"><Calculator size={20} className="text-gray-400" /> Proyección de Presupuesto</h3>
                                 <p className="text-sm text-gray-500 mt-1">Calcula cuánto te costará una campaña específica según tu propia audiencia.</p>
                             </div>
                             <button onClick={() => setIsCalcOpen(false)} className="text-gray-400 hover:text-gray-600 p-2 rounded-lg hover:bg-gray-100 transition-colors">
@@ -391,13 +392,13 @@ export default function WhatsAppDashboard() {
                                         onClick={() => setCalcData({ ...calcData, type: 'template' })}
                                         className={`px-4 py-2.5 rounded-xl border text-sm font-medium transition-all ${calcData.type === 'template' ? 'bg-teal-50 border-teal-500 text-teal-700 shadow-sm' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
                                     >
-                                        📄 Plantilla Texto
+                                        Plantilla Texto
                                     </button>
                                     <button
                                         onClick={() => setCalcData({ ...calcData, type: 'audio' })}
                                         className={`px-4 py-2.5 rounded-xl border text-sm font-medium transition-all ${calcData.type === 'audio' ? 'bg-purple-50 border-purple-500 text-purple-700 shadow-sm' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
                                     >
-                                        🎙️ Audio IA
+                                        Audio IA
                                     </button>
                                 </div>
                             </div>
