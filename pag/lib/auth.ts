@@ -53,6 +53,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         signIn: "/login",
     },
     callbacks: {
+        async authorized({ auth, request }) {
+            const isLoggedIn = !!auth?.user
+            const isAdminRoute = request.nextUrl.pathname.startsWith('/admin')
+
+            if (isAdminRoute && !isLoggedIn) {
+                return false // Redirect to login
+            }
+
+            return true
+        },
         async jwt({ token, user }) {
             if (user) {
                 token.id = user.id as string
