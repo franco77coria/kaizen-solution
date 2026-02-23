@@ -53,6 +53,7 @@ export default function WhatsAppDashboard() {
     const [calcData, setCalcData] = useState({
         contacts: 1000,
         type: 'template', // 'template' | 'audio'
+        category: 'marketing', // 'marketing' | 'utility' | 'authentication' | 'service'
         characters: 150
     })
 
@@ -381,8 +382,35 @@ export default function WhatsAppDashboard() {
                                     min="1"
                                     value={calcData.contacts}
                                     onChange={e => setCalcData({ ...calcData, contacts: parseInt(e.target.value) || 0 })}
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none text-sm transition-all bg-gray-50/50 focus:bg-white"
+                                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none text-sm transition-all bg-gray-50/50 focus:bg-white"
                                 />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Categoría del Template</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {[
+                                        { key: 'marketing', label: 'Marketing', price: '$0.0620', desc: 'Promociones, ofertas' },
+                                        { key: 'utility', label: 'Utilidad', price: '$0.0080', desc: 'Confirmaciones, alertas' },
+                                        { key: 'authentication', label: 'Autenticación', price: '$0.0315', desc: 'Códigos OTP' },
+                                        { key: 'service', label: 'Servicio', price: 'Gratis*', desc: 'Respuestas al cliente' },
+                                    ].map(cat => (
+                                        <button
+                                            key={cat.key}
+                                            onClick={() => setCalcData({ ...calcData, category: cat.key })}
+                                            className={`px-3 py-2.5 rounded-xl border text-left transition-all ${calcData.category === cat.key
+                                                ? 'bg-green-50 border-green-500 shadow-sm'
+                                                : 'bg-white border-gray-200 hover:bg-gray-50'
+                                                }`}
+                                        >
+                                            <span className={`text-sm font-semibold block ${calcData.category === cat.key ? 'text-green-700' : 'text-gray-700'}`}>{cat.label}</span>
+                                            <span className={`text-[11px] block ${calcData.category === cat.key ? 'text-green-600' : 'text-gray-400'}`}>{cat.price}/conv</span>
+                                        </button>
+                                    ))}
+                                </div>
+                                {calcData.category === 'service' && (
+                                    <p className="text-[11px] text-gray-400 mt-2">* Gratis las primeras 1,000 conversaciones/mes. Solo aplica cuando el usuario escribe primero.</p>
+                                )}
                             </div>
 
                             <div>
@@ -390,7 +418,7 @@ export default function WhatsAppDashboard() {
                                 <div className="grid grid-cols-2 gap-3">
                                     <button
                                         onClick={() => setCalcData({ ...calcData, type: 'template' })}
-                                        className={`px-4 py-2.5 rounded-xl border text-sm font-medium transition-all ${calcData.type === 'template' ? 'bg-teal-50 border-teal-500 text-teal-700 shadow-sm' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                                        className={`px-4 py-2.5 rounded-xl border text-sm font-medium transition-all ${calcData.type === 'template' ? 'bg-green-50 border-green-500 text-green-700 shadow-sm' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
                                     >
                                         Plantilla Texto
                                     </button>
@@ -404,7 +432,7 @@ export default function WhatsAppDashboard() {
                             </div>
 
                             {calcData.type === 'audio' && (
-                                <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                                <div>
                                     <label className="block text-sm font-semibold text-gray-700 mb-1.5">Longitud del texto (Caracteres)</label>
                                     <input
                                         type="number"
@@ -413,27 +441,56 @@ export default function WhatsAppDashboard() {
                                         onChange={e => setCalcData({ ...calcData, characters: parseInt(e.target.value) || 0 })}
                                         className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none text-sm transition-all bg-gray-50/50 focus:bg-white"
                                     />
-                                    <p className="text-xs text-gray-500 mt-2">ElevenLabs cobra por cada caracter generado (~$0.00015 USD). Afecta el precio final de la nota de voz.</p>
+                                    <p className="text-xs text-gray-500 mt-2">ElevenLabs cobra ~$0.00015 USD por caracter generado.</p>
                                 </div>
                             )}
 
                             {(() => {
-                                const baseMeta = calcData.contacts * 0.06; // Conversation Template / Utility latam average
+                                const categoryPrices: Record<string, number> = {
+                                    marketing: 0.0620,
+                                    utility: 0.0080,
+                                    authentication: 0.0315,
+                                    service: 0,
+                                }
+                                const pricePerMsg = categoryPrices[calcData.category] || 0.06;
+                                const baseMeta = calcData.contacts * pricePerMsg;
                                 const baseEleven = calcData.type === 'audio' ? (calcData.contacts * calcData.characters * 0.00015) : 0;
                                 const total = baseMeta + baseEleven;
+                                const marketingCost = calcData.contacts * 0.0620;
+                                const savings = marketingCost - baseMeta;
 
                                 return (
-                                    <div className="mt-6 pt-6 border-t border-gray-100">
-                                        <div className={`p-5 rounded-xl border ${calcData.type === 'audio' ? 'bg-gradient-to-br from-purple-50 to-teal-50 border-purple-100' : 'bg-teal-50 border-teal-100'}`}>
-                                            <div className="flex justify-between items-end mb-2">
+                                    <div className="pt-5 border-t border-gray-100 space-y-3">
+                                        <div className={`p-5 rounded-xl border ${calcData.type === 'audio' ? 'bg-gradient-to-br from-purple-50 to-green-50 border-purple-100' : 'bg-green-50 border-green-100'}`}>
+                                            <div className="flex justify-between items-end mb-3">
                                                 <p className="text-sm font-bold text-gray-700">Costo Final Proyectado</p>
                                                 <p className="text-3xl font-black text-gray-900">${total.toFixed(2)} <span className="text-sm font-semibold text-gray-500">USD</span></p>
                                             </div>
-                                            <div className="flex justify-between text-xs font-medium">
-                                                <span className="text-gray-500">WhatsApp API: <span className="text-teal-700 font-bold">${baseMeta.toFixed(2)}</span></span>
-                                                {calcData.type === 'audio' && <span className="text-gray-500">ElevenLabs: <span className="text-purple-700 font-bold">${baseEleven.toFixed(2)}</span></span>}
+                                            <div className="space-y-1.5 text-xs font-medium">
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-500">WhatsApp API ({calcData.category})</span>
+                                                    <span className="text-green-700 font-bold">${baseMeta.toFixed(2)}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-500">Costo por mensaje</span>
+                                                    <span className="text-gray-600">${pricePerMsg.toFixed(4)}</span>
+                                                </div>
+                                                {calcData.type === 'audio' && (
+                                                    <div className="flex justify-between">
+                                                        <span className="text-gray-500">ElevenLabs (audio)</span>
+                                                        <span className="text-purple-700 font-bold">${baseEleven.toFixed(2)}</span>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
+
+                                        {calcData.category !== 'marketing' && calcData.category !== 'service' && savings > 0 && (
+                                            <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-center">
+                                                <span className="text-xs font-semibold text-emerald-700">
+                                                    Ahorro vs Marketing: ${savings.toFixed(2)} USD ({Math.round((savings / marketingCost) * 100)}% menos)
+                                                </span>
+                                            </div>
+                                        )}
                                     </div>
                                 )
                             })()}
