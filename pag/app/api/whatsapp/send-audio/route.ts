@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { generateAudio, logApiUsage } from "@/lib/elevenlabs"
+import { generateAudioForWhatsApp, logApiUsage } from "@/lib/elevenlabs"
 import {
     getWhatsAppConfig,
     logWhatsApp,
@@ -9,7 +9,6 @@ import {
     sendWhatsAppAudio
 } from "@/lib/whatsapp"
 import { prisma } from "@/lib/prisma"
-import { convertToOggOpus } from "@/lib/audio-converter"
 
 export async function POST(request: NextRequest) {
     const session = await auth()
@@ -31,8 +30,8 @@ export async function POST(request: NextRequest) {
         const config = await getWhatsAppConfig()
         if (!config) throw new Error("WhatsApp no configurado")
 
-        // 1. Generate audio with ElevenLabs
-        const { audioBuffer, characterCount } = await generateAudio(text, voiceId)
+        // 1. Generate audio with ElevenLabs (formato OGG Opus nativo, sin ffmpeg)
+        const { audioBuffer, characterCount } = await generateAudioForWhatsApp(text, voiceId)
 
         const estimatedTtsCost = (characterCount / 1000) * 0.30
         await logApiUsage("elevenlabs", "tts_generate", characterCount, estimatedTtsCost, {
@@ -41,19 +40,10 @@ export async function POST(request: NextRequest) {
             forWhatsApp: true,
         })
 
-        // 2. Transcodificar MP3 a OGG Opus (Requisito estricto de Meta WhatsApp para "notas de voz nativas")
-        let oggBuffer: Buffer;
-        try {
-            oggBuffer = await convertToOggOpus(audioBuffer);
-        } catch (convErr: any) {
-            console.error("FFmpeg fallback:", convErr);
-            throw new Error(`Error convirtiendo a OGG Opus: ${convErr.message}`);
-        }
+        // 2. Subir el audio OGG Opus a Media API de Meta
+        const mediaId = await uploadMediaToWhatsApp(audioBuffer, "audio/ogg");
 
-        // 3. Subir el audio nativo a Media API de Meta
-        const mediaId = await uploadMediaToWhatsApp(oggBuffer, "audio/ogg");
-
-        // 4. Send audio message via WhatsApp usando el Media ID
+        // 3. Send audio message via WhatsApp usando el Media ID
         const result = await sendWhatsAppAudio(numero, mediaId);
 
         const msgId = result?.messages?.[0]?.id || null

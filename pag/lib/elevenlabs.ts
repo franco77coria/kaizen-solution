@@ -57,14 +57,19 @@ export async function callElevenLabsAPI(
     method: "GET" | "POST" | "DELETE" = "GET",
     body?: any,
     isJson: boolean = true,
-    returnRaw: boolean = false
+    returnRaw: boolean = false,
+    queryParams?: Record<string, string>
 ): Promise<any> {
     const config = await getElevenLabsConfig()
     if (!config || !config.isConfigured) {
         throw new Error("ElevenLabs no está configurado. Ve a Configuración para agregar tu API Key.")
     }
 
-    const url = `https://api.elevenlabs.io/v1/${endpoint}`
+    let url = `https://api.elevenlabs.io/v1/${endpoint}`
+    if (queryParams) {
+        const params = new URLSearchParams(queryParams)
+        url += `?${params.toString()}`
+    }
 
     const headers: Record<string, string> = {
         "xi-api-key": config.apiKey,
@@ -137,13 +142,19 @@ export async function deleteVoice(voiceId: string): Promise<void> {
 export async function generateAudio(
     text: string,
     voiceId?: string,
-    modelId?: string
+    modelId?: string,
+    outputFormat?: string
 ): Promise<{ audioBuffer: Buffer; characterCount: number }> {
     const config = await getElevenLabsConfig()
     if (!config) throw new Error("ElevenLabs no configurado")
 
     const voice = voiceId || config.voiceId
     const model = modelId || config.modelId
+
+    const queryParams: Record<string, string> = {}
+    if (outputFormat) {
+        queryParams.output_format = outputFormat
+    }
 
     const response = await callElevenLabsAPI(
         `text-to-speech/${voice}`,
@@ -157,7 +168,8 @@ export async function generateAudio(
             },
         },
         true,   // isJson
-        true    // returnRaw (we need the buffer)
+        true,   // returnRaw (we need the buffer)
+        queryParams.output_format ? queryParams : undefined
     )
 
     const arrayBuffer = await response.arrayBuffer()
@@ -167,6 +179,19 @@ export async function generateAudio(
         audioBuffer,
         characterCount: text.length,
     }
+}
+
+/**
+ * Genera audio en formato OGG Opus directamente desde ElevenLabs.
+ * Ideal para WhatsApp, que requiere Opus para renderizarse como "nota de voz".
+ * Usa output_format=opus_16000 nativo de la API — sin necesidad de ffmpeg.
+ */
+export async function generateAudioForWhatsApp(
+    text: string,
+    voiceId?: string,
+    modelId?: string
+): Promise<{ audioBuffer: Buffer; characterCount: number }> {
+    return generateAudio(text, voiceId, modelId, "opus_16000")
 }
 
 // ─── Template variable substitution ───

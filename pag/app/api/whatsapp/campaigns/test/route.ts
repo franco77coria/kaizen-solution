@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { generateAudio, getElevenLabsConfig } from "@/lib/elevenlabs";
-import { convertToOggOpus } from "@/lib/audio-converter";
+import { generateAudioForWhatsApp, getElevenLabsConfig } from "@/lib/elevenlabs";
 import { uploadMediaToWhatsApp, sendWhatsAppAudio } from "@/lib/whatsapp";
 
 export async function POST(req: Request) {
@@ -33,9 +32,8 @@ export async function POST(req: Request) {
                 });
             }
 
-            const { audioBuffer } = await generateAudio(promptTest, audioConfig.voiceId);
-            const oggBuffer = await convertToOggOpus(audioBuffer);
-            const mediaId = await uploadMediaToWhatsApp(oggBuffer, 'audio/ogg');
+            const { audioBuffer } = await generateAudioForWhatsApp(promptTest, audioConfig.voiceId);
+            const mediaId = await uploadMediaToWhatsApp(audioBuffer, 'audio/ogg');
 
             await sendWhatsAppAudio(testPhone, mediaId);
 

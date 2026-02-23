@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Client } from "@upstash/qstash";
 import { verifySignatureAppRouter } from "@upstash/qstash/nextjs";
-import { generateAudio, getElevenLabsConfig } from "@/lib/elevenlabs";
-import { convertToOggOpus } from "@/lib/audio-converter";
+import { generateAudioForWhatsApp, getElevenLabsConfig } from "@/lib/elevenlabs";
 import { uploadMediaToWhatsApp, sendWhatsAppAudio } from "@/lib/whatsapp";
 
 const qstash = new Client({
@@ -85,12 +84,10 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
                         prompt = prompt.replace(new RegExp(`\\{${varKey}\\}`, 'g'), val);
                     }
 
-                    // 1. Generar audio
-                    const { audioBuffer } = await generateAudio(prompt, audioConfig.voiceId);
-                    // 2. Transcodificar a Ogg Opus
-                    const oggBuffer = await convertToOggOpus(audioBuffer);
-                    // 3. Subir a Meta y obtener mediaId
-                    const mediaId = await uploadMediaToWhatsApp(oggBuffer, 'audio/ogg');
+                    // 1. Generar audio en formato OGG Opus directo
+                    const { audioBuffer } = await generateAudioForWhatsApp(prompt, audioConfig.voiceId);
+                    // 2. Subir a Meta y obtener mediaId
+                    const mediaId = await uploadMediaToWhatsApp(audioBuffer, 'audio/ogg');
                     // 4. Enviar Msg
                     const data = await sendWhatsAppAudio(job.phone, mediaId);
 
