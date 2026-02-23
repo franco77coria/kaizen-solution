@@ -175,31 +175,31 @@ export default function WhatsAppDashboard() {
             </div>
 
             {/* Panel de Campañas Masivas */}
-            <div className="bg-[#1A1D24] border border-[#2A2D35] rounded-2xl p-6 shadow-sm">
+            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
                     <div>
-                        <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                            <span className="text-teal-400">📢</span> Rendimiento de Campañas Masivas
+                        <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                            <span>📢</span> Rendimiento de Campañas Masivas
                         </h2>
-                        <p className="text-xs text-gray-400 mt-1">Acumuado histórico de los envíos programados usando plantillas.</p>
+                        <p className="text-xs text-gray-500 mt-1">Acumulado histórico de los envíos programados usando plantillas.</p>
                     </div>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="bg-[#111318] border border-[#2A2D35] rounded-xl p-4 flex flex-col items-center justify-center">
-                        <span className="text-2xl font-bold tracking-tight text-white">{stats?.campaigns?.total || 0}</span>
+                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 flex flex-col items-center justify-center">
+                        <span className="text-2xl font-bold tracking-tight text-gray-900">{stats?.campaigns?.total || 0}</span>
                         <span className="text-xs text-gray-500 uppercase font-semibold mt-1 tracking-wider">Total Generados</span>
                     </div>
-                    <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 flex flex-col items-center justify-center">
-                        <span className="text-2xl font-bold tracking-tight text-blue-400">{stats?.campaigns?.delivered || 0}</span>
-                        <span className="text-xs text-blue-500/80 uppercase font-semibold mt-1 tracking-wider">Entregados</span>
+                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex flex-col items-center justify-center">
+                        <span className="text-2xl font-bold tracking-tight text-blue-600">{stats?.campaigns?.delivered || 0}</span>
+                        <span className="text-xs text-blue-500 uppercase font-semibold mt-1 tracking-wider">Entregados</span>
                     </div>
-                    <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 flex flex-col items-center justify-center">
-                        <span className="text-2xl font-bold tracking-tight text-green-400">{stats?.campaigns?.read || 0}</span>
-                        <span className="text-xs text-green-500/80 uppercase font-semibold mt-1 tracking-wider">Leídos</span>
+                    <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex flex-col items-center justify-center">
+                        <span className="text-2xl font-bold tracking-tight text-green-600">{stats?.campaigns?.read || 0}</span>
+                        <span className="text-xs text-green-500 uppercase font-semibold mt-1 tracking-wider">Leídos</span>
                     </div>
-                    <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 flex flex-col items-center justify-center">
-                        <span className="text-2xl font-bold tracking-tight text-red-400">{stats?.campaigns?.failed || 0}</span>
-                        <span className="text-xs text-red-500/80 uppercase font-semibold mt-1 tracking-wider">Errores / Bounce</span>
+                    <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex flex-col items-center justify-center">
+                        <span className="text-2xl font-bold tracking-tight text-red-600">{stats?.campaigns?.failed || 0}</span>
+                        <span className="text-xs text-red-500 uppercase font-semibold mt-1 tracking-wider">Errores / Bounce</span>
                     </div>
                 </div>
             </div>
