@@ -5,14 +5,20 @@ import { usePathname } from 'next/navigation'
 import { SessionProvider, useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
+import { LogOut } from 'lucide-react'
 
-const navItems = [
+// Items visibles para todos los usuarios
+const publicNavItems = [
     { href: '/admin/whatsapp', label: 'Dashboard', icon: '📊' },
     { href: '/admin/whatsapp/mensajes', label: 'Mensajes', icon: '💬' },
     { href: '/admin/whatsapp/enviar', label: 'Envío Masivo', icon: '📤' },
     { href: '/admin/whatsapp/contactos', label: 'Agenda / CRM', icon: '👥' },
     { href: '/admin/whatsapp/listas', label: 'Listas', icon: '📋' },
     { href: '/admin/whatsapp/plantillas', label: 'Plantillas', icon: '📨' },
+]
+
+// Items solo visibles para ADMIN y SUPER_ADMIN
+const adminOnlyNavItems = [
     { href: '/admin/whatsapp/config', label: 'Configuración', icon: '⚙️' },
     { href: '/admin/whatsapp/config-elevenlabs', label: 'Audio IA', icon: '🎙️' },
     { href: '/admin/whatsapp/uso-api', label: 'Uso API', icon: '📈' },
@@ -22,6 +28,14 @@ function WhatsAppSidebar() {
     const pathname = usePathname()
     const router = useRouter()
     const { data: session } = useSession()
+
+    const userRole = (session?.user as any)?.role || 'VIEWER'
+    const isAdmin = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN'
+
+    // Combinar items según el rol
+    const navItems = isAdmin
+        ? [...publicNavItems, ...adminOnlyNavItems]
+        : publicNavItems
 
     return (
         <aside className="w-64 bg-white border-r border-gray-200 flex flex-col min-h-screen">
@@ -67,23 +81,55 @@ function WhatsAppSidebar() {
                 >
                     ← Volver al Admin
                 </button>
-                <div className="px-4 py-2 text-[10px] text-gray-300">
-                    {session?.user?.email}
+                <div className="px-4 py-2 flex items-center justify-between">
+                    <div>
+                        <div className="text-[10px] text-gray-300">
+                            {session?.user?.email}
+                        </div>
+                        {!isAdmin && (
+                            <div className="text-[9px] text-gray-300 mt-0.5">
+                                Modo lectura
+                            </div>
+                        )}
+                    </div>
                 </div>
+                <button
+                    onClick={() => signOut({ callbackUrl: '/login' })}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm text-red-500 hover:text-red-600 hover:bg-red-50 transition-colors rounded-lg font-medium"
+                >
+                    <LogOut size={16} />
+                    Salir
+                </button>
             </div>
         </aside>
     )
 }
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
-    const { status } = useSession()
+    const { status, data: session } = useSession()
     const router = useRouter()
+    const pathname = usePathname()
 
     useEffect(() => {
         if (status === 'unauthenticated') {
             router.push('/login')
         }
     }, [status, router])
+
+    // Bloquear acceso a páginas de config para usuarios no admin
+    useEffect(() => {
+        if (status === 'authenticated' && session?.user) {
+            const userRole = (session.user as any)?.role || 'VIEWER'
+            const isAdmin = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN'
+
+            const restrictedPaths = ['/admin/whatsapp/config', '/admin/whatsapp/config-elevenlabs', '/admin/whatsapp/uso-api']
+            const isRestricted = restrictedPaths.some(p => pathname.startsWith(p))
+
+            if (!isAdmin && isRestricted) {
+                router.push('/admin/whatsapp')
+            }
+        }
+    }, [status, session, pathname, router])
 
     if (status === 'loading') {
         return (
