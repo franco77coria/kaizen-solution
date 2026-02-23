@@ -1,0 +1,1634 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taller Muñoz - Sistema de Gestión Mecánica</title>
+
+    <!-- Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* ============================================
+           TALLER MUÑOZ - DISEÑO MINIMALISTA INDUSTRIAL
+           Paleta: Negro, Gris, Naranja Mecánico
+           ============================================ */
+
+        :root {
+            /* Colores principales - Tema mecánico */
+            --primary: #FF6B35;
+            --primary-dark: #E85A2A;
+            --primary-light: #FF8C61;
+
+            --secondary: #1A1D23;
+            --secondary-light: #2C3E50;
+
+            --accent: #FFA500;
+            --accent-dark: #FF8C00;
+
+            /* Estados */
+            --success: #27AE60;
+            --warning: #F39C12;
+            --danger: #E74C3C;
+            --info: #3498DB;
+
+            /* Backgrounds */
+            --bg-dark: #14161A;
+            --bg-darker: #0D0F12;
+            --bg-card: #FFFFFF;
+            --bg-sidebar: #1A1D23;
+            --bg-input: #F5F6F7;
+
+            /* Textos */
+            --text-primary: #2C3E50;
+            --text-secondary: #7F8C8D;
+            --text-muted: #95A5A6;
+            --text-white: #FFFFFF;
+
+            /* Bordes */
+            --border-color: #E1E8ED;
+            --border-dark: #34495E;
+
+            /* Dimensiones */
+            --sidebar-width: 280px;
+            --header-height: 70px;
+
+            /* Efectos */
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.08);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.16);
+
+            --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #F5F6F7;
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* ============================================
+           LOADING SCREEN
+           ============================================ */
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            transition: opacity 0.5s, visibility 0.5s;
+        }
+
+        .loading-overlay.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .loading-content {
+            text-align: center;
+        }
+
+        .loader {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 107, 53, 0.2);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 24px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-content p {
+            color: var(--text-white);
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        /* ============================================
+           SIDEBAR
+           ============================================ */
+
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: var(--sidebar-width);
+            background: var(--bg-sidebar);
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+            box-shadow: 4px 0 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .sidebar-header {
+            padding: 28px 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+        }
+
+        .logo-container h1 {
+            color: var(--text-white);
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin-bottom: 4px;
+        }
+
+        .logo-container p {
+            color: var(--primary);
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 24px 16px;
+            overflow-y: auto;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 18px;
+            margin-bottom: 6px;
+            border-radius: 8px;
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            transition: var(--transition);
+            cursor: pointer;
+            position: relative;
+        }
+
+        .nav-item i {
+            width: 20px;
+            text-align: center;
+            font-size: 18px;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-white);
+            transform: translateX(4px);
+        }
+
+        .nav-item.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 12px rgba(255, 107, 53, 0.4);
+        }
+
+        .nav-item.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 60%;
+            background: white;
+            border-radius: 0 2px 2px 0;
+        }
+
+        .sidebar-footer {
+            padding: 20px 24px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+            font-weight: 600;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--warning);
+            animation: pulse 2s infinite;
+        }
+
+        .connection-status.connected .status-dot {
+            background: var(--success);
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        /* ============================================
+           MAIN CONTENT
+           ============================================ */
+
+        .main-content {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .main-header {
+            height: var(--header-height);
+            background: white;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            padding: 0 32px;
+            gap: 24px;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .header-search {
+            flex: 1;
+            max-width: 500px;
+            position: relative;
+        }
+
+        .header-search i {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 16px;
+        }
+
+        .header-search input {
+            width: 100%;
+            padding: 12px 20px 12px 48px;
+            background: var(--bg-input);
+            border: 2px solid transparent;
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .header-search input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: white;
+            box-shadow: 0 0 0 4px rgba(255, 107, 53, 0.1);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .btn-icon {
+            width: 42px;
+            height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-input);
+            border: 2px solid transparent;
+            border-radius: 8px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn-icon:hover {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .date-display {
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 700;
+            padding: 10px 16px;
+            background: var(--bg-input);
+            border-radius: 8px;
+            font-family: 'Roboto Mono', monospace;
+        }
+
+        /* ============================================
+           CONTENT SECTIONS
+           ============================================ */
+
+        .content-wrapper {
+            flex: 1;
+            padding: 32px;
+        }
+
+        .content-section {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .section-header {
+            margin-bottom: 32px;
+        }
+
+        .section-header h2 {
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 8px;
+        }
+
+        .section-header h2 i {
+            color: var(--primary);
+            font-size: 32px;
+        }
+
+        .section-header p {
+            color: var(--text-secondary);
+            font-size: 15px;
+            margin-left: 46px;
+        }
+
+        /* ============================================
+           STATS CARDS
+           ============================================ */
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 28px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            border: 2px solid var(--border-color);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: var(--transition);
+        }
+
+        .stat-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary);
+        }
+
+        .stat-icon {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            color: white;
+            box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+        }
+
+        .stat-info {
+            flex: 1;
+        }
+
+        .stat-value {
+            display: block;
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--text-primary);
+            line-height: 1;
+            font-family: 'Roboto Mono', monospace;
+        }
+
+        .stat-label {
+            display: block;
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 8px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* ============================================
+           CARDS
+           ============================================ */
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            border: 2px solid var(--border-color);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 24px;
+        }
+
+        .card-header {
+            padding: 24px 28px;
+            border-bottom: 2px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: linear-gradient(to right, #FAFBFC, white);
+        }
+
+        .card-header h3 {
+            font-size: 18px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--text-primary);
+        }
+
+        .card-header h3 i {
+            color: var(--primary);
+            font-size: 20px;
+        }
+
+        .card-body {
+            padding: 28px;
+        }
+
+        /* ============================================
+           BUTTONS
+           ============================================ */
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+            transition: var(--transition);
+            text-decoration: none;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--bg-input);
+            color: var(--text-primary);
+            border: 2px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: white;
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #229954;
+            transform: translateY(-2px);
+        }
+
+        /* ============================================
+           TABLES
+           ============================================ */
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 16px 18px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background: #FAFBFC;
+            font-weight: 700;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+        }
+
+        td {
+            font-size: 14px;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        tbody tr {
+            transition: var(--transition);
+        }
+
+        tbody tr:hover {
+            background: #FAFBFC;
+        }
+
+        /* ============================================
+           BADGES
+           ============================================ */
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .badge-working {
+            background: rgba(243, 156, 18, 0.15);
+            color: var(--warning);
+        }
+
+        .badge-completed {
+            background: rgba(39, 174, 96, 0.15);
+            color: var(--success);
+        }
+
+        .badge-pending {
+            background: rgba(52, 152, 219, 0.15);
+            color: var(--info);
+        }
+
+        /* ============================================
+           FORMS
+           ============================================ */
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group label {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 14px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-input);
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 500;
+            transition: var(--transition);
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            border-color: var(--primary);
+            outline: none;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(255, 107, 53, 0.1);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        /* ============================================
+           EMPTY STATE
+           ============================================ */
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .empty-state i {
+            font-size: 64px;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+
+        .empty-state h3 {
+            font-size: 20px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .empty-state p {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        /* ============================================
+           RESPONSIVE
+           ============================================ */
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loader"></div>
+            <p>CARGANDO SISTEMA...</p>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-container">
+                <h1>TALLER MUÑOZ</h1>
+                <p>Sistema de Gestión</p>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="#" class="nav-item active" data-section="dashboard">
+                <i class="fas fa-gauge-high"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="#" class="nav-item" data-section="vehicles">
+                <i class="fas fa-car"></i>
+                <span>Vehículos</span>
+            </a>
+            <a href="#" class="nav-item" data-section="budgets">
+                <i class="fas fa-file-invoice-dollar"></i>
+                <span>Presupuestos</span>
+            </a>
+            <a href="#" class="nav-item" data-section="work-orders">
+                <i class="fas fa-clipboard-list"></i>
+                <span>Órdenes de Trabajo</span>
+            </a>
+            <a href="#" class="nav-item" data-section="stats">
+                <i class="fas fa-chart-line"></i>
+                <span>Estadísticas</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="connection-status" id="connectionStatus">
+                <div class="status-dot"></div>
+                <span>Conectando...</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Header -->
+        <header class="main-header">
+            <div class="header-search">
+                <i class="fas fa-search"></i>
+                <input type="text" placeholder="Buscar por patente o cliente..." id="globalSearch">
+            </div>
+
+            <div class="header-actions">
+                <button class="btn-icon" title="Actualizar datos" onclick="refreshData()">
+                    <i class="fas fa-rotate"></i>
+                </button>
+                <button class="btn-icon" title="Notificaciones">
+                    <i class="fas fa-bell"></i>
+                </button>
+                <div class="date-display" id="currentDate"></div>
+            </div>
+        </header>
+
+        <!-- Content Wrapper -->
+        <div class="content-wrapper">
+            <!-- DASHBOARD SECTION -->
+            <section class="content-section active" id="section-dashboard">
+                <div class="section-header">
+                    <h2>
+                        <i class="fas fa-gauge-high"></i>
+                        Dashboard
+                    </h2>
+                    <p>Resumen general del taller</p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-car"></i>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="stat-total">0</span>
+                            <span class="stat-label">Total Vehículos</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-wrench"></i>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="stat-working">0</span>
+                            <span class="stat-label">En Trabajo</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="stat-completed">0</span>
+                            <span class="stat-label">Finalizados</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="stat-revenue">$0</span>
+                            <span class="stat-label">Ganancia Total</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>
+                            <i class="fas fa-list"></i>
+                            Órdenes Recientes
+                        </h3>
+                        <button class="btn btn-primary" onclick="showSection('work-orders')">
+                            <i class="fas fa-plus"></i>
+                            Nueva Orden
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table id="recentOrdersTable">
+                                <thead>
+                                    <tr>
+                                        <th>OT</th>
+                                        <th>Patente</th>
+                                        <th>Vehículo</th>
+                                        <th>Cliente</th>
+                                        <th>Estado</th>
+                                        <th>Fecha</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="6">
+                                            <div class="empty-state">
+                                                <i class="fas fa-inbox"></i>
+                                                <h3>No hay órdenes recientes</h3>
+                                                <p>Las órdenes aparecerán aquí cuando se creen</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VEHICLES SECTION -->
+            <section class="content-section" id="section-vehicles">
+                <div class="section-header">
+                    <h2>
+                        <i class="fas fa-car"></i>
+                        Gestión de Vehículos
+                    </h2>
+                    <p>Buscar historial y servicios por patente o cliente</p>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>
+                            <i class="fas fa-search"></i>
+                            Buscar Vehículo
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Patente o Nombre del Cliente</label>
+                                <input type="text" id="vehicleSearchInput" placeholder="Ej: ABC123 o Juan Pérez">
+                            </div>
+                            <div class="form-group" style="display: flex; align-items: flex-end;">
+                                <button class="btn btn-primary" onclick="searchVehicle()" style="width: 100%;">
+                                    <i class="fas fa-search"></i>
+                                    Buscar
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="vehicleResults" style="margin-top: 32px;"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- BUDGETS SECTION -->
+            <section class="content-section" id="section-budgets">
+                <div class="section-header">
+                    <h2>
+                        <i class="fas fa-file-invoice-dollar"></i>
+                        Presupuestos
+                    </h2>
+                    <p>Crear y gestionar presupuestos para clientes</p>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>
+                            <i class="fas fa-plus"></i>
+                            Nuevo Presupuesto
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="budgetForm">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>Cliente</label>
+                                    <input type="text" id="budget-cliente" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Vehículo</label>
+                                    <input type="text" id="budget-vehiculo" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Patente</label>
+                                    <input type="text" id="budget-patente" required>
+                                </div>
+                            </div>
+
+                            <div class="form-group" style="margin-top: 24px;">
+                                <label>Descripción de Trabajos</label>
+                                <textarea id="budget-items" placeholder="Detalle los trabajos a realizar..."></textarea>
+                            </div>
+
+                            <div class="form-grid" style="margin-top: 24px;">
+                                <div class="form-group">
+                                    <label>Subtotal Repuestos</label>
+                                    <input type="number" id="budget-subtotal" value="0">
+                                </div>
+                                <div class="form-group">
+                                    <label>Mano de Obra</label>
+                                    <input type="number" id="budget-manoobra" value="0">
+                                </div>
+                                <div class="form-group">
+                                    <label>Total</label>
+                                    <input type="number" id="budget-total" readonly
+                                        style="font-weight: 700; font-size: 18px;">
+                                </div>
+                            </div>
+
+                            <div style="margin-top: 32px; display: flex; gap: 12px;">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i>
+                                    Guardar Presupuesto
+                                </button>
+                                <button type="button" class="btn btn-secondary" onclick="printBudget()">
+                                    <i class="fas fa-print"></i>
+                                    Imprimir A3
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+            <!-- WORK ORDERS SECTION -->
+            <section class="content-section" id="section-work-orders">
+                <div class="section-header">
+                    <h2>
+                        <i class="fas fa-clipboard-list"></i>
+                        Órdenes de Trabajo
+                    </h2>
+                    <p>Crear y gestionar hojas de trabajo</p>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>
+                            <i class="fas fa-plus"></i>
+                            Nueva Orden de Trabajo
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="workOrderForm">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>Patente</label>
+                                    <input type="text" id="wo-patente" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Vehículo</label>
+                                    <input type="text" id="wo-vehiculo" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Cliente</label>
+                                    <input type="text" id="wo-cliente" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Kilometraje</label>
+                                    <input type="number" id="wo-kilometraje">
+                                </div>
+                            </div>
+
+                            <div class="form-grid" style="margin-top: 24px;">
+                                <div class="form-group">
+                                    <label>Anomalía Cliente 1</label>
+                                    <textarea id="wo-anomalia1" rows="2"></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label>Anomalía Cliente 2</label>
+                                    <textarea id="wo-anomalia2" rows="2"></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label>Anomalía Cliente 3</label>
+                                    <textarea id="wo-anomalia3" rows="2"></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label>Anomalía Cliente 4</label>
+                                    <textarea id="wo-anomalia4" rows="2"></textarea>
+                                </div>
+                            </div>
+
+                            <div class="form-group" style="margin-top: 24px;">
+                                <label>Tercerizados</label>
+                                <input type="text" id="wo-tercerizados">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Cobro Mano de Obra</label>
+                                <input type="number" id="wo-cobro" value="0">
+                            </div>
+
+                            <div style="margin-top: 32px; display: flex; gap: 12px;">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i>
+                                    Crear Orden
+                                </button>
+                                <button type="button" class="btn btn-secondary" onclick="saveDraft()">
+                                    <i class="fas fa-floppy-disk"></i>
+                                    Guardar Borrador
+                                </button>
+                                <button type="button" class="btn btn-success" onclick="printWorkOrder()">
+                                    <i class="fas fa-print"></i>
+                                    Imprimir A3
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+            <!-- STATS SECTION -->
+            <section class="content-section" id="section-stats">
+                <div class="section-header">
+                    <h2>
+                        <i class="fas fa-chart-line"></i>
+                        Estadísticas Financieras
+                    </h2>
+                    <p>Seguimiento de ganancias semanales y mensuales</p>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>
+                            <i class="fas fa-calendar-week"></i>
+                            Ganancias por Semana
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div id="weeklyStatsContainer">
+                            <div class="empty-state">
+                                <i class="fas fa-chart-bar"></i>
+                                <h3>Cargando estadísticas...</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 24px;">
+                    <div class="card-header">
+                        <h3>
+                            <i class="fas fa-calendar-alt"></i>
+                            Ganancias por Mes
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div id="monthlyStatsContainer">
+                            <div class="empty-state">
+                                <i class="fas fa-chart-pie"></i>
+                                <h3>Cargando estadísticas...</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script>
+        // ============================================
+        // GLOBAL STATE
+        // ============================================
+
+        let appData = {
+            orders: [],
+            vehicles: [],
+            stats: {},
+            budgets: [],
+            drafts: []
+        };
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+
+        document.addEventListener('DOMContentLoaded', function () {
+            initializeApp();
+            setupEventListeners();
+            updateDateTime();
+            setInterval(updateDateTime, 60000); // Update every minute
+        });
+
+        function initializeApp() {
+            console.log('🚀 Iniciando Taller Muñoz Sistema de Gestión...');
+            loadAllData();
+        }
+
+        function setupEventListeners() {
+            // Navigation
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const section = this.dataset.section;
+                    showSection(section);
+
+                    // Update active state
+                    document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+
+            // Budget form calculations
+            const budgetSubtotal = document.getElementById('budget-subtotal');
+            const budgetManoObra = document.getElementById('budget-manoobra');
+            const budgetTotal = document.getElementById('budget-total');
+
+            [budgetSubtotal, budgetManoObra].forEach(input => {
+                input.addEventListener('input', function () {
+                    const subtotal = parseFloat(budgetSubtotal.value) || 0;
+                    const manoObra = parseFloat(budgetManoObra.value) || 0;
+                    budgetTotal.value = subtotal + manoObra;
+                });
+            });
+
+            // Forms
+            document.getElementById('budgetForm').addEventListener('submit', handleBudgetSubmit);
+            document.getElementById('workOrderForm').addEventListener('submit', handleWorkOrderSubmit);
+
+            // Global search
+            document.getElementById('globalSearch').addEventListener('keyup', function (e) {
+                if (e.key === 'Enter') {
+                    const query = this.value.trim();
+                    if (query) {
+                        document.getElementById('vehicleSearchInput').value = query;
+                        showSection('vehicles');
+                        searchVehicle();
+                    }
+                }
+            });
+        }
+
+        function updateDateTime() {
+            const now = new Date();
+            const options = {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            };
+            document.getElementById('currentDate').textContent = now.toLocaleString('es-CO', options);
+        }
+
+        // ============================================
+        // DATA LOADING
+        // ============================================
+
+        function loadAllData() {
+            updateConnectionStatus('loading');
+
+            google.script.run
+                .withSuccessHandler(function (response) {
+                    console.log('✅ Datos cargados:', response);
+
+                    if (response.success) {
+                        appData.orders = response.orders || [];
+                        appData.vehicles = response.vehicles || [];
+                        appData.stats = response.stats || {};
+
+                        updateDashboard();
+                        updateConnectionStatus('connected');
+                        hideLoading();
+                    } else {
+                        console.error('❌ Error en respuesta:', response.error);
+                        updateConnectionStatus('error');
+                        showError('Error al cargar datos: ' + (response.error || 'Desconocido'));
+                    }
+                })
+                .withFailureHandler(function (error) {
+                    console.error('❌ Error de conexión:', error);
+                    updateConnectionStatus('error');
+                    showError('Error de conexión: ' + error.message);
+                })
+                .getAllData();
+        }
+
+        function refreshData() {
+            console.log('🔄 Refrescando datos...');
+            showLoading('Actualizando datos...');
+
+            google.script.run
+                .withSuccessHandler(function (response) {
+                    console.log('✅ Cache limpiado');
+                    loadAllData();
+                })
+                .withFailureHandler(function (error) {
+                    console.error('❌ Error limpiando cache:', error);
+                    hideLoading();
+                })
+                .clearCache();
+        }
+
+        // ============================================
+        // UI UPDATES
+        // ============================================
+
+        function updateDashboard() {
+            // Update stats
+            document.getElementById('stat-total').textContent = appData.stats.total || 0;
+            document.getElementById('stat-working').textContent = appData.stats.enTrabajo || 0;
+            document.getElementById('stat-completed').textContent = appData.stats.finalizados || 0;
+            document.getElementById('stat-revenue').textContent = formatCurrency(appData.stats.totalGanancia || 0);
+
+            // Update recent orders table
+            updateRecentOrdersTable();
+        }
+
+        function updateRecentOrdersTable() {
+            const tbody = document.querySelector('#recentOrdersTable tbody');
+
+            if (!appData.orders || appData.orders.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty-state">
+                                <i class="fas fa-inbox"></i>
+                                <h3>No hay órdenes recientes</h3>
+                                <p>Las órdenes aparecerán aquí cuando se creen</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            const recentOrders = appData.orders.slice(0, 10);
+
+            tbody.innerHTML = recentOrders.map(order => `
+                <tr>
+                    <td><strong>${order.ordenTrabajo || 'N/A'}</strong></td>
+                    <td>${order.patente || order.patenteCliente || 'N/A'}</td>
+                    <td>${order.vehiculo || 'N/A'}</td>
+                    <td>${order.nombreCliente || 'N/A'}</td>
+                    <td>
+                        <span class="badge ${getBadgeClass(order.estado)}">
+                            ${order.estado || 'Pendiente'}
+                        </span>
+                    </td>
+                    <td>${formatDate(order.marcaTemporal)}</td>
+                </tr>
+            `).join('');
+        }
+
+        function showSection(sectionName) {
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.classList.remove('active');
+            });
+
+            const targetSection = document.getElementById(`section-${sectionName}`);
+            if (targetSection) {
+                targetSection.classList.add('active');
+            }
+        }
+
+        function updateConnectionStatus(status) {
+            const statusEl = document.getElementById('connectionStatus');
+            statusEl.className = 'connection-status ' + status;
+
+            const messages = {
+                'loading': 'Conectando...',
+                'connected': 'Conectado',
+                'error': 'Error de conexión'
+            };
+
+            statusEl.querySelector('span').textContent = messages[status] || 'Desconocido';
+        }
+
+        function showLoading(message = 'CARGANDO...') {
+            const overlay = document.getElementById('loadingOverlay');
+            overlay.querySelector('p').textContent = message;
+            overlay.classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.add('hidden');
+        }
+
+        // ============================================
+        // VEHICLE SEARCH
+        // ============================================
+
+        function searchVehicle() {
+            const query = document.getElementById('vehicleSearchInput').value.trim();
+
+            if (!query) {
+                alert('Por favor ingrese una patente o nombre de cliente');
+                return;
+            }
+
+            showLoading('Buscando vehículo...');
+
+            google.script.run
+                .withSuccessHandler(function (response) {
+                    hideLoading();
+
+                    if (response.success && response.results) {
+                        displayVehicleResults(response.results);
+                    } else {
+                        document.getElementById('vehicleResults').innerHTML = `
+                            <div class="empty-state">
+                                <i class="fas fa-search"></i>
+                                <h3>No se encontraron resultados</h3>
+                                <p>No hay vehículos que coincidan con "${query}"</p>
+                            </div>
+                        `;
+                    }
+                })
+                .withFailureHandler(function (error) {
+                    hideLoading();
+                    showError('Error en búsqueda: ' + error.message);
+                })
+                .searchVehicles(query);
+        }
+
+        function displayVehicleResults(results) {
+            const container = document.getElementById('vehicleResults');
+
+            if (results.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-search"></i>
+                        <h3>No se encontraron resultados</h3>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = results.map(vehicle => `
+                <div class="card" style="margin-bottom: 16px;">
+                    <div class="card-header">
+                        <h3>
+                            <i class="fas fa-car"></i>
+                            ${vehicle.patente} - ${vehicle.vehiculo}
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Cliente:</strong> ${vehicle.cliente}</p>
+                        <p><strong>Total Servicios:</strong> ${vehicle.totalServicios}</p>
+                        <p><strong>Último Servicio:</strong> ${formatDate(vehicle.ultimoServicio)}</p>
+                        
+                        <h4 style="margin-top: 20px; margin-bottom: 12px;">Historial de Servicios:</h4>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>OT</th>
+                                        <th>Estado</th>
+                                        <th>Monto</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${vehicle.servicios.map(s => `
+                                        <tr>
+                                            <td>${formatDate(s.fecha)}</td>
+                                            <td>${s.ordenTrabajo}</td>
+                                            <td><span class="badge ${getBadgeClass(s.estado)}">${s.estado}</span></td>
+                                            <td>${formatCurrency(s.monto)}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ============================================
+        // FORM HANDLERS
+        // ============================================
+
+        function handleBudgetSubmit(e) {
+            e.preventDefault();
+
+            const budgetData = {
+                cliente: document.getElementById('budget-cliente').value,
+                vehiculo: document.getElementById('budget-vehiculo').value,
+                patente: document.getElementById('budget-patente').value,
+                items: document.getElementById('budget-items').value,
+                subtotal: parseFloat(document.getElementById('budget-subtotal').value) || 0,
+                manoObra: parseFloat(document.getElementById('budget-manoobra').value) || 0,
+                total: parseFloat(document.getElementById('budget-total').value) || 0
+            };
+
+            showLoading('Guardando presupuesto...');
+
+            google.script.run
+                .withSuccessHandler(function (response) {
+                    hideLoading();
+
+                    if (response.success) {
+                        alert('✅ Presupuesto creado correctamente');
+                        document.getElementById('budgetForm').reset();
+                        refreshData();
+                    } else {
+                        showError('Error al crear presupuesto: ' + response.message);
+                    }
+                })
+                .withFailureHandler(function (error) {
+                    hideLoading();
+                    showError('Error: ' + error.message);
+                })
+                .createBudget(budgetData);
+        }
+
+        function handleWorkOrderSubmit(e) {
+            e.preventDefault();
+
+            const orderData = {
+                patente: document.getElementById('wo-patente').value,
+                vehiculo: document.getElementById('wo-vehiculo').value,
+                nombreCliente: document.getElementById('wo-cliente').value,
+                kilometraje: document.getElementById('wo-kilometraje').value,
+                anomalia1: document.getElementById('wo-anomalia1').value,
+                anomalia2: document.getElementById('wo-anomalia2').value,
+                anomalia3: document.getElementById('wo-anomalia3').value,
+                anomalia4: document.getElementById('wo-anomalia4').value,
+                tercerizados: document.getElementById('wo-tercerizados').value,
+                cobroManoObra: parseFloat(document.getElementById('wo-cobro').value) || 0
+            };
+
+            showLoading('Creando orden de trabajo...');
+
+            google.script.run
+                .withSuccessHandler(function (response) {
+                    hideLoading();
+
+                    if (response.success) {
+                        alert('✅ Orden de trabajo creada: ' + response.otNumber);
+                        document.getElementById('workOrderForm').reset();
+                        refreshData();
+                    } else {
+                        showError('Error al crear orden: ' + response.message);
+                    }
+                })
+                .withFailureHandler(function (error) {
+                    hideLoading();
+                    showError('Error: ' + error.message);
+                })
+                .createWorkOrder(orderData);
+        }
+
+        function saveDraft() {
+            const draftData = {
+                tipo: 'orden',
+                patente: document.getElementById('wo-patente').value,
+                vehiculo: document.getElementById('wo-vehiculo').value,
+                nombreCliente: document.getElementById('wo-cliente').value,
+                kilometraje: document.getElementById('wo-kilometraje').value,
+                anomalia1: document.getElementById('wo-anomalia1').value,
+                anomalia2: document.getElementById('wo-anomalia2').value,
+                anomalia3: document.getElementById('wo-anomalia3').value,
+                anomalia4: document.getElementById('wo-anomalia4').value,
+                tercerizados: document.getElementById('wo-tercerizados').value,
+                cobroManoObra: parseFloat(document.getElementById('wo-cobro').value) || 0
+            };
+
+            showLoading('Guardando borrador...');
+
+            google.script.run
+                .withSuccessHandler(function (response) {
+                    hideLoading();
+
+                    if (response.success) {
+                        alert('✅ Borrador guardado correctamente');
+                    } else {
+                        showError('Error al guardar borrador: ' + response.message);
+                    }
+                })
+                .withFailureHandler(function (error) {
+                    hideLoading();
+                    showError('Error: ' + error.message);
+                })
+                .saveDraft(draftData);
+        }
+
+        // ============================================
+        // PRINT FUNCTIONS
+        // ============================================
+
+        function printBudget() {
+            alert('🖨️ Función de impresión de presupuesto en desarrollo');
+            // TODO: Implementar generación de PDF A3 para presupuestos
+        }
+
+        function printWorkOrder() {
+            alert('🖨️ Función de impresión de orden de trabajo en desarrollo');
+            // TODO: Implementar generación de PDF A3 para órdenes de trabajo
+        }
+
+        // ============================================
+        // UTILITY FUNCTIONS
+        // ============================================
+
+        function formatCurrency(amount) {
+            if (!amount || isNaN(amount)) return '$0';
+            return '$' + Number(amount).toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('es-CO', { year: 'numeric', month: '2-digit', day: '2-digit' });
+        }
+
+        function getBadgeClass(estado) {
+            const classes = {
+                'En Trabajo': 'badge-working',
+                'Finalizado': 'badge-completed',
+                'Pendiente': 'badge-pending'
+            };
+            return classes[estado] || 'badge-pending';
+        }
+
+        function showError(message) {
+            alert('❌ ' + message);
+            console.error(message);
+        }
+    </script>
+</body>
+
+</html>

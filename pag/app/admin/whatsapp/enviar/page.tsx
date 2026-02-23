@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { SendHorizonal, Plus, PlayCircle, PauseCircle, Trash2 } from "lucide-react"
+import { SendHorizonal, Plus, PlayCircle, PauseCircle, Trash2, Clock } from "lucide-react"
 
 export default function CampanasPage() {
     const [campaigns, setCampaigns] = useState<any[]>([])
@@ -17,7 +17,8 @@ export default function CampanasPage() {
         listId: "",
         templateId: "",
         mapping: {} as Record<string, string>,
-        audioConfig: { voiceId: "", prompt: "" }
+        audioConfig: { voiceId: "", prompt: "" },
+        scheduledFor: ""
     })
 
     const [selectedTemplate, setSelectedTemplate] = useState<any>(null)
@@ -87,7 +88,8 @@ export default function CampanasPage() {
                 setIsModalOpen(false)
                 setNewCampaign({
                     name: "", type: "template", listId: "", templateId: "", mapping: {},
-                    audioConfig: { voiceId: voices[0]?.voice_id || "", prompt: "" }
+                    audioConfig: { voiceId: voices[0]?.voice_id || "", prompt: "" },
+                    scheduledFor: ""
                 })
                 fetchData()
             } else {
@@ -250,19 +252,19 @@ export default function CampanasPage() {
                                             onClick={() => setNewCampaign({ ...newCampaign, type: "template", mapping: {} })}
                                             className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${newCampaign.type === 'template' ? 'bg-white text-green-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                                         >
-                                            📨 Plantilla Aprobada (Meta)
+                                            Plantilla Aprobada (Meta)
                                         </button>
                                         <button
                                             type="button"
                                             onClick={() => setNewCampaign({ ...newCampaign, type: "audio", mapping: {} })}
                                             className={`flex-1 flex flex-col items-center justify-center py-2 text-sm font-medium rounded-lg transition-colors ${newCampaign.type === 'audio' ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                                         >
-                                            🎙️ Audio Dinámico IA (Libre)
+                                            Audio Dinámico IA (Libre)
                                         </button>
                                     </div>
                                     {newCampaign.type === 'audio' && (
                                         <p className="text-xs text-yellow-700 mt-2 text-center bg-yellow-50 py-1.5 rounded-lg border border-yellow-200">
-                                            ⚠️ Requiere que el cliente haya respondido en las últimas 24hs para que le llegue.
+                                            Requiere que el cliente haya respondido en las últimas 24hs para que le llegue.
                                         </p>
                                     )}
                                 </div>
@@ -303,6 +305,27 @@ export default function CampanasPage() {
                                         </select>
                                     </div>
                                 )}
+                            </div>
+
+                            {/* Programar envío */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1.5">
+                                    <Clock size={14} />
+                                    Programar envío (opcional)
+                                </label>
+                                <input
+                                    type="datetime-local"
+                                    value={newCampaign.scheduledFor}
+                                    onChange={(e) => setNewCampaign({ ...newCampaign, scheduledFor: e.target.value })}
+                                    min={new Date().toISOString().slice(0, 16)}
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-gray-900 outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-400"
+                                />
+                                <p className="text-[11px] text-gray-400 mt-1">
+                                    {newCampaign.scheduledFor
+                                        ? `Se enviará el ${new Date(newCampaign.scheduledFor).toLocaleString('es-AR')}`
+                                        : 'Dejá vacío para enviar manualmente'
+                                    }
+                                </p>
                             </div>
 
                             {newCampaign.type === 'audio' && (
@@ -391,14 +414,14 @@ export default function CampanasPage() {
                                 const selectedListObj = lists.find(l => l.id === newCampaign.listId);
                                 const subsCount = selectedListObj?._count?.subscribers || 0;
                                 if (subsCount === 0) return null;
-                                const estMeta = subsCount * 0.06;
+                                const estMeta = subsCount * 0.0773;
                                 const estEleven = newCampaign.type === 'audio' ? subsCount * 0.015 : 0;
                                 const estTotal = estMeta + estEleven;
 
                                 return (
                                     <div className="col-span-2 flex items-center justify-between p-4 bg-green-50 border border-green-200 rounded-lg">
                                         <div>
-                                            <p className="text-sm font-medium text-green-700">💡 Inversión Estimada</p>
+                                            <p className="text-sm font-medium text-green-700">Inversión Estimada</p>
                                             <p className="text-xs text-green-600 mt-0.5">Calculado para impactar a {subsCount} contactos en base a tarifas promedio.</p>
                                         </div>
                                         <div className="text-right">

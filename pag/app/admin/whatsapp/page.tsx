@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
-import { Inbox, Send, Users, TrendingUp, Megaphone, DollarSign, Mic, Calculator, RefreshCw, MessageCircle, Settings } from 'lucide-react'
+import { Inbox, Send, Users, TrendingUp, Megaphone, DollarSign, Mic, Calculator, RefreshCw, MessageCircle, Settings, Download } from 'lucide-react'
 
 interface Stats {
     totalRecibidos: number
@@ -111,43 +111,84 @@ export default function WhatsAppDashboard() {
         { label: 'Tasa Respuesta', value: `${stats?.tasaRespuesta || 0}%`, sub: 'respondidos', color: 'bg-amber-500', icon: TrendingUp },
     ]
 
+    const exportCSV = () => {
+        if (!stats) return
+        const rows = [
+            ['Métrica', 'Valor'],
+            ['Período', dateRange === 'ALL' ? 'Histórico' : dateRange === 'TODAY' ? 'Hoy' : dateRange === '7DAYS' ? 'Últimos 7 días' : 'Últimos 30 días'],
+            ['Mensajes Recibidos', String(stats.totalRecibidos || 0)],
+            ['Mensajes Enviados', String(stats.totalEnviados || 0)],
+            ['Recibidos Hoy', String(stats.recibidosHoy || 0)],
+            ['Enviados Hoy', String(stats.enviadosHoy || 0)],
+            ['Contactos Activos', String(stats.totalContactos || 0)],
+            ['Tasa de Respuesta', `${stats.tasaRespuesta || 0}%`],
+            ['No Leídos', String(stats.noLeidos || 0)],
+            ['---', '---'],
+            ['Campañas - Total Generados', String(stats.campaigns?.total || 0)],
+            ['Campañas - Entregados', String(stats.campaigns?.delivered || 0)],
+            ['Campañas - Leídos', String(stats.campaigns?.read || 0)],
+            ['Campañas - Errores', String(stats.campaigns?.failed || 0)],
+            ['---', '---'],
+            ['Costo Meta (WhatsApp)', `$${stats.financials?.meta?.toFixed(2) || '0.00'} USD`],
+            ['Costo ElevenLabs', `$${stats.financials?.elevenlabs?.toFixed(2) || '0.00'} USD`],
+            ['Costo Total', `$${stats.financials?.total?.toFixed(2) || '0.00'} USD`],
+        ]
+        const csv = rows.map(r => r.join(',')).join('\n')
+        const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' })
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `reporte-whatsapp-${new Date().toISOString().split('T')[0]}.csv`
+        link.click()
+        URL.revokeObjectURL(url)
+    }
+
     return (
-        <div className="p-8 max-w-7xl mx-auto space-y-8">
+        <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 lg:space-y-8">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex flex-col gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+                    <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Dashboard</h1>
                     <p className="text-sm text-gray-400 mt-1">Resumen de tu actividad en WhatsApp Business</p>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                     {stats?.health && (
-                        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-medium ${stats.health.qualityRating === 'GREEN' ? 'bg-green-50 border-green-200 text-green-700' :
+                        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs sm:text-sm font-medium ${stats.health.qualityRating === 'GREEN' ? 'bg-green-50 border-green-200 text-green-700' :
                             stats.health.qualityRating === 'YELLOW' ? 'bg-yellow-50 border-yellow-200 text-yellow-700' :
                                 stats.health.qualityRating === 'RED' ? 'bg-red-50 border-red-200 text-red-700' :
                                     'bg-gray-50 border-gray-200 text-gray-600'
                             }`}>
                             <span className="w-2 h-2 rounded-full bg-current"></span>
-                            <span>Calidad WABA: {stats.health.qualityRating}</span>
+                            <span>WABA: {stats.health.qualityRating}</span>
                         </div>
                     )}
 
                     <select
                         value={dateRange}
                         onChange={(e) => setDateRange(e.target.value)}
-                        className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg outline-none cursor-pointer focus:ring-2 focus:ring-green-500/20"
+                        className="px-3 py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg outline-none cursor-pointer focus:ring-2 focus:ring-green-500/20"
                     >
-                        <option value="ALL">Histórico Global</option>
+                        <option value="ALL">Histórico</option>
                         <option value="TODAY">Hoy</option>
-                        <option value="7DAYS">Últimos 7 días</option>
-                        <option value="30DAYS">Últimos 30 días</option>
+                        <option value="7DAYS">7 días</option>
+                        <option value="30DAYS">30 días</option>
                     </select>
 
                     <button
                         onClick={() => { fetchData() }}
-                        className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-1.5"
+                        className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-1.5"
                     >
-                        <RefreshCw size={14} /> Actualizar
+                        <RefreshCw size={14} />
+                        <span className="hidden sm:inline">Actualizar</span>
+                    </button>
+
+                    <button
+                        onClick={exportCSV}
+                        className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-green-600 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors flex items-center gap-1.5"
+                    >
+                        <Download size={14} />
+                        <span className="hidden sm:inline">Exportar CSV</span>
                     </button>
                 </div>
             </div>
@@ -388,11 +429,12 @@ export default function WhatsAppDashboard() {
 
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Categoría del Template</label>
+                                <p className="text-[11px] text-gray-400 mb-2">Precios Meta 2026 — Argentina (por mensaje)</p>
                                 <div className="grid grid-cols-2 gap-2">
                                     {[
-                                        { key: 'marketing', label: 'Marketing', price: '$0.0620', desc: 'Promociones, ofertas' },
-                                        { key: 'utility', label: 'Utilidad', price: '$0.0080', desc: 'Confirmaciones, alertas' },
-                                        { key: 'authentication', label: 'Autenticación', price: '$0.0315', desc: 'Códigos OTP' },
+                                        { key: 'marketing', label: 'Marketing', price: '$0.0773', desc: 'Promociones, ofertas' },
+                                        { key: 'utility', label: 'Utilidad', price: '$0.0325', desc: 'Confirmaciones, alertas' },
+                                        { key: 'authentication', label: 'Autenticación', price: '$0.0325', desc: 'Códigos OTP' },
                                         { key: 'service', label: 'Servicio', price: 'Gratis*', desc: 'Respuestas al cliente' },
                                     ].map(cat => (
                                         <button
@@ -447,16 +489,16 @@ export default function WhatsAppDashboard() {
 
                             {(() => {
                                 const categoryPrices: Record<string, number> = {
-                                    marketing: 0.0620,
-                                    utility: 0.0080,
-                                    authentication: 0.0315,
+                                    marketing: 0.0773,
+                                    utility: 0.0325,
+                                    authentication: 0.0325,
                                     service: 0,
                                 }
-                                const pricePerMsg = categoryPrices[calcData.category] || 0.06;
+                                const pricePerMsg = categoryPrices[calcData.category] || 0.0773;
                                 const baseMeta = calcData.contacts * pricePerMsg;
                                 const baseEleven = calcData.type === 'audio' ? (calcData.contacts * calcData.characters * 0.00015) : 0;
                                 const total = baseMeta + baseEleven;
-                                const marketingCost = calcData.contacts * 0.0620;
+                                const marketingCost = calcData.contacts * 0.0773;
                                 const savings = marketingCost - baseMeta;
 
                                 return (

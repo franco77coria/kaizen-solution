@@ -1,0 +1,15 @@
+{
+    "expo": {
+        "name": "kaizen-transport-app",
+        "slug": "kaizen-transport-app",
+        "version": "1.0.0",
+        "orientation": "portrait",
+        "userInterfaceStyle": "light",
+        "assetBundlePatterns": [
+            "**/*"
+        ],
+        "web": {
+            "favicon": "./assets/favicon.png"
+        }
+    }
+}

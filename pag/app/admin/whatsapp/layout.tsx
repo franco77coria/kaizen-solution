@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { SessionProvider, useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import {
     LayoutDashboard,
     MessageCircle,
@@ -17,6 +17,8 @@ import {
     BarChart3,
     LogOut,
     ArrowLeft,
+    Menu,
+    X,
     type LucideIcon
 } from 'lucide-react'
 
@@ -26,7 +28,6 @@ interface NavItem {
     icon: LucideIcon
 }
 
-// Items visibles para todos los usuarios
 const publicNavItems: NavItem[] = [
     { href: '/admin/whatsapp', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/admin/whatsapp/mensajes', label: 'Mensajes', icon: MessageCircle },
@@ -36,7 +37,6 @@ const publicNavItems: NavItem[] = [
     { href: '/admin/whatsapp/plantillas', label: 'Plantillas', icon: FileText },
 ]
 
-// Items solo visibles para ADMIN y SUPER_ADMIN
 const adminOnlyNavItems: NavItem[] = [
     { href: '/admin/whatsapp/config', label: 'Configuración', icon: Settings },
     { href: '/admin/whatsapp/config-elevenlabs', label: 'Audio IA', icon: Mic },
@@ -47,19 +47,21 @@ function WhatsAppSidebar() {
     const pathname = usePathname()
     const router = useRouter()
     const { data: session } = useSession()
+    const [mobileOpen, setMobileOpen] = useState(false)
 
     const userRole = (session?.user as any)?.role || 'VIEWER'
     const isAdmin = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN'
+    const navItems = isAdmin ? [...publicNavItems, ...adminOnlyNavItems] : publicNavItems
 
-    // Combinar items según el rol
-    const navItems = isAdmin
-        ? [...publicNavItems, ...adminOnlyNavItems]
-        : publicNavItems
+    // Close mobile menu on route change
+    useEffect(() => {
+        setMobileOpen(false)
+    }, [pathname])
 
-    return (
-        <aside className="w-64 bg-white border-r border-gray-200 flex flex-col min-h-screen">
+    const sidebarContent = (
+        <>
             {/* Logo */}
-            <div className="p-6 border-b border-gray-100">
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
                 <Link href="/admin" className="flex items-center gap-3 group">
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-sm">
                         <MessageCircle className="w-5 h-5 text-white" />
@@ -69,10 +71,17 @@ function WhatsAppSidebar() {
                         <p className="text-[10px] text-gray-400 font-medium tracking-wider uppercase">WhatsApp Business</p>
                     </div>
                 </Link>
+                {/* Mobile close button */}
+                <button
+                    onClick={() => setMobileOpen(false)}
+                    className="lg:hidden p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                >
+                    <X size={20} />
+                </button>
             </div>
 
             {/* Nav */}
-            <nav className="flex-1 p-4 space-y-1">
+            <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
                 {navItems.map((item) => {
                     const isActive = pathname === item.href ||
                         (item.href !== '/admin/whatsapp' && pathname.startsWith(item.href))
@@ -102,17 +111,13 @@ function WhatsAppSidebar() {
                     <ArrowLeft size={14} />
                     Volver al Admin
                 </button>
-                <div className="px-4 py-2 flex items-center justify-between">
-                    <div>
-                        <div className="text-[10px] text-gray-300 truncate max-w-[160px]">
-                            {session?.user?.email}
-                        </div>
-                        {!isAdmin && (
-                            <div className="text-[9px] text-gray-300 mt-0.5">
-                                Modo lectura
-                            </div>
-                        )}
+                <div className="px-4 py-1">
+                    <div className="text-[10px] text-gray-300 truncate">
+                        {session?.user?.email}
                     </div>
+                    {!isAdmin && (
+                        <div className="text-[9px] text-gray-300 mt-0.5">Modo lectura</div>
+                    )}
                 </div>
                 <button
                     onClick={() => signOut({ callbackUrl: '/login' })}
@@ -122,7 +127,46 @@ function WhatsAppSidebar() {
                     Salir
                 </button>
             </div>
-        </aside>
+        </>
+    )
+
+    return (
+        <>
+            {/* Mobile header bar */}
+            <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+                <button
+                    onClick={() => setMobileOpen(true)}
+                    className="p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                >
+                    <Menu size={22} />
+                </button>
+                <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-sm">
+                        <MessageCircle className="w-4 h-4 text-white" />
+                    </div>
+                    <span className="text-sm font-bold text-gray-900">Kaizen WA</span>
+                </div>
+                <div className="w-10" /> {/* Spacer for centering */}
+            </div>
+
+            {/* Mobile overlay */}
+            {mobileOpen && (
+                <div
+                    className="lg:hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
+                    onClick={() => setMobileOpen(false)}
+                />
+            )}
+
+            {/* Sidebar - desktop always visible, mobile slide-in */}
+            <aside className={`
+                fixed lg:sticky top-0 left-0 z-50 h-screen
+                w-64 bg-white border-r border-gray-200 flex flex-col
+                transition-transform duration-300 ease-in-out
+                ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+            `}>
+                {sidebarContent}
+            </aside>
+        </>
     )
 }
 
@@ -137,15 +181,12 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
         }
     }, [status, router])
 
-    // Bloquear acceso a páginas de config para usuarios no admin
     useEffect(() => {
         if (status === 'authenticated' && session?.user) {
             const userRole = (session.user as any)?.role || 'VIEWER'
             const isAdmin = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN'
-
             const restrictedPaths = ['/admin/whatsapp/config', '/admin/whatsapp/config-elevenlabs', '/admin/whatsapp/uso-api']
             const isRestricted = restrictedPaths.some(p => pathname.startsWith(p))
-
             if (!isAdmin && isRestricted) {
                 router.push('/admin/whatsapp')
             }
@@ -164,7 +205,6 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     }
 
     if (status === 'unauthenticated') return null
-
     return <>{children}</>
 }
 
@@ -178,7 +218,7 @@ export default function WhatsAppLayout({
             <AuthGuard>
                 <div className="flex min-h-screen bg-gray-50">
                     <WhatsAppSidebar />
-                    <main className="flex-1 overflow-auto">
+                    <main className="flex-1 overflow-auto pt-14 lg:pt-0">
                         {children}
                     </main>
                 </div>
