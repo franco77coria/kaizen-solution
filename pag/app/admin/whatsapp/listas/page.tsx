@@ -7,6 +7,7 @@ export default function ListasPage() {
     const [lists, setLists] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [isModalOpen, setIsModalOpen] = useState(false)
+    const [editingListId, setEditingListId] = useState<string | null>(null)
 
     // Form state
     const [name, setName] = useState("")
@@ -31,20 +32,49 @@ export default function ListasPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         try {
-            const res = await fetch("/api/whatsapp/lists", {
-                method: "POST",
+            const url = editingListId ? `/api/whatsapp/lists/${editingListId}` : "/api/whatsapp/lists"
+            const method = editingListId ? "PUT" : "POST"
+
+            const res = await fetch(url, {
+                method,
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ name, description }),
             })
             if (res.ok) {
-                setIsModalOpen(false)
-                setName("")
-                setDescription("")
+                closeModal()
                 fetchLists()
             }
         } catch (error) {
             console.error(error)
         }
+    }
+
+    const handleDelete = async (id: string) => {
+        if (!confirm("¿Seguro que deseas eliminar esta lista? Los contactos seguirán existiendo en tu directorio general, pero perderán esta etiqueta.")) return
+        try {
+            const res = await fetch(`/api/whatsapp/lists/${id}`, { method: "DELETE" })
+            if (res.ok) {
+                fetchLists()
+            } else {
+                alert("Error al eliminar la lista.")
+            }
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
+    const openEditModal = (list: any) => {
+        setEditingListId(list.id)
+        setName(list.name)
+        setDescription(list.description || "")
+        setIsModalOpen(true)
+    }
+
+    const closeModal = () => {
+        setIsModalOpen(false)
+        setEditingListId(null)
+        setName("")
+        setDescription("")
     }
 
     return (
@@ -88,11 +118,14 @@ export default function ListasPage() {
                                 {list.description || "Sin descripción"}
                             </p>
                             <div className="flex gap-2.5 pt-4 border-t border-gray-100">
-                                <a href={`/admin/whatsapp/contactos?list=${list.id}`} className="text-xs text-gray-600 hover:text-gray-900 transition-colors bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-md flex-1 text-center">
+                                <a href={`/admin/whatsapp/contactos?list=${list.id}`} className="text-xs text-blue-600 hover:text-blue-900 transition-colors bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-md flex-1 text-center font-medium">
                                     Ver Contactos
                                 </a>
-                                <button className="text-xs text-red-500 hover:text-red-600 transition-colors bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-md">
-                                    Eliminar
+                                <button onClick={() => openEditModal(list)} className="text-xs text-gray-600 hover:text-gray-900 transition-colors bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-md" title="Editar Lista">
+                                    <Edit size={14} />
+                                </button>
+                                <button onClick={() => handleDelete(list.id)} className="text-xs text-red-500 hover:text-red-600 transition-colors bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-md" title="Eliminar Lista">
+                                    <Trash2 size={14} />
                                 </button>
                             </div>
                         </div>
@@ -104,7 +137,7 @@ export default function ListasPage() {
             {isModalOpen && (
                 <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
                     <div className="bg-white border border-gray-200 rounded-xl p-6 w-full max-w-md shadow-xl">
-                        <h2 className="text-xl font-bold text-gray-900 mb-4">Nueva Lista</h2>
+                        <h2 className="text-xl font-bold text-gray-900 mb-4">{editingListId ? "Editar Lista" : "Nueva Lista"}</h2>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Nombre de la lista</label>
@@ -129,7 +162,7 @@ export default function ListasPage() {
                             <div className="flex gap-3 justify-end pt-4">
                                 <button
                                     type="button"
-                                    onClick={() => setIsModalOpen(false)}
+                                    onClick={closeModal}
                                     className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
                                 >
                                     Cancelar
@@ -138,7 +171,7 @@ export default function ListasPage() {
                                     type="submit"
                                     className="px-4 py-2 text-sm bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors"
                                 >
-                                    Guardar Lista
+                                    {editingListId ? "Guardar Cambios" : "Guardar Lista"}
                                 </button>
                             </div>
                         </form>
