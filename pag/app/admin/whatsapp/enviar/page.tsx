@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { SendHorizonal, Plus, PlayCircle, PauseCircle, Trash2, Clock } from "lucide-react"
+import { SendHorizonal, Plus, PlayCircle, PauseCircle, Trash2, Clock, ImageIcon } from "lucide-react"
 
 export default function CampanasPage() {
     const [campaigns, setCampaigns] = useState<any[]>([])
@@ -13,11 +13,11 @@ export default function CampanasPage() {
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [newCampaign, setNewCampaign] = useState({
         name: "",
-        type: "template" as "template" | "audio",
+        type: "template" as "template" | "audio" | "image",
         listId: "",
         templateId: "",
         mapping: {} as Record<string, string>,
-        audioConfig: { voiceId: "", prompt: "" },
+        audioConfig: { voiceId: "", prompt: "", imageUrl: "", caption: "" },
         scheduledFor: ""
     })
 
@@ -71,10 +71,13 @@ export default function CampanasPage() {
             if (newCampaign.type === "audio" && (!newCampaign.audioConfig.voiceId || !newCampaign.audioConfig.prompt)) {
                 return alert("Falta configurar la voz o el texto del audio")
             }
+            if (newCampaign.type === "image" && !newCampaign.audioConfig.imageUrl) {
+                return alert("Falta la URL de la imagen")
+            }
 
             const payload = { ...newCampaign }
             if (payload.type === "template") {
-                payload.audioConfig = { voiceId: "", prompt: "" };
+                payload.audioConfig = { voiceId: "", prompt: "", imageUrl: "", caption: "" };
             } else {
                 payload.templateId = "";
             }
@@ -112,10 +115,13 @@ export default function CampanasPage() {
             if (newCampaign.type === "audio" && (!newCampaign.audioConfig.voiceId || !newCampaign.audioConfig.prompt)) {
                 return alert("Falta configurar la voz o el texto del audio")
             }
+            if (newCampaign.type === "image" && !newCampaign.audioConfig.imageUrl) {
+                return alert("Falta la URL de la imagen")
+            }
 
             const payload = { ...newCampaign, testPhone }
             if (payload.type === "template") {
-                payload.audioConfig = { voiceId: "", prompt: "" };
+                payload.audioConfig = { voiceId: "", prompt: "", imageUrl: "", caption: "" };
             } else {
                 payload.templateId = "";
             }
@@ -194,7 +200,8 @@ export default function CampanasPage() {
                                     <div className="flex items-center gap-3 mb-1">
                                         <h3 className="text-lg font-bold text-gray-900">{camp.name}</h3>
                                         {getStatusBadge(camp.status)}
-                                        {camp.type === 'audio' && <span className="text-[10px] bg-purple-50 text-purple-600 px-2 py-0.5 rounded-md border border-purple-200">🎙️ Audio IA Libre</span>}
+                                        {camp.type === 'audio' && <span className="text-[10px] bg-purple-50 text-purple-600 px-2 py-0.5 rounded-md border border-purple-200">Audio IA</span>}
+                                        {camp.type === 'image' && <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md border border-blue-200">Imagen + Texto</span>}
                                     </div>
                                     <div className="text-sm text-gray-500 flex gap-4">
                                         <span>Lista: <strong className="text-gray-700">{camp.list?.name || 'Desconocida'}</strong></span>
@@ -253,19 +260,26 @@ export default function CampanasPage() {
                                             onClick={() => setNewCampaign({ ...newCampaign, type: "template", mapping: {} })}
                                             className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${newCampaign.type === 'template' ? 'bg-white text-green-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                                         >
-                                            Plantilla Aprobada (Meta)
+                                            Plantilla (Meta)
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setNewCampaign({ ...newCampaign, type: "image", mapping: {} })}
+                                            className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${newCampaign.type === 'image' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                        >
+                                            Imagen + Texto
                                         </button>
                                         <button
                                             type="button"
                                             onClick={() => setNewCampaign({ ...newCampaign, type: "audio", mapping: {} })}
-                                            className={`flex-1 flex flex-col items-center justify-center py-2 text-sm font-medium rounded-lg transition-colors ${newCampaign.type === 'audio' ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                            className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${newCampaign.type === 'audio' ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                                         >
-                                            Audio Dinámico IA (Libre)
+                                            Audio IA
                                         </button>
                                     </div>
-                                    {newCampaign.type === 'audio' && (
+                                    {(newCampaign.type === 'audio' || newCampaign.type === 'image') && (
                                         <p className="text-xs text-yellow-700 mt-2 text-center bg-yellow-50 py-1.5 rounded-lg border border-yellow-200">
-                                            Requiere que el cliente haya respondido en las últimas 24hs para que le llegue.
+                                            Requiere que el cliente haya respondido en las últimas 24hs (ventana abierta).
                                         </p>
                                     )}
                                 </div>
@@ -289,22 +303,26 @@ export default function CampanasPage() {
                                     </select>
                                 </div>
 
-                                {newCampaign.type === 'template' ? (
+                                {newCampaign.type === 'template' && (
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Plantilla de Meta</label>
-                                        <select required={newCampaign.type === 'template'} value={newCampaign.templateId} onChange={(e) => handleTemplateSelect(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-gray-900 outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-400">
+                                        <select required value={newCampaign.templateId} onChange={(e) => handleTemplateSelect(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-gray-900 outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-400">
                                             <option value="">Seleccione aprobada...</option>
                                             {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                                         </select>
                                     </div>
-                                ) : (
+                                )}
+                                {newCampaign.type === 'audio' && (
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Voz (ElevenLabs)</label>
-                                        <select required={newCampaign.type === 'audio'} value={newCampaign.audioConfig.voiceId} onChange={(e) => setNewCampaign({ ...newCampaign, audioConfig: { ...newCampaign.audioConfig, voiceId: e.target.value } })} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-gray-900 outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-400">
+                                        <select required value={newCampaign.audioConfig.voiceId} onChange={(e) => setNewCampaign({ ...newCampaign, audioConfig: { ...newCampaign.audioConfig, voiceId: e.target.value } })} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-gray-900 outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-400">
                                             {voices.length === 0 && <option value="">Sin configurar</option>}
                                             {voices.map(v => <option key={v.voice_id} value={v.voice_id}>{v.name}</option>)}
                                         </select>
                                     </div>
+                                )}
+                                {newCampaign.type === 'image' && (
+                                    <div className="col-span-2" />
                                 )}
                             </div>
 
@@ -331,9 +349,9 @@ export default function CampanasPage() {
 
                             {newCampaign.type === 'audio' && (
                                 <div className="col-span-2">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Texto a Narrar Automáticamente (Podés usar variables como <code className="bg-gray-100 px-1 rounded">{'{name}'}</code>)</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Texto a Narrar (Podés usar variables como <code className="bg-gray-100 px-1 rounded">{'{name}'}</code>)</label>
                                     <textarea
-                                        required={newCampaign.type === 'audio'}
+                                        required
                                         value={newCampaign.audioConfig.prompt}
                                         onChange={(e) => {
                                             const prompt = e.target.value
@@ -343,6 +361,44 @@ export default function CampanasPage() {
                                         className="w-full bg-gray-50 border border-gray-200 rounded-lg p-4 text-gray-900 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-400 outline-none resize-none font-mono text-sm"
                                         placeholder="Hola {name}, te recordamos tu cita en Kaizen Solution para el día..."
                                     ></textarea>
+                                </div>
+                            )}
+
+                            {newCampaign.type === 'image' && (
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">URL de la Imagen *</label>
+                                        <input
+                                            type="url" required
+                                            value={newCampaign.audioConfig.imageUrl}
+                                            onChange={(e) => setNewCampaign(prev => ({ ...prev, audioConfig: { ...prev.audioConfig, imageUrl: e.target.value } }))}
+                                            className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 text-sm"
+                                            placeholder="https://ejemplo.com/imagen.jpg"
+                                        />
+                                        <p className="text-[11px] text-gray-400 mt-1">Debe ser una URL pública accesible (HTTPS). Formatos: JPG, PNG.</p>
+                                    </div>
+
+                                    {newCampaign.audioConfig.imageUrl && (
+                                        <div className="flex justify-center">
+                                            <img
+                                                src={newCampaign.audioConfig.imageUrl}
+                                                alt="Preview"
+                                                className="max-h-40 rounded-lg border border-gray-200 object-contain"
+                                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                                            />
+                                        </div>
+                                    )}
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Texto acompañante (Podés usar variables como <code className="bg-gray-100 px-1 rounded">{'{name}'}</code>)</label>
+                                        <textarea
+                                            value={newCampaign.audioConfig.caption}
+                                            onChange={(e) => setNewCampaign(prev => ({ ...prev, audioConfig: { ...prev.audioConfig, caption: e.target.value } }))}
+                                            rows={3}
+                                            className="w-full bg-gray-50 border border-gray-200 rounded-lg p-4 text-gray-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none resize-none text-sm"
+                                            placeholder="Hola {name}, mirá esta promoción especial..."
+                                        ></textarea>
+                                    </div>
                                 </div>
                             )}
 
@@ -399,16 +455,21 @@ export default function CampanasPage() {
                                 )
                             })()}
 
-                            {/* Variables mapping para Type = Audio */}
-                            {newCampaign.type === 'audio' && (() => {
-                                const matches = newCampaign.audioConfig.prompt.match(/\{(\w+)\}/g)
+                            {/* Variables mapping para Type = Audio / Image */}
+                            {(newCampaign.type === 'audio' || newCampaign.type === 'image') && (() => {
+                                const textToScan = newCampaign.type === 'audio'
+                                    ? newCampaign.audioConfig.prompt
+                                    : (newCampaign.audioConfig.caption || "")
+                                const matches = textToScan.match(/\{(\w+)\}/g)
                                 const vars = matches ? Array.from(new Set(matches.map((m: string) => m.replace(/[{}]/g, "")))) : []
                                 if (vars.length === 0) return null
 
                                 return (
                                     <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-4">
-                                        <h4 className="text-sm font-medium text-purple-700">Personalización de Variables de Audio IA</h4>
-                                        <p className="text-xs text-gray-500">Hemos detectado estas variables en tu texto. Mapealas a Excel.</p>
+                                        <h4 className={`text-sm font-medium ${newCampaign.type === 'audio' ? 'text-purple-700' : 'text-blue-700'}`}>
+                                            Personalización de Variables
+                                        </h4>
+                                        <p className="text-xs text-gray-500">Variables detectadas en tu texto. Mapealas a datos del contacto.</p>
                                         <div className="space-y-3">
                                             {vars.map((v: string) => (
                                                 <div key={v} className="flex items-center gap-4">
@@ -418,7 +479,7 @@ export default function CampanasPage() {
                                                         required
                                                         value={newCampaign.mapping[v] || ""}
                                                         onChange={(e) => setNewCampaign({ ...newCampaign, mapping: { ...newCampaign.mapping, [v]: e.target.value } })}
-                                                        className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-gray-900 text-sm outline-none focus:ring-2 focus:ring-purple-500/20"
+                                                        className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-gray-900 text-sm outline-none focus:ring-2 focus:ring-green-500/20"
                                                     >
                                                         <option value="">Columna del CSV/Contacto</option>
                                                         {mockColumns.map(mc => <option key={mc} value={mc}>{mc}</option>)}
@@ -434,7 +495,8 @@ export default function CampanasPage() {
                                 const selectedListObj = lists.find(l => l.id === newCampaign.listId);
                                 const subsCount = selectedListObj?._count?.subscribers || 0;
                                 if (subsCount === 0) return null;
-                                const estMeta = subsCount * 0.0773;
+                                const isFreeType = newCampaign.type === 'image' || newCampaign.type === 'audio';
+                                const estMeta = isFreeType ? 0 : subsCount * 0.0773;
                                 const estEleven = newCampaign.type === 'audio' ? subsCount * 0.015 : 0;
                                 const estTotal = estMeta + estEleven;
 
@@ -454,10 +516,10 @@ export default function CampanasPage() {
 
                             <div className="col-span-2 flex gap-3 justify-end pt-4 border-t border-gray-200">
                                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-5 py-2 text-sm text-gray-500 hover:text-gray-700">Cancelar</button>
-                                <button type="button" onClick={handleTestCampaign} disabled={!newCampaign.listId || (newCampaign.type === 'template' && !newCampaign.templateId)} className="px-5 py-2 text-sm bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 disabled:opacity-50 rounded-lg transition-colors">
+                                <button type="button" onClick={handleTestCampaign} disabled={!newCampaign.listId || (newCampaign.type === 'template' && !newCampaign.templateId) || (newCampaign.type === 'image' && !newCampaign.audioConfig.imageUrl)} className="px-5 py-2 text-sm bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 disabled:opacity-50 rounded-lg transition-colors">
                                     Enviar Prueba a Mi WA
                                 </button>
-                                <button type="submit" disabled={!newCampaign.listId || (newCampaign.type === 'template' && !newCampaign.templateId)} className="px-5 py-2 text-sm bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white rounded-lg transition-colors">
+                                <button type="submit" disabled={!newCampaign.listId || (newCampaign.type === 'template' && !newCampaign.templateId) || (newCampaign.type === 'image' && !newCampaign.audioConfig.imageUrl)} className="px-5 py-2 text-sm bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white rounded-lg transition-colors">
                                     Guardar Borrador
                                 </button>
                             </div>
