@@ -196,10 +196,14 @@ export default function MensajesPage() {
                 if (c.type === 'HEADER' || c.type === 'BODY') {
                     const matches = c.text?.match(/\{\{[^}]+\}\}/g)
                     if (matches && matches.length > 0) {
-                        const parameters = matches.map((m: string) => ({
-                            type: "text",
-                            text: templateVariables[m] || "..."
-                        }))
+                        const parameters = matches.map((m: string) => {
+                            const paramName = m.replace(/^\{\{/, '').replace(/\}\}$/, '').trim()
+                            return {
+                                type: "text",
+                                parameter_name: paramName,
+                                text: templateVariables[m] || "..."
+                            }
+                        })
                         apiComponents.push({
                             type: c.type.toLowerCase(),
                             parameters
