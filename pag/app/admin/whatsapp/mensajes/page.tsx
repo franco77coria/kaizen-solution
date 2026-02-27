@@ -39,7 +39,7 @@ export default function MensajesPage() {
     const [newChatPhone, setNewChatPhone] = useState('')
 
     // Plantillas (Para conversaciones vacías o iniciales)
-    const [templates, setTemplates] = useState<{ id: string, name: string, language: string, bodyText: string }[]>([])
+    const [templates, setTemplates] = useState<{ id: string, name: string, language: string, bodyText: string, components?: any[] }[]>([])
     const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false)
     const [selectedTemplate, setSelectedTemplate] = useState<any>(null)
     const [templateVariables, setTemplateVariables] = useState<Record<string, string>>({})
