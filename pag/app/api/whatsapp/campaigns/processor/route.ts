@@ -150,6 +150,16 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
                         componentsParam.push({ type: "body", parameters: realBodyParams });
                     }
 
+                    for (const comp of parsedComponents) {
+                        if (comp.type === 'BUTTONS' && comp.buttons) {
+                            comp.buttons.forEach((btn: any, idx: number) => {
+                                if (btn.type === 'FLOW') {
+                                    componentsParam.push({ type: "button", sub_type: "flow", index: String(idx), parameters: [] });
+                                }
+                            });
+                        }
+                    }
+
                     const payload = {
                         messaging_product: "whatsapp",
                         recipient_type: "individual",
