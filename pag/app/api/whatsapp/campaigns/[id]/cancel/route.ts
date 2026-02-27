@@ -1,21 +1,26 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
     try {
+        const session = await auth()
+        if (!session) {
+            return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+        }
         const campaignId = params.id;
 
-        // Primero borramos todos los Jobs asociados
-        await prisma.campaignJob.deleteMany({
-            where: { campaignId }
+        await prisma.campaignJob.updateMany({
+            where: { campaignId, status: "pending" },
+            data: { status: "cancelled" }
         });
 
-        // Luego borramos la campaña
-        await prisma.whatsAppCampaign.delete({
-            where: { id: campaignId }
+        await prisma.whatsAppCampaign.update({
+            where: { id: campaignId },
+            data: { status: "cancelled" }
         });
 
-        return NextResponse.json({ success: true, message: "Campaña Eliminada" });
+        return NextResponse.json({ success: true, message: "Campaña cancelada" });
 
     } catch (error: any) {
         console.error("Error deleting campaign:", error);
