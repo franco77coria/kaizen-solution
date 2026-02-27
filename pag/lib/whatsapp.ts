@@ -242,12 +242,17 @@ export async function getTemplatesFromMeta() {
 
     return (data.data || [])
         .filter((t: any) => t.status === "APPROVED")
-        .map((t: any) => ({
-            name: t.name,
-            language: t.language,
-            category: t.category,
-            status: t.status,
-        }))
+        .map((t: any) => {
+            const bodyComponent = t.components?.find((c: any) => c.type === "BODY")
+            return {
+                id: t.id,
+                name: t.name,
+                language: t.language,
+                category: t.category,
+                status: t.status,
+                bodyText: bodyComponent?.text || "",
+            }
+        })
 }
 
 // ─── Log helper ───
