@@ -189,6 +189,21 @@ export async function sendWhatsAppText(phone: string, message: string) {
     return callWhatsAppAPI(`${config.phoneNumberId}/messages`, "POST", body)
 }
 
+export async function sendWhatsAppImage(phone: string, imageUrl: string, caption?: string) {
+    const config = await getWhatsAppConfig()
+    if (!config) throw new Error("WhatsApp no configurado")
+
+    const body: any = {
+        messaging_product: "whatsapp",
+        to: phone,
+        type: "image",
+        image: { link: imageUrl },
+    }
+    if (caption) body.image.caption = caption
+
+    return callWhatsAppAPI(`${config.phoneNumberId}/messages`, "POST", body)
+}
+
 // ─── Native Audio (Voice Message) helpers ───
 
 /**
