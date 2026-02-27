@@ -109,38 +109,45 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
                     const bodyParams: any[] = [];
 
                     const parsedComponents = campaign.template?.components ? JSON.parse(campaign.template.components) : [];
-                    const templateBodyParams = parsedComponents.find((c: any) => c.type === 'BODY')?.text || "";
-                    const requiredVarsCount = new Set(templateBodyParams.match(/\{\{[^}]+\}\}/g) || []).size;
 
-                    const varMatches = templateBodyParams.match(/\{\{([^}]+)\}\}/g) || [];
-                    const varNames = varMatches.map((m: string) => m.replace(/^\{\{/, '').replace(/\}\}$/, '').trim());
+                    const allNamedParams: { componentType: string, param_name: string }[] = [];
+                    for (const comp of parsedComponents) {
+                        const namedParams = comp.example?.header_text_named_params || comp.example?.body_text_named_params || [];
+                        for (const p of namedParams) {
+                            if (p.param_name) allNamedParams.push({ componentType: comp.type, param_name: p.param_name });
+                        }
+                    }
 
                     const sortedEntries = Object.entries(mapping).sort(([a], [b]) => Number(a) - Number(b));
 
                     let paramIdx = 0;
                     for (const [, columnMapped] of sortedEntries) {
                         const val = resolveContactField(subscriber, columnMapped as string);
+                        const paramInfo = allNamedParams[paramIdx];
                         bodyParams.push({
                             type: "text",
-                            parameter_name: varNames[paramIdx] || String(paramIdx + 1),
+                            parameter_name: paramInfo?.param_name || String(paramIdx + 1),
                             text: val || "Usuario"
                         });
                         paramIdx++;
                     }
 
-                    while (bodyParams.length < requiredVarsCount) {
+                    while (bodyParams.length < allNamedParams.length) {
+                        const paramInfo = allNamedParams[bodyParams.length];
                         bodyParams.push({
                             type: "text",
-                            parameter_name: varNames[bodyParams.length] || String(bodyParams.length + 1),
+                            parameter_name: paramInfo?.param_name || String(bodyParams.length + 1),
                             text: "..."
                         });
                     }
 
-                    if (bodyParams.length > 0) {
-                        componentsParam.push({
-                            type: "body",
-                            parameters: bodyParams
-                        });
+                    const headerParams = bodyParams.filter((_: any, i: number) => allNamedParams[i]?.componentType === 'HEADER');
+                    const realBodyParams = bodyParams.filter((_: any, i: number) => allNamedParams[i]?.componentType === 'BODY' || !allNamedParams[i]);
+                    if (headerParams.length > 0) {
+                        componentsParam.push({ type: "header", parameters: headerParams });
+                    }
+                    if (realBodyParams.length > 0) {
+                        componentsParam.push({ type: "body", parameters: realBodyParams });
                     }
 
                     const payload = {
