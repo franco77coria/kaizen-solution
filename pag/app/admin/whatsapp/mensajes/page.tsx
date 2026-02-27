@@ -42,6 +42,7 @@ export default function MensajesPage() {
     const [templates, setTemplates] = useState<{ id: string, name: string, language: string, bodyText: string }[]>([])
     const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false)
     const [selectedTemplate, setSelectedTemplate] = useState<any>(null)
+    const [templateVariables, setTemplateVariables] = useState<Record<string, string>>({})
 
     const chatEndRef = useRef<HTMLDivElement>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
@@ -195,12 +196,11 @@ export default function MensajesPage() {
                     // Contar variables tipo {{1}}, {{2}}...
                     const matches = c.text?.match(/\{\{\d+\}\}/g)
                     if (matches && matches.length > 0) {
-                        // El número de matches únicas determina cuántos params crear
-                        const numVars = new Set(matches).size
-                        const parameters = Array(numVars).fill({
+                        // Creamos los parameters usando el input del usuario en base a key {{1}}
+                        const parameters = matches.map((m: string) => ({
                             type: "text",
-                            text: "..."
-                        })
+                            text: templateVariables[m] || "..."
+                        }))
                         apiComponents.push({
                             type: c.type.toLowerCase(), // meta requires lowercase 'header', 'body'
                             parameters
@@ -514,6 +514,21 @@ export default function MensajesPage() {
                                     onChange={(e) => {
                                         const found = templates.find(t => t.id === e.target.value)
                                         setSelectedTemplate(found || null)
+
+                                        const vars: Record<string, string> = {}
+                                        if (found && found.components) {
+                                            found.components.forEach((c: any) => {
+                                                if (c.type === 'HEADER' || c.type === 'BODY') {
+                                                    const matches = c.text?.match(/\{\{\d+\}\}/g)
+                                                    if (matches) {
+                                                        matches.forEach((m: string) => {
+                                                            vars[m] = ""
+                                                        })
+                                                    }
+                                                }
+                                            })
+                                        }
+                                        setTemplateVariables(vars)
                                     }}
                                 >
                                     <option value="" disabled>-- Elige una Plantilla --</option>
@@ -529,6 +544,26 @@ export default function MensajesPage() {
                                     <p className="text-sm text-gray-700 whitespace-pre-wrap">
                                         {selectedTemplate.bodyText || 'Sin contenido'}
                                     </p>
+                                </div>
+                            )}
+
+                            {selectedTemplate && Object.keys(templateVariables).length > 0 && (
+                                <div className="bg-amber-50 p-4 rounded-lg border border-amber-200 mt-2">
+                                    <p className="text-xs font-bold text-amber-900 mb-3">Variables requeridas por la plantilla:</p>
+                                    <div className="space-y-3">
+                                        {Object.keys(templateVariables).map((vKey) => (
+                                            <div key={vKey}>
+                                                <label className="block text-xs font-semibold text-gray-700 mb-1">Valor para <span className="text-amber-600 bg-amber-100 px-1 rounded">{vKey}</span></label>
+                                                <input
+                                                    type="text"
+                                                    className="w-full border border-gray-300 p-2 rounded-md text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+                                                    placeholder={`Ej. Nombre, monto...`}
+                                                    value={templateVariables[vKey]}
+                                                    onChange={(e) => setTemplateVariables({ ...templateVariables, [vKey]: e.target.value })}
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
 
