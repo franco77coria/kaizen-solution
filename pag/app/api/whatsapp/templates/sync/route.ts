@@ -45,16 +45,22 @@ export async function POST() {
             const bodyComponent = t.components.find((c: any) => c.type === 'BODY');
             const bodyText = bodyComponent ? bodyComponent.text : "";
 
-            // Buscar ocurrencias de {{d+}} en el texto
-            const regex = /\{\{(\d+)\}\}/g;
+            const regex = /\{\{([^}]+)\}\}/g;
             const variablesEncontradas = [];
             let match;
             while ((match = regex.exec(bodyText)) !== null) {
                 variablesEncontradas.push(match[1]);
             }
 
-            // Desduplicar el array
-            const uniqueVars = Array.from(new Set(variablesEncontradas)).sort((a, b) => Number(a) - Number(b));
+            const uniqueVars = Array.from(new Set(variablesEncontradas)).sort((a, b) => {
+                const na = parseInt(a), nb = parseInt(b);
+                if (!isNaN(na) && !isNaN(nb)) return na - nb;
+                return a.localeCompare(b);
+            });
+
+            // #region agent log
+            fetch('http://127.0.0.1:7243/ingest/f9affe2b-8796-441f-9dcd-82782f1c48ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'templates-sync-route.ts:SYNC',message:'Template variable detection',data:{templateName:t.name,bodyText,variablesEncontradas,uniqueVars},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
+            // #endregion
 
             await prisma.whatsAppTemplate.upsert({
                 where: { name_language: { name: t.name, language: t.language } },
