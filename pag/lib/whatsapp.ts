@@ -143,19 +143,26 @@ export async function callWhatsAppAPI(
 export async function sendWhatsAppTemplate(
     phone: string,
     templateName: string,
-    languageCode: string
+    languageCode: string,
+    components?: Array<{ type: string; parameters: Array<{ type: string; text: string }> }>
 ) {
     const config = await getWhatsAppConfig()
     if (!config) throw new Error("WhatsApp no configurado")
+
+    const templatePayload: any = {
+        name: templateName,
+        language: { code: languageCode },
+    }
+
+    if (components && components.length > 0) {
+        templatePayload.components = components
+    }
 
     const body = {
         messaging_product: "whatsapp",
         to: phone,
         type: "template",
-        template: {
-            name: templateName,
-            language: { code: languageCode },
-        },
+        template: templatePayload,
     }
 
     return callWhatsAppAPI(`${config.phoneNumberId}/messages`, "POST", body)
