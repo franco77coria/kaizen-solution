@@ -134,6 +134,9 @@ export async function callWhatsAppAPI(
     const data = await response.json()
 
     if (!response.ok) {
+        // #region agent log
+        try { await prisma.whatsAppLog.create({ data: { type: 'DEBUG_API_ERROR', payload: JSON.stringify({ url, method, requestBody: body, responseStatus: response.status, responseData: data }) } }); } catch(e) {}
+        // #endregion
         throw new Error(data?.error?.message || `API error: ${response.status}`)
     }
 
@@ -164,6 +167,10 @@ export async function sendWhatsAppTemplate(
         type: "template",
         template: templatePayload,
     }
+
+    // #region agent log
+    try { await prisma.whatsAppLog.create({ data: { type: 'DEBUG_SEND_TEMPLATE', payload: JSON.stringify({ phone, templateName, languageCode, components, fullPayload: body }) } }); } catch(e) {}
+    // #endregion
 
     return callWhatsAppAPI(`${config.phoneNumberId}/messages`, "POST", body)
 }
