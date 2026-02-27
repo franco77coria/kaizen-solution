@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 import { Client } from "@upstash/qstash";
 
 // Inicializar QStash Client
@@ -9,6 +10,10 @@ const qstash = new Client({
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
     try {
+        const session = await auth()
+        if (!session) {
+            return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+        }
         const campaignId = params.id;
 
         const campaign = await prisma.whatsAppCampaign.findUnique({
@@ -25,28 +30,29 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         const totalContacts = campaign.list.subscribers.length;
         if (totalContacts === 0) return NextResponse.json({ error: "Lista vacía" }, { status: 400 });
 
-        // 1. Si está en Draft, prepararla: crear registro de Job por cada contacto en la base de datos
-        // para tener control sobre quién recibió y quién no
         if (campaign.status === 'draft') {
-            const jobsToCreate = campaign.list.subscribers.map(sub => ({
-                campaignId: campaign.id,
-                phone: sub.contact.phone,
-                status: "pending"
-            }));
+            await prisma.$transaction(async (tx) => {
+                const fresh = await tx.whatsAppCampaign.findUnique({ where: { id: campaignId } });
+                if (fresh?.status !== 'draft') throw new Error("Campaña ya fue iniciada");
 
-            // Inserción en batch (Evitamos duplicates con ignore/skip si existieran, pero es un createMany fresh)
-            await prisma.campaignJob.createMany({
-                data: jobsToCreate,
-                skipDuplicates: true
-            });
+                const jobsToCreate = campaign.list.subscribers.map(sub => ({
+                    campaignId: campaign.id,
+                    phone: sub.contact.phone,
+                    status: "pending"
+                }));
 
-            // Actualizar stats de la campaña a 0/total
-            await prisma.whatsAppCampaign.update({
-                where: { id: campaignId },
-                data: {
-                    status: "running",
-                    stats: JSON.stringify({ total: totalContacts, sent: 0, delivered: 0, read: 0, failed: 0 })
-                }
+                await tx.campaignJob.createMany({
+                    data: jobsToCreate,
+                    skipDuplicates: true
+                });
+
+                await tx.whatsAppCampaign.update({
+                    where: { id: campaignId },
+                    data: {
+                        status: "running",
+                        stats: JSON.stringify({ total: totalContacts, sent: 0, delivered: 0, read: 0, failed: 0 })
+                    }
+                });
             });
         } else if (campaign.status === 'paused') {
             await prisma.whatsAppCampaign.update({
