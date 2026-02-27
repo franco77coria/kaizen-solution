@@ -32,12 +32,19 @@ export async function PUT(
         const body = await request.json()
         const { name, phone } = body
 
+        // #region agent log
+        try { await prisma.whatsAppLog.create({ data: { type: 'DEBUG_CONTACT_UPDATE', payload: JSON.stringify({ id: params.id, name, phone }) } }); } catch(le) {}
+        // #endregion
+
         await prisma.whatsAppContact.update({
             where: { id: params.id },
             data: { name, phone }
         })
         return NextResponse.json({ success: true })
     } catch (e: any) {
+        // #region agent log
+        try { await prisma.whatsAppLog.create({ data: { type: 'DEBUG_CONTACT_UPDATE_ERROR', payload: JSON.stringify({ id: params.id, error: e.message, code: e.code }) } }); } catch(le) {}
+        // #endregion
         return NextResponse.json({ success: false, error: e.message }, { status: 500 })
     }
 }
