@@ -67,8 +67,22 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
             if (!elConfig) throw new Error("Configuración ElevenLabs faltante para campaña de audio");
         }
 
+        const resolveContactField = (subscriber: any, columnMapped: string): string => {
+            if (!subscriber) return "";
+            const contact = subscriber.contact;
+            switch (columnMapped) {
+                case "name": return contact.name || "";
+                case "phone": return contact.phone || "";
+                case "tags": {
+                    try { return JSON.parse(contact.tags || "[]").join(", "); } catch { return ""; }
+                }
+                case "source": return contact.source || "";
+                case "externalId": return contact.externalId || "";
+                default: return "";
+            }
+        };
+
         for (const job of pendingJobs) {
-            // Cruzar el teléfono real guardado en Contact (podríamos habernos traido el contact direct, pero la cascada lo tiene)
             const subscriber = job.campaign.list.subscribers.find((s: any) => s.contact.phone === job.phone);
 
             try {
@@ -77,18 +91,12 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
                 if (isAudio) {
                     let prompt = audioConfig.prompt || "";
                     for (const [varKey, columnMapped] of Object.entries(mapping)) {
-                        let val = "";
-                        if (subscriber && columnMapped === "name") {
-                            val = subscriber.contact.name || "";
-                        }
+                        const val = resolveContactField(subscriber, columnMapped as string);
                         prompt = prompt.replace(new RegExp(`\\{${varKey}\\}`, 'g'), val);
                     }
 
-                    // 1. Generar audio en formato OGG Opus directo
                     const { audioBuffer } = await generateAudioForWhatsApp(prompt, audioConfig.voiceId);
-                    // 2. Subir a Meta y obtener mediaId
                     const mediaId = await uploadMediaToWhatsApp(audioBuffer, 'audio/ogg');
-                    // 4. Enviar Msg
                     const data = await sendWhatsAppAudio(job.phone, mediaId);
 
                     if (data.messages && data.messages.length > 0) {
@@ -97,27 +105,23 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
                         throw new Error("No message ID returned (Audio)");
                     }
                 } else {
-                    // ====== Lógica de Template ======
-                    const componentsParam = [];
-                    const bodyParams = [];
+                    const componentsParam: any[] = [];
+                    const bodyParams: any[] = [];
 
-                    // Extraer componentes reales de la plantilla original para saber cuántas variables requiere Meta
                     const parsedComponents = campaign.template?.components ? JSON.parse(campaign.template.components) : [];
                     const templateBodyParams = parsedComponents.find((c: any) => c.type === 'BODY')?.text || "";
                     const requiredVarsCount = new Set(templateBodyParams.match(/\{\{\d+\}\}/g) || []).size;
 
-                    for (const [varIndex, columnMapped] of Object.entries(mapping)) {
-                        let val = "";
-                        if (subscriber && columnMapped === "name") {
-                            val = subscriber.contact.name || "";
-                        }
+                    const sortedEntries = Object.entries(mapping).sort(([a], [b]) => Number(a) - Number(b));
+
+                    for (const [, columnMapped] of sortedEntries) {
+                        const val = resolveContactField(subscriber, columnMapped as string);
                         bodyParams.push({
                             type: "text",
-                            text: val || "Usuario" // fallback
+                            text: val || "Usuario"
                         });
                     }
 
-                    // Si el usuario no mapeó suficientes variables, rellenamos con vacíos para que Meta no rechace el envío
                     while (bodyParams.length < requiredVarsCount) {
                         bodyParams.push({
                             type: "text",
