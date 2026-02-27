@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { SessionProvider, useSession, signOut } from 'next-auth/react'
+import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import {
@@ -214,7 +214,6 @@ export default function WhatsAppLayout({
     children: React.ReactNode
 }) {
     return (
-        <SessionProvider>
             <AuthGuard>
                 <div className="flex min-h-screen bg-gray-50">
                     <WhatsAppSidebar />
@@ -223,6 +222,5 @@ export default function WhatsAppLayout({
                     </main>
                 </div>
             </AuthGuard>
-        </SessionProvider>
     )
 }
