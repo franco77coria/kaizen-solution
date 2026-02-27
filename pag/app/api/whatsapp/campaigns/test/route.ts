@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { generateAudioForWhatsApp, getElevenLabsConfig } from "@/lib/elevenlabs";
-import { uploadMediaToWhatsApp, sendWhatsAppAudio, getWhatsAppConfig } from "@/lib/whatsapp";
+import { uploadMediaToWhatsApp, sendWhatsAppAudio, getWhatsAppConfig, sendWhatsAppImage } from "@/lib/whatsapp";
 
 export async function POST(req: Request) {
     try {
@@ -17,12 +17,28 @@ export async function POST(req: Request) {
         const config = await getWhatsAppConfig();
         if (!config || !config.apiToken) throw new Error("WhatsApp no configurado");
 
-        if (type === 'audio') {
+        if (type === 'image') {
+            if (!audioConfig?.imageUrl) {
+                return NextResponse.json({ error: "URL de imagen requerida" }, { status: 400 });
+            }
+
+            let captionTest = audioConfig.caption || "";
+            const matches = captionTest.match(/\{(\w+)\}/g);
+            if (matches) {
+                const vars = Array.from(new Set(matches.map((m: string) => m.replace(/[{}]/g, ""))));
+                vars.forEach((v: any) => {
+                    captionTest = captionTest.replace(new RegExp(`\\{${v}\\}`, 'g'), `[${v} de prueba]`);
+                });
+            }
+
+            await sendWhatsAppImage(testPhone, audioConfig.imageUrl, captionTest || undefined);
+
+            return NextResponse.json({ success: true, message: "Prueba de imagen enviada" });
+        } else if (type === 'audio') {
             if (!audioConfig?.voiceId || !audioConfig?.prompt) {
                 return NextResponse.json({ error: "Voz o Prompt faltante" }, { status: 400 });
             }
 
-            // Para la prueba, simplemente reemplazamos con valores dummy visibles
             let promptTest = audioConfig.prompt;
             const matches = promptTest.match(/\{(\w+)\}/g);
             if (matches) {
@@ -43,22 +59,36 @@ export async function POST(req: Request) {
             if (!template) return NextResponse.json({ error: "Template no encontrado" }, { status: 404 });
 
             const componentsParam: any[] = [];
-            const bodyParams: any[] = [];
 
-            // Dummy mapping vars
-            const mappingObj = mapping || {};
-            for (const [varIndex, _] of Object.entries(mappingObj)) {
-                bodyParams.push({
-                    type: "text",
-                    text: `[Prueba ${varIndex}]`
-                });
+            const parsedComponents = template.components ? JSON.parse(template.components) : [];
+            const allNamedParams: { componentType: string, param_name: string }[] = [];
+            for (const comp of parsedComponents) {
+                const namedParams = comp.example?.header_text_named_params || comp.example?.body_text_named_params || [];
+                for (const p of namedParams) {
+                    if (p.param_name) allNamedParams.push({ componentType: comp.type, param_name: p.param_name });
+                }
             }
 
-            if (bodyParams.length > 0) {
-                componentsParam.push({
-                    type: "body",
-                    parameters: bodyParams
-                });
+            if (allNamedParams.length > 0) {
+                const headerParams = allNamedParams
+                    .filter(p => p.componentType === 'HEADER')
+                    .map(p => ({ type: "text", parameter_name: p.param_name, text: `[${p.param_name}]` }));
+                const bodyParams = allNamedParams
+                    .filter(p => p.componentType === 'BODY')
+                    .map(p => ({ type: "text", parameter_name: p.param_name, text: `[${p.param_name}]` }));
+
+                if (headerParams.length > 0) componentsParam.push({ type: "header", parameters: headerParams });
+                if (bodyParams.length > 0) componentsParam.push({ type: "body", parameters: bodyParams });
+            }
+
+            for (const comp of parsedComponents) {
+                if (comp.type === 'BUTTONS' && comp.buttons) {
+                    comp.buttons.forEach((btn: any, idx: number) => {
+                        if (btn.type === 'FLOW') {
+                            componentsParam.push({ type: "button", sub_type: "flow", index: String(idx), parameters: [] });
+                        }
+                    });
+                }
             }
 
             const payload = {
