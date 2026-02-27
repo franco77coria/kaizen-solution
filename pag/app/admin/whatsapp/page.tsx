@@ -45,6 +45,7 @@ export default function WhatsAppDashboard() {
     const [stats, setStats] = useState<Stats | null>(null)
     const [recentMessages, setRecentMessages] = useState<Message[]>([])
     const [loading, setLoading] = useState(true)
+    const [initialLoad, setInitialLoad] = useState(true)
     const [error, setError] = useState('')
     const [dateRange, setDateRange] = useState('ALL') // ALL, TODAY, 7DAYS, 30DAYS
 
@@ -60,7 +61,7 @@ export default function WhatsAppDashboard() {
     const fetchData = async () => {
         try {
             setError('')
-            setLoading(true)
+            if (initialLoad) setLoading(true)
 
             let qs = ''
             const now = new Date()
@@ -84,6 +85,7 @@ export default function WhatsAppDashboard() {
             setError(e.message)
         } finally {
             setLoading(false)
+            setInitialLoad(false)
         }
     }
 
