@@ -258,6 +258,7 @@ export async function getTemplatesFromMeta() {
                 category: t.category,
                 status: t.status,
                 bodyText: bodyComponent?.text || "",
+                components: t.components || [],
             }
         })
 }
