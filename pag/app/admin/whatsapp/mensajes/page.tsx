@@ -555,6 +555,17 @@ export default function MensajesPage() {
                                 </div>
                             )}
 
+                            {/* #region agent log - visual debug */}
+                            {selectedTemplate && (
+                                <div className="bg-red-50 p-3 rounded border border-red-300 mt-2 text-[10px] font-mono text-red-800 break-all">
+                                    <p className="font-bold mb-1">[DEBUG] Template data:</p>
+                                    <p>components type: {typeof selectedTemplate.components} | is array: {String(Array.isArray(selectedTemplate.components))} | length: {selectedTemplate.components?.length ?? 'undefined'}</p>
+                                    <p>vars detected: {JSON.stringify(templateVariables)}</p>
+                                    <p>components raw: {JSON.stringify(selectedTemplate.components?.map((c: any) => ({ type: c.type, text: c.text?.substring(0, 100) })))}</p>
+                                </div>
+                            )}
+                            {/* #endregion */}
+
                             {selectedTemplate && Object.keys(templateVariables).length > 0 && (
                                 <div className="bg-amber-50 p-4 rounded-lg border border-amber-200 mt-2">
                                     <p className="text-xs font-bold text-amber-900 mb-3">Variables requeridas por la plantilla:</p>
