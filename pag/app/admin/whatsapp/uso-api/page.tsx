@@ -125,7 +125,7 @@ export default function UsoApiPage() {
                     {/* Chart */}
                     <Card className="border-0 shadow-sm">
                         <CardHeader className="pb-2">
-                            <CardTitle className="text-base font-semibold">Uso últimos 7 días</CardTitle>
+                            <CardTitle className="text-base font-semibold">Uso últimos {days} días</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <div className="flex items-end gap-2 h-40">
