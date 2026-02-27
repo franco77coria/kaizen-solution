@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
 
     try {
         const body = await request.json()
-        const { template, idioma, numeros } = body
+        const { template, idioma, numeros, components: templateComponents } = body
 
         if (!template) {
             return NextResponse.json({ error: "Template requerido" }, { status: 400 })
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
         for (let i = 0; i < cleanNumbers.length; i++) {
             const numero = cleanNumbers[i]
             try {
-                const result = await sendWhatsAppTemplate(numero, template, idioma || "es")
+                const result = await sendWhatsAppTemplate(numero, template, idioma || "es", templateComponents)
                 const msgId = result?.messages?.[0]?.id || null
 
                 // Save outbound message
