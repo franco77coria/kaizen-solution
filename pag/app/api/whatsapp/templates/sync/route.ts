@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 import { getWhatsAppConfig } from "@/lib/whatsapp";
 
 export async function POST() {
     try {
+        const session = await auth()
+        if (!session) {
+            return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+        }
         const config = await getWhatsAppConfig();
 
         if (!config || !config.apiToken || !config.wabaId) {
@@ -88,6 +93,10 @@ export async function POST() {
 
 export async function GET() {
     try {
+        const session = await auth()
+        if (!session) {
+            return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+        }
         const templates = await prisma.whatsAppTemplate.findMany({
             orderBy: { name: 'asc' }
         });
