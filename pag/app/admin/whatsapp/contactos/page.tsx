@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react"
 import Papa from "papaparse"
-import { Upload, Users, FileSpreadsheet, CheckCircle2, AlertCircle, Plus } from "lucide-react"
+import { Upload, Users, FileSpreadsheet, CheckCircle2, AlertCircle, Plus, Edit2, Trash2 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 
 export default function ContactosPage() {
@@ -22,6 +22,11 @@ export default function ContactosPage() {
     const [mapping, setMapping] = useState<{ [key: string]: string }>({ phone: "", name: "" })
     const [status, setStatus] = useState<"idle" | "parsing" | "mapping" | "uploading" | "success" | "error">("idle")
     const [results, setResults] = useState<{ success: number; errors: any[] } | null>(null)
+
+    // Edit State
+    const [editingContact, setEditingContact] = useState<any>(null)
+    const [editName, setEditName] = useState("")
+    const [editPhone, setEditPhone] = useState("")
 
     const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -125,6 +130,39 @@ export default function ContactosPage() {
         return c.phone.includes(q) || c.name?.toLowerCase().includes(q)
     })
 
+    const handleDeleteContact = async (id: string) => {
+        if (!confirm("¿Seguro que deseas eliminar este contacto?")) return;
+        try {
+            const res = await fetch(`/api/whatsapp/contacts/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                loadContacts()
+            } else {
+                alert("Error al eliminar el contacto.")
+            }
+        } catch (e) {
+            console.error(e)
+        }
+    }
+
+    const handleSaveEdit = async () => {
+        if (!editingContact) return;
+        try {
+            const res = await fetch(`/api/whatsapp/contacts/${editingContact.id}`, {
+                method: 'PUT',
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: editName, phone: editPhone })
+            })
+            if (res.ok) {
+                setEditingContact(null)
+                loadContacts()
+            } else {
+                alert("Error al actualizar el contacto.")
+            }
+        } catch (e) {
+            console.error(e)
+        }
+    }
+
     return (
         <div className="p-6 max-w-7xl mx-auto space-y-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -188,6 +226,7 @@ export default function ContactosPage() {
                                                 <th className="px-6 py-3 font-semibold">Origen</th>
                                                 <th className="px-6 py-3 font-semibold">Mensajes</th>
                                                 <th className="px-6 py-3 font-semibold">Estado (Ventana)</th>
+                                                <th className="px-6 py-3 font-semibold text-right">Acciones</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-100">
@@ -219,6 +258,28 @@ export default function ContactosPage() {
                                                                 Cerrada
                                                             </span>
                                                         )}
+                                                    </td>
+                                                    <td className="px-6 py-3 text-right">
+                                                        <div className="flex items-center justify-end gap-2">
+                                                            <button
+                                                                onClick={() => {
+                                                                    setEditingContact(c)
+                                                                    setEditName(c.name || "")
+                                                                    setEditPhone(c.phone || "")
+                                                                }}
+                                                                className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                                title="Editar contacto"
+                                                            >
+                                                                <Edit2 size={16} />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleDeleteContact(c.id)}
+                                                                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                                title="Eliminar contacto"
+                                                            >
+                                                                <Trash2 size={16} />
+                                                            </button>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             ))}
@@ -386,6 +447,53 @@ export default function ContactosPage() {
                                 <button onClick={() => setStatus("idle")} className="mt-4 px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition">Reintentar</button>
                             </div>
                         )}
+                    </div>
+                </div>
+            )}
+
+            {editingContact && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden flex flex-col">
+                        <div className="p-4 border-b border-gray-100 flex justify-between items-center">
+                            <h3 className="font-bold text-gray-900">Editar Contacto</h3>
+                            <button onClick={() => setEditingContact(null)} className="text-gray-400 hover:text-gray-600">✕</button>
+                        </div>
+                        <div className="p-5 space-y-4">
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">Nombre</label>
+                                <input
+                                    type="text"
+                                    value={editName}
+                                    onChange={(e) => setEditName(e.target.value)}
+                                    className="w-full border border-gray-300 p-2 rounded-lg text-sm focus:border-green-500 focus:ring-1 focus:ring-green-500"
+                                    placeholder="Nombre del contacto"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">Teléfono</label>
+                                <input
+                                    type="text"
+                                    value={editPhone}
+                                    onChange={(e) => setEditPhone(e.target.value)}
+                                    className="w-full border border-gray-300 p-2 rounded-lg text-sm focus:border-green-500 focus:ring-1 focus:ring-green-500"
+                                    placeholder="Ej. 5491100000000"
+                                />
+                            </div>
+                        </div>
+                        <div className="p-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50">
+                            <button
+                                onClick={() => setEditingContact(null)}
+                                className="px-4 py-2 text-gray-600 text-sm font-medium hover:bg-gray-200 rounded-lg transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleSaveEdit}
+                                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-bold rounded-lg transition-colors disabled:opacity-50"
+                            >
+                                Guardar
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
