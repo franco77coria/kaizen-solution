@@ -205,6 +205,18 @@ export default function MensajesPage() {
                         parameters
                     })
                 }
+                if (c.type === 'BUTTONS' && c.buttons) {
+                    c.buttons.forEach((btn: any, idx: number) => {
+                        if (btn.type === 'FLOW') {
+                            apiComponents.push({
+                                type: "button",
+                                sub_type: "flow",
+                                index: String(idx),
+                                parameters: []
+                            })
+                        }
+                    })
+                }
             })
         }
 
