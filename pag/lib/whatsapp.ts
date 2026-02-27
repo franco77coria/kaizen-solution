@@ -56,7 +56,7 @@ export async function getWhatsAppConfig(): Promise<WhatsAppConfig | null> {
         phoneNumberId: config.phoneNumberId,
         wabaId: config.wabaId,
         verifyToken: config.verifyToken,
-        apiVersion: config.apiVersion,
+        apiVersion: config.apiVersion?.replace('v21.0', 'v22.0') || 'v22.0',
         isConfigured: config.isConfigured,
     }
 }
@@ -85,7 +85,7 @@ export async function saveWhatsAppConfig(data: {
                 phoneNumberId: data.phoneNumberId,
                 wabaId: data.wabaId || null,
                 verifyToken: data.verifyToken || "kaizen_whatsapp_2026",
-                apiVersion: data.apiVersion || "v21.0",
+                apiVersion: data.apiVersion || "v22.0",
                 isConfigured: true,
             },
         })
@@ -97,7 +97,7 @@ export async function saveWhatsAppConfig(data: {
                 phoneNumberId: data.phoneNumberId,
                 wabaId: data.wabaId || null,
                 verifyToken: data.verifyToken || "kaizen_whatsapp_2026",
-                apiVersion: data.apiVersion || "v21.0",
+                apiVersion: data.apiVersion || "v22.0",
                 isConfigured: true,
             },
         })
