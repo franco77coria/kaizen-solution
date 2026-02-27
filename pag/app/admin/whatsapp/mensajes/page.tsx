@@ -193,22 +193,17 @@ export default function MensajesPage() {
         const apiComponents: any[] = []
         if (selectedTemplate.components && selectedTemplate.components.length > 0) {
             selectedTemplate.components.forEach((c: any) => {
-                if (c.type === 'HEADER' || c.type === 'BODY') {
-                    const matches = c.text?.match(/\{\{[^}]+\}\}/g)
-                    if (matches && matches.length > 0) {
-                        const parameters = matches.map((m: string) => {
-                            const paramName = m.replace(/^\{\{/, '').replace(/\}\}$/, '').trim()
-                            return {
-                                type: "text",
-                                parameter_name: paramName,
-                                text: templateVariables[m] || "..."
-                            }
-                        })
-                        apiComponents.push({
-                            type: c.type.toLowerCase(),
-                            parameters
-                        })
-                    }
+                const namedParams = c.example?.header_text_named_params || c.example?.body_text_named_params || []
+                if (namedParams.length > 0) {
+                    const parameters = namedParams.map((p: any) => ({
+                        type: "text",
+                        parameter_name: p.param_name,
+                        text: templateVariables[p.param_name] || "..."
+                    }))
+                    apiComponents.push({
+                        type: c.type.toLowerCase(),
+                        parameters
+                    })
                 }
             })
         }
@@ -524,22 +519,12 @@ export default function MensajesPage() {
                                         const vars: Record<string, string> = {}
                                         if (found && found.components) {
                                             found.components.forEach((c: any) => {
-                                                if (c.type === 'HEADER' || c.type === 'BODY') {
-                                                    const matches = c.text?.match(/\{\{[^}]+\}\}/g)
-                                                    // #region agent log
-                                                    fetch('http://127.0.0.1:7243/ingest/f9affe2b-8796-441f-9dcd-82782f1c48ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'mensajes-page.tsx:onSelectTemplate',message:'Component variable detection',data:{componentType:c.type,text:c.text,matches,foundName:found?.name},timestamp:Date.now(),hypothesisId:'H2'})}).catch(()=>{});
-                                                    // #endregion
-                                                    if (matches) {
-                                                        matches.forEach((m: string) => {
-                                                            vars[m] = ""
-                                                        })
-                                                    }
-                                                }
+                                                const namedParams = c.example?.header_text_named_params || c.example?.body_text_named_params || []
+                                                namedParams.forEach((p: any) => {
+                                                    vars[p.param_name] = ""
+                                                })
                                             })
                                         }
-                                        // #region agent log
-                                        fetch('http://127.0.0.1:7243/ingest/f9affe2b-8796-441f-9dcd-82782f1c48ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'mensajes-page.tsx:onSelectTemplate',message:'Final vars result',data:{vars,componentsRaw:found?.components},timestamp:Date.now(),hypothesisId:'H2'})}).catch(()=>{});
-                                        // #endregion
                                         setTemplateVariables(vars)
                                     }}
                                 >
@@ -563,9 +548,8 @@ export default function MensajesPage() {
                             {selectedTemplate && (
                                 <div className="bg-red-50 p-3 rounded border border-red-300 mt-2 text-[10px] font-mono text-red-800 break-all">
                                     <p className="font-bold mb-1">[DEBUG] Template data:</p>
-                                    <p>components type: {typeof selectedTemplate.components} | is array: {String(Array.isArray(selectedTemplate.components))} | length: {selectedTemplate.components?.length ?? 'undefined'}</p>
                                     <p>vars detected: {JSON.stringify(templateVariables)}</p>
-                                    <p>components raw: {JSON.stringify(selectedTemplate.components?.map((c: any) => ({ type: c.type, text: c.text?.substring(0, 100) })))}</p>
+                                    <p>named params: {JSON.stringify(selectedTemplate.components?.flatMap((c: any) => (c.example?.header_text_named_params || c.example?.body_text_named_params || []).map((p: any) => p.param_name)))}</p>
                                 </div>
                             )}
                             {/* #endregion */}
@@ -591,7 +575,7 @@ export default function MensajesPage() {
                             )}
 
                             <p className="text-[11px] text-gray-400 italic">
-                                Nota: Si tu plantilla seleccionada posee variables dinámicas (como "Hola {"{{"}1{"}}"}"), este envío inicial rápido podría fallar ya que Meta espera que le pases las variables exactas por Campañas Masivas. Escoge preferiblemente modelos estáticos para envío manual rápido.
+                                Nota: Si tu plantilla tiene variables dinámicas, completá los campos arriba antes de enviar. Las variables se detectan automáticamente desde la configuración del template en Meta.
                             </p>
                         </div>
 
