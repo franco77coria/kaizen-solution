@@ -41,7 +41,7 @@ export default function MensajesPage() {
     // Plantillas (Para conversaciones vacías o iniciales)
     const [templates, setTemplates] = useState<{ id: string, name: string, language: string, bodyText: string }[]>([])
     const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false)
-    const [selectedTemplate, setSelectedTemplate] = useState('')
+    const [selectedTemplate, setSelectedTemplate] = useState<any>(null)
 
     const chatEndRef = useRef<HTMLDivElement>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
@@ -191,16 +191,17 @@ export default function MensajesPage() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    tipo: 'plantilla',
+                    tipo: 'template',
                     numero: selectedPhone,
-                    mensaje: selectedTemplate, // selectedTemplate guarda el string 'name' de la plantilla
+                    template: selectedTemplate.name,
+                    idioma: selectedTemplate.language
                 }),
             })
 
             const data = await res.json()
             if (data.success) {
                 setIsTemplateModalOpen(false)
-                setSelectedTemplate('')
+                setSelectedTemplate(null)
                 loadMessages(selectedPhone)
             } else {
                 alert(data.error || 'Error enviando la plantilla oficial')
@@ -484,12 +485,15 @@ export default function MensajesPage() {
                                 <label className="block text-sm font-bold text-gray-700 mb-2">Selecciona un modelo oficial aprobado:</label>
                                 <select
                                     className="w-full border border-gray-300 p-2.5 rounded-lg text-sm bg-gray-50 focus:bg-white transition-colors"
-                                    value={selectedTemplate}
-                                    onChange={(e) => setSelectedTemplate(e.target.value)}
+                                    value={selectedTemplate?.id || ""}
+                                    onChange={(e) => {
+                                        const found = templates.find(t => t.id === e.target.value)
+                                        setSelectedTemplate(found || null)
+                                    }}
                                 >
                                     <option value="" disabled>-- Elige una Plantilla --</option>
                                     {templates.map(t => (
-                                        <option key={t.id} value={t.name}>{t.name} ({t.language})</option>
+                                        <option key={t.id} value={t.id}>{t.name} ({t.language})</option>
                                     ))}
                                 </select>
                             </div>
@@ -498,7 +502,7 @@ export default function MensajesPage() {
                                 <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                                     <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Previsualización del texto a enviar:</p>
                                     <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                                        {templates.find(t => t.name === selectedTemplate)?.bodyText || 'Sin contenido'}
+                                        {selectedTemplate.bodyText || 'Sin contenido'}
                                     </p>
                                 </div>
                             )}
