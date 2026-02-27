@@ -40,7 +40,8 @@ export async function POST(request: NextRequest) {
         for (let i = 0; i < cleanNumbers.length; i++) {
             const numero = cleanNumbers[i]
             try {
-                const result = await sendWhatsAppTemplate(numero, template, idioma || "es", templateComponents)
+                const validComponents = Array.isArray(templateComponents) && templateComponents.length > 0 ? templateComponents : undefined
+                const result = await sendWhatsAppTemplate(numero, template, idioma || "es", validComponents)
                 const msgId = result?.messages?.[0]?.id || null
 
                 // Save outbound message
