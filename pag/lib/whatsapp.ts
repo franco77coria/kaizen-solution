@@ -280,29 +280,20 @@ export async function logWhatsApp(type: string, payload: any) {
 // ─── Contact helper ───
 
 export async function upsertContact(phone: string, name?: string) {
-    const existing = await prisma.whatsAppContact.findUnique({
+    await prisma.whatsAppContact.upsert({
         where: { phone },
+        update: {
+            name: name || undefined,
+            lastMessageAt: new Date(),
+            totalMessages: { increment: 1 },
+        },
+        create: {
+            phone,
+            name: name || null,
+            lastMessageAt: new Date(),
+            totalMessages: 1,
+        },
     })
-
-    if (existing) {
-        await prisma.whatsAppContact.update({
-            where: { phone },
-            data: {
-                name: name || existing.name,
-                lastMessageAt: new Date(),
-                totalMessages: { increment: 1 },
-            },
-        })
-    } else {
-        await prisma.whatsAppContact.create({
-            data: {
-                phone,
-                name: name || null,
-                lastMessageAt: new Date(),
-                totalMessages: 1,
-            },
-        })
-    }
 }
 
 export function maskToken(token: string): string {
