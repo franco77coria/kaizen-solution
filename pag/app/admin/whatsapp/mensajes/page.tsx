@@ -89,7 +89,12 @@ export default function MensajesPage() {
         try {
             const res = await fetch('/api/whatsapp/templates')
             const data = await res.json()
-            setTemplates(data.filter((t: any) => t.status === 'APPROVED'))
+            if (data.success && data.templates) {
+                setTemplates(data.templates.filter((t: any) => t.status === 'APPROVED'))
+            } else if (Array.isArray(data)) {
+                // Retrocompatibility if it returns array directly
+                setTemplates(data.filter((t: any) => t.status === 'APPROVED'))
+            }
         } catch (e) {
             console.error('Error loading templates', e)
         }
