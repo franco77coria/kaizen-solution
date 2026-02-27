@@ -32,19 +32,26 @@ export async function PUT(
         const body = await request.json()
         const { name, phone } = body
 
-        // #region agent log
-        try { await prisma.whatsAppLog.create({ data: { type: 'DEBUG_CONTACT_UPDATE', payload: JSON.stringify({ id: params.id, name, phone }) } }); } catch(le) {}
-        // #endregion
+        if (!phone || !phone.trim()) {
+            return NextResponse.json({ success: false, error: "El teléfono es obligatorio" }, { status: 400 })
+        }
+
+        const existing = await prisma.whatsAppContact.findUnique({ where: { phone } })
+        if (existing && existing.id !== params.id) {
+            return NextResponse.json({ success: false, error: "Ya existe un contacto con ese teléfono" }, { status: 409 })
+        }
 
         await prisma.whatsAppContact.update({
             where: { id: params.id },
-            data: { name, phone }
+            data: { name: name || null, phone: phone.trim() }
         })
         return NextResponse.json({ success: true })
     } catch (e: any) {
-        // #region agent log
-        try { await prisma.whatsAppLog.create({ data: { type: 'DEBUG_CONTACT_UPDATE_ERROR', payload: JSON.stringify({ id: params.id, error: e.message, code: e.code }) } }); } catch(le) {}
-        // #endregion
-        return NextResponse.json({ success: false, error: e.message }, { status: 500 })
+        const msg = e.code === 'P2002'
+            ? "Ya existe un contacto con ese teléfono"
+            : e.code === 'P2025'
+            ? "Contacto no encontrado"
+            : e.message
+        return NextResponse.json({ success: false, error: msg }, { status: 500 })
     }
 }
