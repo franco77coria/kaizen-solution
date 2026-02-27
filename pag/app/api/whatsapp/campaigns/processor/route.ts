@@ -101,6 +101,10 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
                     const componentsParam = [];
                     const bodyParams = [];
 
+                    // Extraer componentes reales de la plantilla original para saber cuántas variables requiere Meta
+                    const templateBodyParams = campaign.template?.components?.find((c: any) => c.type === 'BODY')?.text || "";
+                    const requiredVarsCount = new Set(templateBodyParams.match(/\{\{\d+\}\}/g) || []).size;
+
                     for (const [varIndex, columnMapped] of Object.entries(mapping)) {
                         let val = "";
                         if (subscriber && columnMapped === "name") {
@@ -109,6 +113,14 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
                         bodyParams.push({
                             type: "text",
                             text: val || "Usuario" // fallback
+                        });
+                    }
+
+                    // Si el usuario no mapeó suficientes variables, rellenamos con vacíos para que Meta no rechace el envío
+                    while (bodyParams.length < requiredVarsCount) {
+                        bodyParams.push({
+                            type: "text",
+                            text: "..."
                         });
                     }
 
