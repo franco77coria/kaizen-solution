@@ -186,6 +186,30 @@ export default function MensajesPage() {
     const sendManualTemplate = async () => {
         if (!selectedPhone || !selectedTemplate) return
         setSending(true)
+
+        // Generar dummy components basados en el texto de la plantilla original
+        const apiComponents: any[] = []
+        if (selectedTemplate.components && selectedTemplate.components.length > 0) {
+            selectedTemplate.components.forEach((c: any) => {
+                if (c.type === 'HEADER' || c.type === 'BODY') {
+                    // Contar variables tipo {{1}}, {{2}}...
+                    const matches = c.text?.match(/\{\{\d+\}\}/g)
+                    if (matches && matches.length > 0) {
+                        // El número de matches únicas determina cuántos params crear
+                        const numVars = new Set(matches).size
+                        const parameters = Array(numVars).fill({
+                            type: "text",
+                            text: "..."
+                        })
+                        apiComponents.push({
+                            type: c.type.toLowerCase(), // meta requires lowercase 'header', 'body'
+                            parameters
+                        })
+                    }
+                }
+            })
+        }
+
         try {
             const res = await fetch('/api/whatsapp/send', {
                 method: 'POST',
@@ -194,7 +218,8 @@ export default function MensajesPage() {
                     tipo: 'template',
                     numero: selectedPhone,
                     template: selectedTemplate.name,
-                    idioma: selectedTemplate.language
+                    idioma: selectedTemplate.language,
+                    components: apiComponents // Enviamos las variables dinámicas mockeadas
                 }),
             })
 
