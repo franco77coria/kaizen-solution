@@ -29,6 +29,9 @@ export async function POST(request: NextRequest) {
             if (!template) {
                 return NextResponse.json({ error: "Template requerido" }, { status: 400 })
             }
+            // #region agent log
+            await logWhatsApp("debug_send_template", { template, idioma, componentsReceived: templateComponents, componentsLength: templateComponents?.length || 0 })
+            // #endregion
             result = await sendWhatsAppTemplate(numero, template, idioma || "en_US", templateComponents)
             content = `[Template: ${template}]`
         } else {
