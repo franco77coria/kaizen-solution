@@ -197,6 +197,7 @@ export default function MensajesPage() {
                 if (namedParams.length > 0) {
                     const parameters = namedParams.map((p: any) => ({
                         type: "text",
+                        parameter_name: p.param_name,
                         text: templateVariables[p.param_name] || "..."
                     }))
                     apiComponents.push({
