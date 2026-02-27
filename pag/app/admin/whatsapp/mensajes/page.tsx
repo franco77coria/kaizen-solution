@@ -90,10 +90,12 @@ export default function MensajesPage() {
         try {
             const res = await fetch('/api/whatsapp/templates')
             const data = await res.json()
+            // #region agent log
+            fetch('http://127.0.0.1:7243/ingest/f9affe2b-8796-441f-9dcd-82782f1c48ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'mensajes-page.tsx:loadTemplates',message:'Templates API response',data:{hasSuccess:data.success,templateCount:data.templates?.length,firstTemplate:data.templates?.[0]?{name:data.templates[0].name,components:data.templates[0].components?.slice(0,3)}:null},timestamp:Date.now(),hypothesisId:'H2'})}).catch(()=>{});
+            // #endregion
             if (data.success && data.templates) {
                 setTemplates(data.templates.filter((t: any) => t.status === 'APPROVED'))
             } else if (Array.isArray(data)) {
-                // Retrocompatibility if it returns array directly
                 setTemplates(data.filter((t: any) => t.status === 'APPROVED'))
             }
         } catch (e) {
@@ -188,21 +190,18 @@ export default function MensajesPage() {
         if (!selectedPhone || !selectedTemplate) return
         setSending(true)
 
-        // Generar dummy components basados en el texto de la plantilla original
         const apiComponents: any[] = []
         if (selectedTemplate.components && selectedTemplate.components.length > 0) {
             selectedTemplate.components.forEach((c: any) => {
                 if (c.type === 'HEADER' || c.type === 'BODY') {
-                    // Contar variables tipo {{1}}, {{2}}...
-                    const matches = c.text?.match(/\{\{\d+\}\}/g)
+                    const matches = c.text?.match(/\{\{[^}]+\}\}/g)
                     if (matches && matches.length > 0) {
-                        // Creamos los parameters usando el input del usuario en base a key {{1}}
                         const parameters = matches.map((m: string) => ({
                             type: "text",
                             text: templateVariables[m] || "..."
                         }))
                         apiComponents.push({
-                            type: c.type.toLowerCase(), // meta requires lowercase 'header', 'body'
+                            type: c.type.toLowerCase(),
                             parameters
                         })
                     }
@@ -210,6 +209,9 @@ export default function MensajesPage() {
             })
         }
 
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/f9affe2b-8796-441f-9dcd-82782f1c48ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'mensajes-page.tsx:sendManualTemplate',message:'Sending template with components',data:{templateName:selectedTemplate.name,templateVars:templateVariables,apiComponents,componentsRaw:selectedTemplate.components},timestamp:Date.now(),hypothesisId:'H2'})}).catch(()=>{});
+        // #endregion
         try {
             const res = await fetch('/api/whatsapp/send', {
                 method: 'POST',
@@ -219,7 +221,7 @@ export default function MensajesPage() {
                     numero: selectedPhone,
                     template: selectedTemplate.name,
                     idioma: selectedTemplate.language,
-                    components: apiComponents // Enviamos las variables dinámicas mockeadas
+                    components: apiComponents
                 }),
             })
 
@@ -519,7 +521,10 @@ export default function MensajesPage() {
                                         if (found && found.components) {
                                             found.components.forEach((c: any) => {
                                                 if (c.type === 'HEADER' || c.type === 'BODY') {
-                                                    const matches = c.text?.match(/\{\{\d+\}\}/g)
+                                                    const matches = c.text?.match(/\{\{[^}]+\}\}/g)
+                                                    // #region agent log
+                                                    fetch('http://127.0.0.1:7243/ingest/f9affe2b-8796-441f-9dcd-82782f1c48ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'mensajes-page.tsx:onSelectTemplate',message:'Component variable detection',data:{componentType:c.type,text:c.text,matches,foundName:found?.name},timestamp:Date.now(),hypothesisId:'H2'})}).catch(()=>{});
+                                                    // #endregion
                                                     if (matches) {
                                                         matches.forEach((m: string) => {
                                                             vars[m] = ""
@@ -528,6 +533,9 @@ export default function MensajesPage() {
                                                 }
                                             })
                                         }
+                                        // #region agent log
+                                        fetch('http://127.0.0.1:7243/ingest/f9affe2b-8796-441f-9dcd-82782f1c48ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'mensajes-page.tsx:onSelectTemplate',message:'Final vars result',data:{vars,componentsRaw:found?.components},timestamp:Date.now(),hypothesisId:'H2'})}).catch(()=>{});
+                                        // #endregion
                                         setTemplateVariables(vars)
                                     }}
                                 >
