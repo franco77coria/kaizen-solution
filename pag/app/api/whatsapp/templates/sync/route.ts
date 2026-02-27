@@ -41,26 +41,17 @@ export async function POST() {
 
         // Procesar y guardar en BD Local
         for (const t of templates) {
-            // Intentamos extraer las variables requeridas (ej. {{1}}, {{2}}) del texto (BODY)
             const bodyComponent = t.components.find((c: any) => c.type === 'BODY');
             const bodyText = bodyComponent ? bodyComponent.text : "";
 
-            const regex = /\{\{([^}]+)\}\}/g;
-            const variablesEncontradas = [];
-            let match;
-            while ((match = regex.exec(bodyText)) !== null) {
-                variablesEncontradas.push(match[1]);
+            const allNamedParams: string[] = [];
+            for (const comp of t.components) {
+                const namedParams = comp.example?.header_text_named_params || comp.example?.body_text_named_params || [];
+                for (const p of namedParams) {
+                    if (p.param_name) allNamedParams.push(p.param_name);
+                }
             }
-
-            const uniqueVars = Array.from(new Set(variablesEncontradas)).sort((a, b) => {
-                const na = parseInt(a), nb = parseInt(b);
-                if (!isNaN(na) && !isNaN(nb)) return na - nb;
-                return a.localeCompare(b);
-            });
-
-            // #region agent log
-            fetch('http://127.0.0.1:7243/ingest/f9affe2b-8796-441f-9dcd-82782f1c48ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'templates-sync-route.ts:SYNC',message:'Template variable detection',data:{templateName:t.name,bodyText,variablesEncontradas,uniqueVars},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
-            // #endregion
+            const uniqueVars = Array.from(new Set(allNamedParams));
 
             await prisma.whatsAppTemplate.upsert({
                 where: { name_language: { name: t.name, language: t.language } },
