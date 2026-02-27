@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getWhatsAppConfig } from "@/lib/whatsapp";
 
 export async function POST() {
     try {
-        const config = await prisma.whatsAppConfig.findFirst();
+        const config = await getWhatsAppConfig();
 
         if (!config || !config.apiToken || !config.wabaId) {
             return NextResponse.json({ error: "WhatsApp API no está configurada o falta WABA ID" }, { status: 400 });

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { generateAudioForWhatsApp, getElevenLabsConfig } from "@/lib/elevenlabs";
-import { uploadMediaToWhatsApp, sendWhatsAppAudio } from "@/lib/whatsapp";
+import { uploadMediaToWhatsApp, sendWhatsAppAudio, getWhatsAppConfig } from "@/lib/whatsapp";
 
 export async function POST(req: Request) {
     try {
@@ -14,7 +14,7 @@ export async function POST(req: Request) {
 
         if (!testPhone) return NextResponse.json({ error: "Número de prueba requerido" }, { status: 400 });
 
-        const config = await prisma.whatsAppConfig.findFirst();
+        const config = await getWhatsAppConfig();
         if (!config || !config.apiToken) throw new Error("WhatsApp no configurado");
 
         if (type === 'audio') {

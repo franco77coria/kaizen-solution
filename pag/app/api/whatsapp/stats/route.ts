@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/lib/auth"
+import { getWhatsAppConfig } from "@/lib/whatsapp"
 
 export async function GET(request: NextRequest) {
     const session = await auth()
@@ -125,7 +126,7 @@ export async function GET(request: NextRequest) {
     // Health / Quality Rating desde Meta
     let accountHealth = { status: "UNKNOWN", qualityRating: "UNKNOWN" };
     try {
-        const config = await prisma.whatsAppConfig.findFirst();
+        const config = await getWhatsAppConfig();
         if (config?.apiToken && config?.phoneNumberId) {
             const fbRes = await fetch(`https://graph.facebook.com/${config.apiVersion}/${config.phoneNumberId}?fields=quality_rating,status`, {
                 headers: { Authorization: `Bearer ${config.apiToken}` }

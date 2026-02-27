@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { uploadMediaToWhatsApp } from "@/lib/whatsapp";
+import { uploadMediaToWhatsApp, getWhatsAppConfig } from "@/lib/whatsapp";
 import { auth } from "@/lib/auth";
 
 export async function POST(req: Request) {
@@ -17,7 +17,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Faltan parámetros (numero, file)" }, { status: 400 });
         }
 
-        const config = await prisma.whatsAppConfig.findFirst();
+        const config = await getWhatsAppConfig();
         if (!config || !config.isConfigured) throw new Error("WhatsApp no configurado");
 
         // 1. Convert File to Buffer

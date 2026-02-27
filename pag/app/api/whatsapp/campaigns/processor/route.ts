@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { Client } from "@upstash/qstash";
 import { verifySignatureAppRouter } from "@upstash/qstash/nextjs";
 import { generateAudioForWhatsApp, getElevenLabsConfig } from "@/lib/elevenlabs";
-import { uploadMediaToWhatsApp, sendWhatsAppAudio } from "@/lib/whatsapp";
+import { uploadMediaToWhatsApp, sendWhatsAppAudio, getWhatsAppConfig } from "@/lib/whatsapp";
 
 const qstash = new Client({
     token: process.env.QSTASH_TOKEN || "NO_TOKEN",
@@ -50,7 +50,7 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
         }
 
         // Config de WhatsApp
-        const config = await prisma.whatsAppConfig.findFirst();
+        const config = await getWhatsAppConfig();
         if (!config || !config.apiToken) throw new Error("Config WhatsApp faltante");
 
         let successCount = 0;
