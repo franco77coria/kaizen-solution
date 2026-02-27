@@ -347,18 +347,36 @@ export default function CampanasPage() {
                             )}
 
                             {/* Variables mapping para Type = Template */}
-                            {newCampaign.type === 'template' && selectedTemplate && (
+                            {newCampaign.type === 'template' && selectedTemplate && (() => {
+                                const detectedVars: string[] = []
+                                try {
+                                    const comps = selectedTemplate.components ? (typeof selectedTemplate.components === 'string' ? JSON.parse(selectedTemplate.components) : selectedTemplate.components) : []
+                                    for (const c of comps) {
+                                        const namedParams = c.example?.header_text_named_params || c.example?.body_text_named_params || []
+                                        for (const p of namedParams) {
+                                            if (p.param_name && !detectedVars.includes(p.param_name)) detectedVars.push(p.param_name)
+                                        }
+                                    }
+                                } catch {}
+                                if (detectedVars.length === 0) {
+                                    try {
+                                        const dbVars = JSON.parse(selectedTemplate.variables || "[]")
+                                        for (const v of dbVars) { if (!detectedVars.includes(v)) detectedVars.push(v) }
+                                    } catch {}
+                                }
+
+                                return (
                                 <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-4">
                                     <h4 className="text-sm font-medium text-green-700">Personalización de Variables de Plantilla</h4>
-                                    <p className="text-xs text-gray-500">Mapea las variables de la plantilla <code>{"{{1}}, {{2}}"}</code> a columnas de tu lista.</p>
+                                    <p className="text-xs text-gray-500">Mapea las variables de la plantilla a los datos de tus contactos.</p>
 
-                                    {(() => { try { return JSON.parse(selectedTemplate.variables || "[]").length === 0 } catch { return true } })() ? (
+                                    {detectedVars.length === 0 ? (
                                         <div className="text-sm text-gray-400 italic">Esta plantilla no requiere variables personalizadas.</div>
                                     ) : (
                                         <div className="space-y-3">
-                                            {JSON.parse(selectedTemplate.variables || "[]").map((v: string) => (
+                                            {detectedVars.map((v: string) => (
                                                 <div key={v} className="flex items-center gap-4">
-                                                    <span className="w-16 text-center bg-gray-200 px-2 py-1 rounded text-gray-700 text-xs font-mono">{`{{${v}}}`}</span>
+                                                    <span className="w-auto min-w-[4rem] text-center bg-gray-200 px-2 py-1 rounded text-gray-700 text-xs font-mono">{`{{${v}}}`}</span>
                                                     <span className="text-gray-500 text-sm">reemplazar con</span>
                                                     <select
                                                         required
@@ -378,7 +396,8 @@ export default function CampanasPage() {
                                         <p className="text-xs font-mono text-gray-500 whitespace-pre-wrap">{selectedTemplate.bodyText}</p>
                                     </div>
                                 </div>
-                            )}
+                                )
+                            })()}
 
                             {/* Variables mapping para Type = Audio */}
                             {newCampaign.type === 'audio' && (() => {
