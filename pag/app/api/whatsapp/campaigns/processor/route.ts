@@ -3,13 +3,15 @@ import { prisma } from "@/lib/prisma";
 import { Client } from "@upstash/qstash";
 import { verifySignatureAppRouter } from "@upstash/qstash/nextjs";
 import { generateAudioForWhatsApp, getElevenLabsConfig, logApiUsage } from "@/lib/elevenlabs";
-import { uploadMediaToWhatsApp, sendWhatsAppAudio, getWhatsAppConfig } from "@/lib/whatsapp";
+import { uploadMediaToWhatsApp, sendWhatsAppAudio, getWhatsAppConfig, sendWhatsAppImage } from "@/lib/whatsapp";
 
 const qstash = new Client({
     token: process.env.QSTASH_TOKEN || "NO_TOKEN",
 });
 
-// Este endpoint DEBE ser llamado por QStash. Usamos verifySignatureAppRouter para seguridad criptográfica.
+const THROTTLE_MS = 150;
+const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+
 export const POST = verifySignatureAppRouter(async (req: Request) => {
     try {
         const body = await req.json();
@@ -24,42 +26,40 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
 
         if (!campaign) return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
 
-        // Safety check: Si fue pausada o cancelada después de encolarla
         if (campaign.status !== 'running') {
-            console.log(`Campaña ${campaign.id} ignorada por estado: ${campaign.status}`);
             return NextResponse.json({ success: true, message: `Abortado por estado ${campaign.status}` });
         }
 
-        // Buscar trabajos pendientes (LIMIT = batchSize)
         const pendingJobs = await prisma.campaignJob.findMany({
             where: { campaignId, status: "pending" },
             take: batchSize,
-            include: {
-                campaign: { include: { list: { include: { subscribers: { include: { contact: true } } } } } }
-            }
         });
 
-        // Si ya no hay pendientes, marcamos completada
         if (pendingJobs.length === 0) {
             await prisma.whatsAppCampaign.update({
                 where: { id: campaignId },
                 data: { status: "completed" }
             });
-            console.log(`Campaña ${campaign.id} finalizada exitosamente.`);
             return NextResponse.json({ success: true, message: "Campaign Completed" });
         }
 
-        // Config de WhatsApp
         const config = await getWhatsAppConfig();
         if (!config || !config.apiToken) throw new Error("Config WhatsApp faltante");
+
+        const phones = pendingJobs.map(j => j.phone);
+        const contacts = await prisma.whatsAppContact.findMany({
+            where: { phone: { in: phones } },
+        });
+        const contactMap = new Map(contacts.map(c => [c.phone, c]));
 
         let successCount = 0;
         let failCount = 0;
 
-        // TODO: Recuperar el mapa de variables y cruzar los datos
         const mapping = JSON.parse(campaign.mapping || "{}");
         const isAudio = campaign.type === 'audio';
+        const isImage = campaign.type === 'image';
         let audioConfig: any = null;
+        let imageConfig: any = null;
 
         if (isAudio) {
             audioConfig = JSON.parse(campaign.audioConfig || "{}");
@@ -67,9 +67,12 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
             if (!elConfig) throw new Error("Configuración ElevenLabs faltante para campaña de audio");
         }
 
-        const resolveContactField = (subscriber: any, columnMapped: string): string => {
-            if (!subscriber) return "";
-            const contact = subscriber.contact;
+        if (isImage) {
+            imageConfig = JSON.parse(campaign.audioConfig || "{}");
+        }
+
+        const resolveContactField = (contact: any, columnMapped: string): string => {
+            if (!contact) return "";
             switch (columnMapped) {
                 case "name": return contact.name || "";
                 case "phone": return contact.phone || "";
@@ -82,8 +85,9 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
             }
         };
 
-        for (const job of pendingJobs) {
-            const subscriber = job.campaign.list.subscribers.find((s: any) => s.contact.phone === job.phone);
+        for (let i = 0; i < pendingJobs.length; i++) {
+            const job = pendingJobs[i];
+            const contact = contactMap.get(job.phone) || null;
 
             try {
                 let messageId = "";
@@ -91,7 +95,7 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
                 if (isAudio) {
                     let prompt = audioConfig.prompt || "";
                     for (const [varKey, columnMapped] of Object.entries(mapping)) {
-                        const val = resolveContactField(subscriber, columnMapped as string);
+                        const val = resolveContactField(contact, columnMapped as string);
                         prompt = prompt.replace(new RegExp(`\\{${varKey}\\}`, 'g'), val);
                     }
 
@@ -103,6 +107,20 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
                         messageId = data.messages[0].id;
                     } else {
                         throw new Error("No message ID returned (Audio)");
+                    }
+                } else if (isImage) {
+                    let caption = imageConfig.caption || "";
+                    for (const [varKey, columnMapped] of Object.entries(mapping)) {
+                        const val = resolveContactField(contact, columnMapped as string);
+                        caption = caption.replace(new RegExp(`\\{${varKey}\\}`, 'g'), val);
+                    }
+
+                    const data = await sendWhatsAppImage(job.phone, imageConfig.imageUrl, caption);
+
+                    if (data.messages && data.messages.length > 0) {
+                        messageId = data.messages[0].id;
+                    } else {
+                        throw new Error("No message ID returned (Image)");
                     }
                 } else {
                     const componentsParam: any[] = [];
@@ -122,7 +140,7 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
 
                     let paramIdx = 0;
                     for (const [, columnMapped] of sortedEntries) {
-                        const val = resolveContactField(subscriber, columnMapped as string);
+                        const val = resolveContactField(contact, columnMapped as string);
                         const paramInfo = allNamedParams[paramIdx];
                         bodyParams.push({
                             type: "text",
@@ -190,16 +208,15 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
                     }
                 }
 
-                // Job Exitoso
                 await prisma.campaignJob.update({
                     where: { id: job.id },
                     data: { status: 'sent', messageId: messageId, processedAt: new Date() }
                 });
                 await logApiUsage(
                     "whatsapp",
-                    isAudio ? "send_audio" : "bulk_template",
+                    isAudio ? "send_audio" : isImage ? "send_image" : "bulk_template",
                     1,
-                    0.0773,
+                    isImage ? 0 : 0.0773,
                     { phone: job.phone, campaignId, messageId }
                 );
                 successCount++;
@@ -211,9 +228,12 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
                 });
                 failCount++;
             }
+
+            if (i < pendingJobs.length - 1) {
+                await sleep(THROTTLE_MS);
+            }
         }
 
-        // Actualizar Stats de Campaña
         const prevStats = JSON.parse(campaign.stats || "{}");
         prevStats.sent = (prevStats.sent || 0) + successCount;
         prevStats.failed = (prevStats.failed || 0) + failCount;
@@ -223,7 +243,6 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
             data: { stats: JSON.stringify(prevStats) }
         });
 
-        // Encolar siguiente lote si el Qstash env no está vacío
         const webhookUrl = process.env.UPSTASH_WEBHOOK_URL;
         if (process.env.QSTASH_TOKEN && webhookUrl) {
             await qstash.publishJSON({
