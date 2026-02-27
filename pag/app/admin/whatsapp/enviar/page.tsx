@@ -184,7 +184,8 @@ export default function CampanasPage() {
             ) : (
                 <div className="grid grid-cols-1 gap-4">
                     {campaigns.map((camp) => {
-                        const stats = JSON.parse(camp.stats || "{}")
+                        let stats: any = {}
+                        try { stats = JSON.parse(camp.stats || "{}") } catch {}
                         const progress = stats.total > 0 ? Math.round((stats.sent / stats.total) * 100) : 0
 
                         return (
@@ -351,7 +352,7 @@ export default function CampanasPage() {
                                     <h4 className="text-sm font-medium text-green-700">Personalización de Variables de Plantilla</h4>
                                     <p className="text-xs text-gray-500">Mapea las variables de la plantilla <code>{"{{1}}, {{2}}"}</code> a columnas de tu lista.</p>
 
-                                    {JSON.parse(selectedTemplate.variables || "[]").length === 0 ? (
+                                    {(() => { try { return JSON.parse(selectedTemplate.variables || "[]").length === 0 } catch { return true } })() ? (
                                         <div className="text-sm text-gray-400 italic">Esta plantilla no requiere variables personalizadas.</div>
                                     ) : (
                                         <div className="space-y-3">
