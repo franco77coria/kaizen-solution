@@ -102,7 +102,8 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
                     const bodyParams = [];
 
                     // Extraer componentes reales de la plantilla original para saber cuántas variables requiere Meta
-                    const templateBodyParams = campaign.template?.components?.find((c: any) => c.type === 'BODY')?.text || "";
+                    const parsedComponents = campaign.template?.components ? JSON.parse(campaign.template.components) : [];
+                    const templateBodyParams = parsedComponents.find((c: any) => c.type === 'BODY')?.text || "";
                     const requiredVarsCount = new Set(templateBodyParams.match(/\{\{\d+\}\}/g) || []).size;
 
                     for (const [varIndex, columnMapped] of Object.entries(mapping)) {
