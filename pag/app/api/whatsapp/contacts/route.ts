@@ -2,13 +2,26 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/lib/auth"
 
-export async function GET() {
+export async function GET(request: NextRequest) {
     const session = await auth()
     if (!session) {
         return NextResponse.json({ error: "No autorizado" }, { status: 401 })
     }
 
+    const { searchParams } = new URL(request.url)
+    const listId = searchParams.get("list")
+
+    const whereClause: any = {}
+    if (listId) {
+        whereClause.listSubscriptions = {
+            some: {
+                listId: listId
+            }
+        }
+    }
+
     const contacts = await prisma.whatsAppContact.findMany({
+        where: whereClause,
         orderBy: { lastMessageAt: "desc" },
     })
 

@@ -1,11 +1,12 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, Suspense } from "react"
+import { useSearchParams } from "next/navigation"
 import Papa from "papaparse"
-import { Upload, Users, FileSpreadsheet, CheckCircle2, AlertCircle, Plus, Edit2, Trash2 } from "lucide-react"
+import { Upload, Users, FileSpreadsheet, CheckCircle2, AlertCircle, Plus, Edit2, Trash2, UserMinus } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 
-export default function ContactosPage() {
+function ContactosPageContent() {
     const [lists, setLists] = useState<any[]>([])
     const [contacts, setContacts] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
@@ -29,15 +30,18 @@ export default function ContactosPage() {
     const [editPhone, setEditPhone] = useState("")
 
     const fileInputRef = useRef<HTMLInputElement>(null)
+    const searchParams = useSearchParams()
+    const currentListId = searchParams.get("list")
 
     useEffect(() => {
         loadContacts()
         fetchLists()
-    }, [])
+    }, [currentListId])
 
     const loadContacts = async () => {
         try {
-            const res = await fetch("/api/whatsapp/contacts")
+            const url = currentListId ? `/api/whatsapp/contacts?list=${currentListId}` : "/api/whatsapp/contacts"
+            const res = await fetch(url)
             const data = await res.json()
             setContacts(Array.isArray(data) ? data : [])
         } catch (e) {
@@ -163,13 +167,28 @@ export default function ContactosPage() {
         }
     }
 
+    const handleRemoveFromList = async (id: string) => {
+        if (!currentListId) return;
+        if (!confirm("¿Seguro que deseas remover este contacto de esta lista particular? (No se eliminará del directorio general)")) return;
+        try {
+            const res = await fetch(`/api/whatsapp/lists/${currentListId}/remove-contact?contactId=${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                loadContacts()
+            } else {
+                alert("Error al remover el contacto de la lista.")
+            }
+        } catch (e) {
+            console.error(e)
+        }
+    }
+
     return (
         <div className="p-6 max-w-7xl mx-auto space-y-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
                         <Users className="text-green-600" />
-                        Agenda y Contactos
+                        {currentListId ? "Contactos de la Lista" : "Agenda y Contactos"}
                     </h1>
                     <p className="text-gray-500 mt-1 text-sm">Administra tu base de datos de usuarios o importa nuevos desde CSV.</p>
                 </div>
@@ -272,10 +291,19 @@ export default function ContactosPage() {
                                                             >
                                                                 <Edit2 size={16} />
                                                             </button>
+                                                            {currentListId && (
+                                                                <button
+                                                                    onClick={() => handleRemoveFromList(c.id)}
+                                                                    className="p-1.5 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                                                                    title="Remover de esta lista"
+                                                                >
+                                                                    <UserMinus size={16} />
+                                                                </button>
+                                                            )}
                                                             <button
                                                                 onClick={() => handleDeleteContact(c.id)}
                                                                 className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                                title="Eliminar contacto"
+                                                                title="Eliminar contacto permanentemente"
                                                             >
                                                                 <Trash2 size={16} />
                                                             </button>
@@ -498,5 +526,13 @@ export default function ContactosPage() {
                 </div>
             )}
         </div>
+    )
+}
+
+export default function ContactosPage() {
+    return (
+        <Suspense fallback={<div className="p-6">Cargando contactos...</div>}>
+            <ContactosPageContent />
+        </Suspense>
     )
 }
