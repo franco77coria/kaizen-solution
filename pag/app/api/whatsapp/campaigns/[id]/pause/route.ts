@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
     try {
+        const session = await auth()
+        if (!session) {
+            return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+        }
         const campaignId = params.id;
 
         // Solo marca la BD como 'paused'. El próximo Worker de QStash que ejecute un batch
