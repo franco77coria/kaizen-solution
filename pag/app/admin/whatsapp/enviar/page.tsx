@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { SendHorizonal, Plus, PlayCircle, PauseCircle, Trash2, Clock, ImageIcon } from "lucide-react"
+import { SendHorizonal, Plus, PlayCircle, PauseCircle, Trash2, Clock, ImageIcon, Zap } from "lucide-react"
 
 export default function CampanasPage() {
     const [campaigns, setCampaigns] = useState<any[]>([])
@@ -14,6 +14,7 @@ export default function CampanasPage() {
     const [newCampaign, setNewCampaign] = useState({
         name: "",
         type: "template" as "template" | "audio" | "image",
+        audienceMode: "list" as "list" | "active_window",
         listId: "",
         templateId: "",
         mapping: {} as Record<string, string>,
@@ -22,6 +23,8 @@ export default function CampanasPage() {
     })
 
     const [selectedTemplate, setSelectedTemplate] = useState<any>(null)
+    const [activeWindowContacts, setActiveWindowContacts] = useState<any[]>([])
+    const [loadingWindow, setLoadingWindow] = useState(false)
     const mockColumns = ["phone", "name", "tags", "source", "externalId"]
 
     useEffect(() => {
@@ -54,6 +57,16 @@ export default function CampanasPage() {
         } finally {
             setLoading(false)
         }
+    }
+
+    const fetchActiveWindowContacts = async () => {
+        setLoadingWindow(true)
+        try {
+            const res = await fetch("/api/whatsapp/contacts/active-window")
+            const data = await res.json()
+            setActiveWindowContacts(data.contacts || [])
+        } catch { setActiveWindowContacts([]) }
+        finally { setLoadingWindow(false) }
     }
 
     const handleTemplateSelect = (tempId: string) => {
@@ -90,8 +103,8 @@ export default function CampanasPage() {
             if (res.ok) {
                 setIsModalOpen(false)
                 setNewCampaign({
-                    name: "", type: "template", listId: "", templateId: "", mapping: {},
-                    audioConfig: { voiceId: voices[0]?.voice_id || "", prompt: "" },
+                    name: "", type: "template", audienceMode: "list", listId: "", templateId: "", mapping: {},
+                    audioConfig: { voiceId: voices[0]?.voice_id || "", prompt: "", imageUrl: "", caption: "" },
                     scheduledFor: ""
                 })
                 fetchData()
@@ -295,13 +308,82 @@ export default function CampanasPage() {
                                     />
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Audiencia (Lista)</label>
-                                    <select required value={newCampaign.listId} onChange={(e) => setNewCampaign({ ...newCampaign, listId: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-gray-900 outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-400">
-                                        <option value="">Seleccione una lista...</option>
-                                        {lists.map(l => <option key={l.id} value={l.id}>{l.name} ({l._count?.subscribers || 0} contactos)</option>)}
-                                    </select>
-                                </div>
+                                {(newCampaign.type === 'image' || newCampaign.type === 'audio') && (
+                                    <div className="col-span-2">
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Audiencia</label>
+                                        <div className="flex bg-gray-100 rounded-xl p-1 gap-1">
+                                            <button
+                                                type="button"
+                                                onClick={() => setNewCampaign({ ...newCampaign, audienceMode: "list", listId: "" })}
+                                                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${newCampaign.audienceMode === 'list' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                            >
+                                                Lista específica
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setNewCampaign({ ...newCampaign, audienceMode: "active_window", listId: "__active_window__" })
+                                                    if (activeWindowContacts.length === 0) fetchActiveWindowContacts()
+                                                }}
+                                                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-1.5 ${newCampaign.audienceMode === 'active_window' ? 'bg-white text-emerald-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                            >
+                                                <Zap size={14} />
+                                                Ventana Activa (24hs)
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {(newCampaign.type === 'template' || newCampaign.audienceMode === 'list') && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            {newCampaign.type === 'template' ? 'Audiencia (Lista)' : 'Lista'}
+                                        </label>
+                                        <select required={newCampaign.audienceMode === 'list'} value={newCampaign.listId === '__active_window__' ? '' : newCampaign.listId} onChange={(e) => setNewCampaign({ ...newCampaign, listId: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-gray-900 outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-400">
+                                            <option value="">Seleccione una lista...</option>
+                                            {lists.map(l => <option key={l.id} value={l.id}>{l.name} ({l._count?.subscribers || 0} contactos)</option>)}
+                                        </select>
+                                    </div>
+                                )}
+
+                                {newCampaign.audienceMode === 'active_window' && (newCampaign.type === 'image' || newCampaign.type === 'audio') && (
+                                    <div className="col-span-2">
+                                        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <div className="flex items-center gap-2">
+                                                    <Zap size={16} className="text-emerald-600" />
+                                                    <span className="text-sm font-medium text-emerald-800">Contactos con ventana activa</span>
+                                                </div>
+                                                <button type="button" onClick={fetchActiveWindowContacts} className="text-xs text-emerald-600 hover:text-emerald-800 underline">
+                                                    {loadingWindow ? 'Cargando...' : 'Refrescar'}
+                                                </button>
+                                            </div>
+                                            {loadingWindow ? (
+                                                <div className="flex justify-center py-3">
+                                                    <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <p className="text-2xl font-bold text-emerald-700">{activeWindowContacts.length} <span className="text-sm font-normal">contactos disponibles</span></p>
+                                                    <p className="text-[11px] text-emerald-600 mt-1">Estos contactos te escribieron en las últimas 24hs. Les podés enviar cualquier mensaje libre sin costo de Meta.</p>
+                                                    {activeWindowContacts.length > 0 && activeWindowContacts.length <= 10 && (
+                                                        <div className="mt-2 space-y-1">
+                                                            {activeWindowContacts.map((c: any) => (
+                                                                <div key={c.id} className="flex items-center justify-between text-xs bg-white/60 px-2 py-1 rounded">
+                                                                    <span className="text-gray-700">{c.name || c.phone}</span>
+                                                                    <span className="text-gray-400">{c.phone}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                    {activeWindowContacts.length > 10 && (
+                                                        <p className="text-[11px] text-emerald-500 mt-2">Mostrando resumen. {activeWindowContacts.length} contactos serán incluidos.</p>
+                                                    )}
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
 
                                 {newCampaign.type === 'template' && (
                                     <div>
@@ -492,8 +574,9 @@ export default function CampanasPage() {
                             })()}
 
                             {(() => {
+                                const isWindow = newCampaign.audienceMode === 'active_window';
                                 const selectedListObj = lists.find(l => l.id === newCampaign.listId);
-                                const subsCount = selectedListObj?._count?.subscribers || 0;
+                                const subsCount = isWindow ? activeWindowContacts.length : (selectedListObj?._count?.subscribers || 0);
                                 if (subsCount === 0) return null;
                                 const isFreeType = newCampaign.type === 'image' || newCampaign.type === 'audio';
                                 const estMeta = isFreeType ? 0 : subsCount * 0.0773;
@@ -516,10 +599,10 @@ export default function CampanasPage() {
 
                             <div className="col-span-2 flex gap-3 justify-end pt-4 border-t border-gray-200">
                                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-5 py-2 text-sm text-gray-500 hover:text-gray-700">Cancelar</button>
-                                <button type="button" onClick={handleTestCampaign} disabled={!newCampaign.listId || (newCampaign.type === 'template' && !newCampaign.templateId) || (newCampaign.type === 'image' && !newCampaign.audioConfig.imageUrl)} className="px-5 py-2 text-sm bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 disabled:opacity-50 rounded-lg transition-colors">
+                                <button type="button" onClick={handleTestCampaign} disabled={(!newCampaign.listId && newCampaign.audienceMode !== 'active_window') || (newCampaign.type === 'template' && !newCampaign.templateId) || (newCampaign.type === 'image' && !newCampaign.audioConfig.imageUrl)} className="px-5 py-2 text-sm bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 disabled:opacity-50 rounded-lg transition-colors">
                                     Enviar Prueba a Mi WA
                                 </button>
-                                <button type="submit" disabled={!newCampaign.listId || (newCampaign.type === 'template' && !newCampaign.templateId) || (newCampaign.type === 'image' && !newCampaign.audioConfig.imageUrl)} className="px-5 py-2 text-sm bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white rounded-lg transition-colors">
+                                <button type="submit" disabled={(!newCampaign.listId && newCampaign.audienceMode !== 'active_window') || (newCampaign.type === 'template' && !newCampaign.templateId) || (newCampaign.type === 'image' && !newCampaign.audioConfig.imageUrl) || (newCampaign.audienceMode === 'active_window' && activeWindowContacts.length === 0)} className="px-5 py-2 text-sm bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white rounded-lg transition-colors">
                                     Guardar Borrador
                                 </button>
                             </div>
