@@ -64,7 +64,7 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
         if (isAudio) {
             audioConfig = JSON.parse(campaign.audioConfig || "{}");
             const elConfig = await getElevenLabsConfig();
-            if (!elConfig) throw new Error("Configuración ElevenLabs faltante para campaña de audio");
+            if (!elConfig) throw new Error("ConfiguraciÃ³n ElevenLabs faltante para campaÃ±a de audio");
         }
 
         if (isImage) {
@@ -212,6 +212,26 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
                     where: { id: job.id },
                     data: { status: 'sent', messageId: messageId, processedAt: new Date() }
                 });
+
+                let msgContent = `[CampaÃ±a: ${campaign.name}]`
+                if (isAudio) msgContent = `[Audio IA - ${campaign.name}]`
+                else if (isImage) msgContent = `[Imagen - ${campaign.name}]`
+                else if (campaign.template?.name) msgContent = `[Template: ${campaign.template.name}]`
+
+                try {
+                    await prisma.whatsAppMessage.create({
+                        data: {
+                            messageId: messageId || undefined,
+                            direction: "outbound",
+                            phone: job.phone,
+                            content: msgContent,
+                            type: isAudio ? "audio" : isImage ? "image" : "template",
+                            status: "sent",
+                            timestamp: new Date(),
+                        }
+                    });
+                } catch (_) {}
+
                 await logApiUsage(
                     "whatsapp",
                     isAudio ? "send_audio" : isImage ? "send_image" : "bulk_template",
