@@ -20,6 +20,9 @@ interface Contact {
     name: string | null
     lastMessageAt: string | null
     totalMessages: number
+    unreadCount?: number
+    lastMessage?: string
+    lastMessageDirection?: string
 }
 
 export default function MensajesPage() {
@@ -38,7 +41,6 @@ export default function MensajesPage() {
     const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false)
     const [newChatPhone, setNewChatPhone] = useState('')
 
-    // Plantillas (Para conversaciones vacías o iniciales)
     const [templates, setTemplates] = useState<{ id: string, name: string, language: string, bodyText: string, components?: any[] }[]>([])
     const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false)
     const [selectedTemplate, setSelectedTemplate] = useState<any>(null)
@@ -90,9 +92,6 @@ export default function MensajesPage() {
         try {
             const res = await fetch('/api/whatsapp/templates')
             const data = await res.json()
-            // #region agent log
-            fetch('http://127.0.0.1:7243/ingest/f9affe2b-8796-441f-9dcd-82782f1c48ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'mensajes-page.tsx:loadTemplates',message:'Templates API response',data:{hasSuccess:data.success,templateCount:data.templates?.length,firstTemplate:data.templates?.[0]?{name:data.templates[0].name,components:data.templates[0].components?.slice(0,3)}:null},timestamp:Date.now(),hypothesisId:'H2'})}).catch(()=>{});
-            // #endregion
             if (data.success && data.templates) {
                 setTemplates(data.templates.filter((t: any) => t.status === 'APPROVED'))
             } else if (Array.isArray(data)) {
@@ -110,12 +109,15 @@ export default function MensajesPage() {
             const data = await res.json()
             setMessages(data.reverse())
 
-            // Mark as read
             await fetch('/api/whatsapp/messages', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ phone }),
             })
+
+            setConversations(prev => prev.map(c =>
+                c.phone === phone ? { ...c, unreadCount: 0 } : c
+            ))
         } catch (e) {
             console.error(e)
         } finally {
@@ -220,9 +222,6 @@ export default function MensajesPage() {
             })
         }
 
-        // #region agent log
-        fetch('http://127.0.0.1:7243/ingest/f9affe2b-8796-441f-9dcd-82782f1c48ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'mensajes-page.tsx:sendManualTemplate',message:'Sending template with components',data:{templateName:selectedTemplate.name,templateVars:templateVariables,apiComponents,componentsRaw:selectedTemplate.components},timestamp:Date.now(),hypothesisId:'H2'})}).catch(()=>{});
-        // #endregion
         try {
             const res = await fetch('/api/whatsapp/send', {
                 method: 'POST',
@@ -245,7 +244,7 @@ export default function MensajesPage() {
                 alert(data.error || 'Error enviando la plantilla oficial')
             }
         } catch (e) {
-            alert('Error de conexión al enviar plantilla')
+            alert('Error de conexiÃ³n al enviar plantilla')
         } finally {
             setSending(false)
         }
@@ -253,7 +252,6 @@ export default function MensajesPage() {
 
     const startNewChat = () => {
         if (!newChatPhone.trim()) return;
-        // Limpiamos el número de posibles espacios o + 
         const cleanPhone = newChatPhone.replace(/\D/g, '');
         setSelectedPhone(cleanPhone);
         setIsNewChatModalOpen(false);
@@ -278,14 +276,14 @@ export default function MensajesPage() {
                         <button
                             onClick={() => setIsNewChatModalOpen(true)}
                             className="w-8 h-8 rounded-full bg-green-50 text-green-600 hover:bg-green-100 flex items-center justify-center transition-colors"
-                            title="Nueva Conversación"
+                            title="Nueva ConversaciÃ³n"
                         >
                             +
                         </button>
                     </div>
                     <input
                         type="text"
-                        placeholder="Buscar conversación..."
+                        placeholder="Buscar conversaciÃ³n..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-400"
@@ -302,28 +300,47 @@ export default function MensajesPage() {
                             {search ? 'Sin resultados' : 'No hay conversaciones'}
                         </div>
                     ) : (
-                        filtered.map((c) => (
-                            <button
-                                key={c.phone}
-                                onClick={() => setSelectedPhone(c.phone)}
-                                className={`w-full text-left px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors ${selectedPhone === c.phone ? 'bg-green-50 border-l-2 border-l-green-500' : ''
-                                    }`}
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500 flex-shrink-0">
-                                        {getInitials(c.name || c.phone)}
+                        filtered.map((c) => {
+                            const unread = c.unreadCount || 0
+                            return (
+                                <button
+                                    key={c.phone}
+                                    onClick={() => setSelectedPhone(c.phone)}
+                                    className={`w-full text-left px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors ${selectedPhone === c.phone ? 'bg-green-50 border-l-2 border-l-green-500' : ''}`}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="relative flex-shrink-0">
+                                            <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500">
+                                                {getInitials(c.name || c.phone)}
+                                            </div>
+                                            {unread > 0 && (
+                                                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center bg-green-500 text-white text-[10px] font-bold rounded-full px-1">
+                                                    {unread > 99 ? '99+' : unread}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center justify-between">
+                                                <p className={`text-sm truncate ${unread > 0 ? 'font-bold text-gray-900' : 'font-medium text-gray-900'}`}>
+                                                    {c.name || formatPhone(c.phone)}
+                                                </p>
+                                                <span className={`text-[10px] flex-shrink-0 ml-2 ${unread > 0 ? 'text-green-600 font-semibold' : 'text-gray-400'}`}>
+                                                    {formatTime(c.lastMessageAt)}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center justify-between mt-0.5">
+                                                <p className={`text-[12px] truncate pr-2 ${unread > 0 ? 'text-gray-700 font-medium' : 'text-gray-400'}`}>
+                                                    {c.lastMessageDirection === 'outbound' && (
+                                                        <span className="text-gray-400 mr-0.5">Tu: </span>
+                                                    )}
+                                                    {c.lastMessage || `${c.totalMessages} mensaje${c.totalMessages !== 1 ? 's' : ''}`}
+                                                </p>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-gray-900 truncate">
-                                            {c.name || formatPhone(c.phone)}
-                                        </p>
-                                        <p className="text-[11px] text-gray-400">
-                                            {c.totalMessages} mensaje{c.totalMessages !== 1 ? 's' : ''} · {formatTime(c.lastMessageAt)}
-                                        </p>
-                                    </div>
-                                </div>
-                            </button>
-                        ))
+                                </button>
+                            )
+                        })
                     )}
                 </div>
             </div>
@@ -333,9 +350,9 @@ export default function MensajesPage() {
                 {!selectedPhone ? (
                     <div className="flex-1 flex items-center justify-center text-center">
                         <div>
-                            <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-4">💬</div>
-                            <p className="text-sm text-gray-500 font-medium">Seleccioná una conversación</p>
-                            <p className="text-xs text-gray-400 mt-1">Elegí un contacto de la lista para ver el chat</p>
+                            <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-4">ðŸ’¬</div>
+                            <p className="text-sm text-gray-500 font-medium">Selecciona una conversaciÃ³n</p>
+                            <p className="text-xs text-gray-400 mt-1">Elige un contacto de la lista para ver el chat</p>
                         </div>
                     </div>
                 ) : (
@@ -358,12 +375,12 @@ export default function MensajesPage() {
                                 className="text-xs font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-md transition-colors border border-amber-200"
                                 title="Enviar mensaje oficial pre-aprobado (Regla 24h)"
                             >
-                                ⚡ Enviar Plantilla Oficial
+                                Enviar Plantilla Oficial
                             </button>
                         </div>
 
                         {/* Messages */}
-                        <div className="flex-1 overflow-y-auto p-6 space-y-3">
+                        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-1">
                             {chatLoading ? (
                                 <div className="flex items-center justify-center h-full">
                                     <div className="w-6 h-6 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
@@ -371,30 +388,36 @@ export default function MensajesPage() {
                             ) : messages.length === 0 ? (
                                 <div className="text-center text-sm text-gray-400 mt-12">No hay mensajes</div>
                             ) : (
-                                messages.map((msg) => (
-                                    <div
-                                        key={msg.id}
-                                        className={`flex ${msg.direction === 'outbound' ? 'justify-end' : 'justify-start'}`}
-                                    >
-                                        <div
-                                            className={`max-w-[70%] px-4 py-2.5 rounded-2xl text-sm ${msg.direction === 'outbound'
-                                                ? 'bg-green-500 text-white rounded-br-md'
-                                                : 'bg-white text-gray-800 border border-gray-200 rounded-bl-md shadow-sm'
-                                                }`}
-                                        >
-                                            <p className="whitespace-pre-wrap break-words">{msg.content}</p>
-                                            <p className={`text-[10px] mt-1 ${msg.direction === 'outbound' ? 'text-green-100' : 'text-gray-400'
-                                                }`}>
-                                                {formatMessageTime(msg.timestamp)}
-                                                {msg.direction === 'outbound' && (
-                                                    <span className="ml-2">
-                                                        {msg.status === 'read' ? '✓✓' : msg.status === 'delivered' ? '✓✓' : '✓'}
+                                messages.map((msg, idx) => {
+                                    const prevMsg = idx > 0 ? messages[idx - 1] : null
+                                    const showDate = !prevMsg || !isSameDay(msg.timestamp, prevMsg.timestamp)
+
+                                    return (
+                                        <div key={msg.id}>
+                                            {showDate && (
+                                                <div className="flex justify-center my-3">
+                                                    <span className="text-[11px] text-gray-500 bg-white px-3 py-1 rounded-full shadow-sm border border-gray-100">
+                                                        {formatDateSeparator(msg.timestamp)}
                                                     </span>
-                                                )}
-                                            </p>
+                                                </div>
+                                            )}
+                                            <div className={`flex ${msg.direction === 'outbound' ? 'justify-end' : 'justify-start'} mb-1`}>
+                                                <div
+                                                    className={`max-w-[70%] px-3.5 py-2 rounded-2xl text-sm relative ${msg.direction === 'outbound'
+                                                        ? 'bg-[#d9fdd3] text-gray-800 rounded-tr-md'
+                                                        : 'bg-white text-gray-800 border border-gray-100 rounded-tl-md shadow-sm'
+                                                    }`}
+                                                >
+                                                    <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                                                    <div className={`flex items-center justify-end gap-1 mt-0.5 ${msg.direction === 'outbound' ? 'text-gray-500' : 'text-gray-400'}`}>
+                                                        <span className="text-[10px]">{formatMessageTime(msg.timestamp)}</span>
+                                                        {msg.direction === 'outbound' && <StatusTicks status={msg.status} />}
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))
+                                    )
+                                })
                             )}
                             <div ref={chatEndRef} />
                         </div>
@@ -403,7 +426,7 @@ export default function MensajesPage() {
                         <div className="px-6 py-4 bg-white border-t border-gray-200">
                             {isAudioMode && (
                                 <div className="mb-3 flex items-center gap-2">
-                                    <span className="text-xs font-semibold text-purple-600 bg-purple-50 px-2 py-1 rounded-md border border-purple-100">Modo Audio IA Activado 🎙️</span>
+                                    <span className="text-xs font-semibold text-purple-600 bg-purple-50 px-2 py-1 rounded-md border border-purple-100">Modo Audio IA Activado</span>
                                     {voices.length > 0 ? (
                                         <select
                                             value={selectedVoice}
@@ -420,11 +443,10 @@ export default function MensajesPage() {
                             {selectedFile && (
                                 <div className="mb-2 bg-blue-50/50 border border-blue-100 rounded-lg p-2 px-3 flex items-center justify-between">
                                     <div className="flex items-center gap-2">
-                                        <span className="text-xl">📎</span>
                                         <span className="text-sm text-blue-800 font-medium truncate max-w-[200px]">{selectedFile.name}</span>
                                         <span className="text-xs text-blue-500">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</span>
                                     </div>
-                                    <button onClick={() => setSelectedFile(null)} className="text-gray-400 hover:text-red-500 font-bold p-1">×</button>
+                                    <button onClick={() => setSelectedFile(null)} className="text-gray-400 hover:text-red-500 font-bold p-1">x</button>
                                 </div>
                             )}
                             <div className="flex gap-2">
@@ -441,32 +463,36 @@ export default function MensajesPage() {
                                     onClick={() => fileInputRef.current?.click()}
                                     title="Adjuntar archivo"
                                     disabled={isAudioMode || sending}
-                                    className="w-10 flex-shrink-0 flex items-center justify-center rounded-xl border bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100 transition-colors disabled:opacity-50"
+                                    className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full border bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100 transition-colors disabled:opacity-50"
                                 >
-                                    📎
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" /></svg>
                                 </button>
                                 <button
                                     onClick={() => setIsAudioMode(!isAudioMode)}
                                     title={isAudioMode ? "Cambiar a Texto" : "Cambiar a Audio IA"}
-                                    className={`w-10 flex-shrink-0 flex items-center justify-center rounded-xl border transition-colors ${isAudioMode ? 'bg-purple-100 border-purple-200 text-purple-600' : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100'}`}
+                                    className={`w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full border transition-colors ${isAudioMode ? 'bg-purple-100 border-purple-200 text-purple-600' : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100'}`}
                                 >
-                                    {isAudioMode ? '🎙️' : '⌨️'}
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" /><path d="M19 10v2a7 7 0 01-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></svg>
                                 </button>
                                 <input
                                     type="text"
-                                    placeholder={isAudioMode ? "Escribí el texto que la IA narrará (se enviará como nota de voz)..." : "Escribir mensaje... (solo funciona en ventana 24h)"}
+                                    placeholder={isAudioMode ? "Escribi el texto que la IA narrara..." : "Escribir mensaje..."}
                                     value={replyText}
                                     onChange={(e) => setReplyText(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && handleReply()}
-                                    className={`flex-1 px-4 py-2.5 bg-gray-50 border rounded-xl text-sm focus:outline-none transition-colors ${isAudioMode ? 'border-purple-200 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-400' : 'border-gray-200 focus:ring-2 focus:ring-green-500/20 focus:border-green-400'}`}
+                                    className={`flex-1 px-4 py-2.5 bg-gray-50 border rounded-full text-sm focus:outline-none transition-colors ${isAudioMode ? 'border-purple-200 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-400' : 'border-gray-200 focus:ring-2 focus:ring-green-500/20 focus:border-green-400'}`}
                                     disabled={sending}
                                 />
                                 <button
                                     onClick={handleReply}
                                     disabled={sending || (!replyText.trim() && !selectedFile) || (isAudioMode && !selectedVoice)}
-                                    className={`px-5 py-2.5 text-white rounded-xl text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${isAudioMode ? 'bg-purple-600 hover:bg-purple-700' : 'bg-green-500 hover:bg-green-600'}`}
+                                    className={`w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${isAudioMode ? 'bg-purple-600 hover:bg-purple-700' : 'bg-green-500 hover:bg-green-600'}`}
                                 >
-                                    {sending ? '...' : (isAudioMode ? 'Narrar y Enviar' : 'Enviar')}
+                                    {sending ? (
+                                        <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                    ) : (
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" /></svg>
+                                    )}
                                 </button>
                             </div>
                         </div>
@@ -474,17 +500,17 @@ export default function MensajesPage() {
                 )}
             </div>
 
-            {/* Modal Nueva Conversación */}
+            {/* Modal Nueva ConversaciÃ³n */}
             {isNewChatModalOpen && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
                     <div className="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden">
                         <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                            <h3 className="font-bold text-gray-900">Nueva Conversación</h3>
-                            <button onClick={() => setIsNewChatModalOpen(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+                            <h3 className="font-bold text-gray-900">Nueva ConversaciÃ³n</h3>
+                            <button onClick={() => setIsNewChatModalOpen(false)} className="text-gray-400 hover:text-gray-600 text-lg">x</button>
                         </div>
                         <div className="p-4 space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Número de WhatsApp (con código de país)</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">NÃºmero de WhatsApp (con cÃ³digo de paÃ­s)</label>
                                 <input
                                     type="text"
                                     placeholder="Ej: 54911223344"
@@ -499,23 +525,23 @@ export default function MensajesPage() {
                                 disabled={!newChatPhone.trim()}
                                 className="w-full bg-green-500 hover:bg-green-600 text-white font-medium py-2 rounded-lg text-sm transition-colors disabled:opacity-50"
                             >
-                                Abrir Carpeta de Chat
+                                Abrir Chat
                             </button>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Modal de Plantillas Rápidas (Para iniciar chats) */}
+            {/* Modal de Plantillas */}
             {isTemplateModalOpen && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
                     <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[80vh]">
                         <div className="p-4 border-b border-amber-200 bg-amber-50 flex justify-between items-center">
                             <div>
-                                <h3 className="font-bold text-amber-900 flex items-center gap-2">⚡ Enviar Plantilla (Regla 24h)</h3>
-                                <p className="text-xs text-amber-700/80 mt-1">Usa esto si Meta te rechaza mensajes libres porque el cliente no te contactó recientemente.</p>
+                                <h3 className="font-bold text-amber-900">Enviar Plantilla (Regla 24h)</h3>
+                                <p className="text-xs text-amber-700/80 mt-1">Usa esto si Meta rechaza mensajes libres porque el cliente no te contactÃ³ recientemente.</p>
                             </div>
-                            <button onClick={() => setIsTemplateModalOpen(false)} className="text-amber-500 hover:text-amber-700">✕</button>
+                            <button onClick={() => setIsTemplateModalOpen(false)} className="text-amber-500 hover:text-amber-700 text-lg">x</button>
                         </div>
 
                         <div className="p-5 flex-1 overflow-y-auto space-y-4">
@@ -527,14 +553,11 @@ export default function MensajesPage() {
                                     onChange={(e) => {
                                         const found = templates.find(t => t.id === e.target.value)
                                         setSelectedTemplate(found || null)
-
                                         const vars: Record<string, string> = {}
                                         if (found && found.components) {
                                             found.components.forEach((c: any) => {
                                                 const namedParams = c.example?.header_text_named_params || c.example?.body_text_named_params || []
-                                                namedParams.forEach((p: any) => {
-                                                    vars[p.param_name] = ""
-                                                })
+                                                namedParams.forEach((p: any) => { vars[p.param_name] = "" })
                                             })
                                         }
                                         setTemplateVariables(vars)
@@ -549,22 +572,12 @@ export default function MensajesPage() {
 
                             {selectedTemplate && (
                                 <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                                    <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Previsualización del texto a enviar:</p>
+                                    <p className="text-xs font-semibold text-gray-500 uppercase mb-2">PrevisualizaciÃ³n:</p>
                                     <p className="text-sm text-gray-700 whitespace-pre-wrap">
                                         {selectedTemplate.bodyText || 'Sin contenido'}
                                     </p>
                                 </div>
                             )}
-
-                            {/* #region agent log - visual debug */}
-                            {selectedTemplate && (
-                                <div className="bg-red-50 p-3 rounded border border-red-300 mt-2 text-[10px] font-mono text-red-800 break-all">
-                                    <p className="font-bold mb-1">[DEBUG] Template data:</p>
-                                    <p>vars detected: {JSON.stringify(templateVariables)}</p>
-                                    <p>named params: {JSON.stringify(selectedTemplate.components?.flatMap((c: any) => (c.example?.header_text_named_params || c.example?.body_text_named_params || []).map((p: any) => p.param_name)))}</p>
-                                </div>
-                            )}
-                            {/* #endregion */}
 
                             {selectedTemplate && Object.keys(templateVariables).length > 0 && (
                                 <div className="bg-amber-50 p-4 rounded-lg border border-amber-200 mt-2">
@@ -585,10 +598,6 @@ export default function MensajesPage() {
                                     </div>
                                 </div>
                             )}
-
-                            <p className="text-[11px] text-gray-400 italic">
-                                Nota: Si tu plantilla tiene variables dinámicas, completá los campos arriba antes de enviar. Las variables se detectan automáticamente desde la configuración del template en Meta.
-                            </p>
                         </div>
 
                         <div className="p-4 border-t border-gray-100 flex justify-end gap-3 bg-white">
@@ -601,7 +610,7 @@ export default function MensajesPage() {
                             <button
                                 onClick={sendManualTemplate}
                                 disabled={!selectedTemplate || sending}
-                                className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50"
+                                className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold rounded-lg transition-colors disabled:opacity-50"
                             >
                                 {sending ? 'Enviando...' : 'Despachar Plantilla'}
                             </button>
@@ -610,6 +619,30 @@ export default function MensajesPage() {
                 </div>
             )}
         </div>
+    )
+}
+
+function StatusTicks({ status }: { status: string }) {
+    if (status === 'read') {
+        return (
+            <svg width="16" height="11" viewBox="0 0 16 11" fill="none">
+                <path d="M11.071.653a.457.457 0 00-.304-.102.493.493 0 00-.381.178L6.12 6.2 3.809 3.793a.453.453 0 00-.634-.057.465.465 0 00-.058.639L6.12 7.8l.234-.009 4.717-6.822a.457.457 0 000-.316z" fill="#53bdeb" />
+                <path d="M14.071.653a.457.457 0 00-.304-.102.493.493 0 00-.381.178L9.12 6.2 6.809 3.793a.453.453 0 00-.634-.057.465.465 0 00-.058.639L9.12 7.8l.234-.009 4.717-6.822a.457.457 0 000-.316z" fill="#53bdeb" />
+            </svg>
+        )
+    }
+    if (status === 'delivered') {
+        return (
+            <svg width="16" height="11" viewBox="0 0 16 11" fill="none">
+                <path d="M11.071.653a.457.457 0 00-.304-.102.493.493 0 00-.381.178L6.12 6.2 3.809 3.793a.453.453 0 00-.634-.057.465.465 0 00-.058.639L6.12 7.8l.234-.009 4.717-6.822a.457.457 0 000-.316z" fill="#92a58c" />
+                <path d="M14.071.653a.457.457 0 00-.304-.102.493.493 0 00-.381.178L9.12 6.2 6.809 3.793a.453.453 0 00-.634-.057.465.465 0 00-.058.639L9.12 7.8l.234-.009 4.717-6.822a.457.457 0 000-.316z" fill="#92a58c" />
+            </svg>
+        )
+    }
+    return (
+        <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+            <path d="M8.071.653a.457.457 0 00-.304-.102.493.493 0 00-.381.178L3.12 6.2.809 3.793a.453.453 0 00-.634-.057.465.465 0 00-.058.639L3.12 7.8l.234-.009L8.071.969a.457.457 0 000-.316z" fill="#92a58c" />
+        </svg>
     )
 }
 
@@ -633,13 +666,34 @@ function formatTime(d: string | null): string {
     const now = new Date()
     const diff = now.getTime() - dt.getTime()
     if (diff < 60000) return 'ahora'
-    if (diff < 3600000) return Math.floor(diff / 60000) + 'min'
-    if (diff < 86400000) return Math.floor(diff / 3600000) + 'h'
-    return dt.getDate() + '/' + (dt.getMonth() + 1)
+    if (diff < 3600000) return Math.floor(diff / 60000) + ' min'
+    if (diff < 86400000) {
+        return dt.getHours().toString().padStart(2, '0') + ':' + dt.getMinutes().toString().padStart(2, '0')
+    }
+    if (diff < 604800000) {
+        const days = ['dom', 'lun', 'mar', 'mie', 'jue', 'vie', 'sab']
+        return days[dt.getDay()]
+    }
+    return dt.getDate() + '/' + (dt.getMonth() + 1) + '/' + dt.getFullYear().toString().slice(-2)
 }
 
 function formatMessageTime(d: string): string {
     if (!d) return ''
     const dt = new Date(d)
     return dt.getHours().toString().padStart(2, '0') + ':' + dt.getMinutes().toString().padStart(2, '0')
+}
+
+function isSameDay(a: string, b: string): boolean {
+    const da = new Date(a)
+    const db = new Date(b)
+    return da.getFullYear() === db.getFullYear() && da.getMonth() === db.getMonth() && da.getDate() === db.getDate()
+}
+
+function formatDateSeparator(d: string): string {
+    const dt = new Date(d)
+    const now = new Date()
+    const diff = now.getTime() - dt.getTime()
+    if (diff < 86400000 && dt.getDate() === now.getDate()) return 'Hoy'
+    if (diff < 172800000) return 'Ayer'
+    return dt.getDate() + '/' + (dt.getMonth() + 1) + '/' + dt.getFullYear()
 }
