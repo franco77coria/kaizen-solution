@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Client } from "@upstash/qstash";
 import { verifySignatureAppRouter } from "@upstash/qstash/nextjs";
-import { generateAudioForWhatsApp, getElevenLabsConfig } from "@/lib/elevenlabs";
+import { generateAudioForWhatsApp, getElevenLabsConfig, logApiUsage } from "@/lib/elevenlabs";
 import { uploadMediaToWhatsApp, sendWhatsAppAudio, getWhatsAppConfig } from "@/lib/whatsapp";
 
 const qstash = new Client({
@@ -195,6 +195,13 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
                     where: { id: job.id },
                     data: { status: 'sent', messageId: messageId, processedAt: new Date() }
                 });
+                await logApiUsage(
+                    "whatsapp",
+                    isAudio ? "send_audio" : "bulk_template",
+                    1,
+                    0.0773,
+                    { phone: job.phone, campaignId, messageId }
+                );
                 successCount++;
 
             } catch (err: any) {
