@@ -7,6 +7,7 @@ import {
     logWhatsApp,
     upsertContact,
 } from "@/lib/whatsapp"
+import { logApiUsage } from "@/lib/elevenlabs"
 
 export async function POST(request: NextRequest) {
     const session = await auth()
@@ -64,6 +65,14 @@ export async function POST(request: NextRequest) {
             template,
             msgId,
         })
+
+        await logApiUsage(
+            "whatsapp",
+            tipo === "template" ? "send_template" : "send_text",
+            1,
+            0.0773,
+            { phone: numero, template: template || null, messageId: msgId }
+        )
 
         return NextResponse.json({ success: true, messageId: msgId })
     } catch (error: any) {
