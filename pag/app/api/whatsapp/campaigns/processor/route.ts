@@ -110,7 +110,7 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
 
                     const parsedComponents = campaign.template?.components ? JSON.parse(campaign.template.components) : [];
                     const templateBodyParams = parsedComponents.find((c: any) => c.type === 'BODY')?.text || "";
-                    const requiredVarsCount = new Set(templateBodyParams.match(/\{\{\d+\}\}/g) || []).size;
+                    const requiredVarsCount = new Set(templateBodyParams.match(/\{\{[^}]+\}\}/g) || []).size;
 
                     const sortedEntries = Object.entries(mapping).sort(([a], [b]) => Number(a) - Number(b));
 
