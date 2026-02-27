@@ -254,6 +254,11 @@ export async function getTemplatesFromMeta() {
         `${config.wabaId}/message_templates?limit=100`
     )
 
+    // #region agent log
+    const debugTemplates = (data.data || []).filter((t: any) => t.status === "APPROVED").slice(0, 8).map((t: any) => ({ name: t.name, components: t.components }));
+    try { await prisma.whatsAppLog.create({ data: { type: 'DEBUG_META_RAW_TEMPLATES', payload: JSON.stringify(debugTemplates) } }); } catch(e) {}
+    // #endregion
+
     return (data.data || [])
         .filter((t: any) => t.status === "APPROVED")
         .map((t: any) => {
