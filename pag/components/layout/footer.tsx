@@ -135,6 +135,12 @@ export default function Footer({
                         <Link href="/privacidad" className="text-xs text-white/25 hover:text-daylight-sky transition-colors">
                             Política de Privacidad
                         </Link>
+                        <Link href="/terminos-y-condiciones" className="text-xs text-white/25 hover:text-daylight-sky transition-colors">
+                            Términos y Condiciones
+                        </Link>
+                        <Link href="/eliminacion-de-datos" className="text-xs text-white/25 hover:text-daylight-sky transition-colors">
+                            Eliminación de Datos
+                        </Link>
                     </div>
                 </div>
             </div>
