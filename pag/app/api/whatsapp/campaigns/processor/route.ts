@@ -112,19 +112,26 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
                     const templateBodyParams = parsedComponents.find((c: any) => c.type === 'BODY')?.text || "";
                     const requiredVarsCount = new Set(templateBodyParams.match(/\{\{[^}]+\}\}/g) || []).size;
 
+                    const varMatches = templateBodyParams.match(/\{\{([^}]+)\}\}/g) || [];
+                    const varNames = varMatches.map((m: string) => m.replace(/^\{\{/, '').replace(/\}\}$/, '').trim());
+
                     const sortedEntries = Object.entries(mapping).sort(([a], [b]) => Number(a) - Number(b));
 
+                    let paramIdx = 0;
                     for (const [, columnMapped] of sortedEntries) {
                         const val = resolveContactField(subscriber, columnMapped as string);
                         bodyParams.push({
                             type: "text",
+                            parameter_name: varNames[paramIdx] || String(paramIdx + 1),
                             text: val || "Usuario"
                         });
+                        paramIdx++;
                     }
 
                     while (bodyParams.length < requiredVarsCount) {
                         bodyParams.push({
                             type: "text",
+                            parameter_name: varNames[bodyParams.length] || String(bodyParams.length + 1),
                             text: "..."
                         });
                     }
