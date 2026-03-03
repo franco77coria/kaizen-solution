@@ -254,10 +254,10 @@ export async function sendWhatsAppTemplate(
     if (config.provider === "twilio") {
         if (!config.twilioNumber) throw new Error("Número Twilio no configurado")
 
-        // Look up template to get ContentSid (HX...)
+        // Look up template to get ContentSid (HX...) and body text
         const dbTemplate = await prisma.whatsAppTemplate.findFirst({
             where: { name: templateName, language: languageCode },
-            select: { wabaId: true },
+            select: { wabaId: true, bodyText: true },
         })
 
         if (dbTemplate?.wabaId?.startsWith("HX")) {
@@ -280,7 +280,7 @@ export async function sendWhatsAppTemplate(
         }
 
         // Fallback: plain text substitution (within 24h window only)
-        let text = templateBodyText || templateName
+        let text = templateBodyText || dbTemplate?.bodyText || templateName
         if (components.length > 0) {
             const bodyComp = components.find((c: any) => c.type === "body")
             const params: string[] = bodyComp?.parameters?.map((p: any) => p.text || "") || []
