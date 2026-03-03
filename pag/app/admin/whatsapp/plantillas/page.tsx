@@ -8,6 +8,7 @@ export default function PlantillasPage() {
     const [loading, setLoading] = useState(true)
     const [syncing, setSyncing] = useState(false)
     const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null)
+    const [isTwilio, setIsTwilio] = useState(false)
 
     const fetchTemplates = async () => {
         try {
@@ -23,6 +24,9 @@ export default function PlantillasPage() {
     }
 
     useEffect(() => {
+        fetch("/api/whatsapp/config").then(r => r.json()).then(d => {
+            if (d.provider === "twilio") setIsTwilio(true)
+        }).catch(() => {})
         fetchTemplates()
     }, [])
 
@@ -78,13 +82,20 @@ export default function PlantillasPage() {
 
                 <button
                     onClick={handleSync}
-                    disabled={syncing}
+                    disabled={syncing || isTwilio}
+                    title={isTwilio ? "No disponible con Twilio como proveedor" : undefined}
                     className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 disabled:cursor-not-allowed text-white px-5 py-2.5 rounded-lg transition-all font-medium shadow-sm"
                 >
                     <RefreshCw size={18} className={syncing ? "animate-spin" : ""} />
                     <span>{syncing ? "Sincronizando..." : "Sincronizar con Meta"}</span>
                 </button>
             </div>
+
+            {isTwilio && (
+                <div className="p-4 rounded-xl border bg-amber-50 border-amber-200 text-amber-800 text-sm">
+                    <strong>Proveedor activo: Twilio.</strong> La sincronización de plantillas de Meta no está disponible. Administrá tus Content Templates directamente desde el portal de Twilio. Las plantillas guardadas previamente con Meta se siguen mostrando abajo.
+                </div>
+            )}
 
             {message && (
                 <div className={`p-4 rounded-xl border ${message.type === "success" ? "bg-green-50 border-green-200 text-green-700" : "bg-red-50 border-red-200 text-red-700"}`}>

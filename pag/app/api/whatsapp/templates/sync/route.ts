@@ -11,8 +11,18 @@ export async function POST() {
         }
         const config = await getWhatsAppConfig();
 
-        if (!config || !config.apiToken || !config.wabaId) {
-            return NextResponse.json({ error: "WhatsApp API no está configurada o falta WABA ID" }, { status: 400 });
+        if (!config) {
+            return NextResponse.json({ error: "WhatsApp API no está configurada" }, { status: 400 });
+        }
+
+        if (config.provider === "twilio") {
+            return NextResponse.json({
+                error: "La sincronización de plantillas requiere Meta como proveedor. Con Twilio, administrá tus templates desde el portal de Twilio (Content Templates)."
+            }, { status: 400 });
+        }
+
+        if (!config.apiToken || !config.wabaId) {
+            return NextResponse.json({ error: "Falta el API Token de Meta o el WABA ID en la configuración" }, { status: 400 });
         }
 
         // Llamar a Graph API para obtener plantillas de la WABA (WhatsApp Business Account)
