@@ -87,7 +87,7 @@ export async function saveWhatsAppConfig(data: {
     // Para cada campo sensible: si viene con **** mantenemos el existente, si no lo encriptamos
     const encryptIfNew = (newVal: string | undefined, existing: string | null): string | null => {
         if (!newVal) return existing
-        if (newVal.includes('****')) return existing
+        if (newVal.includes('****') || newVal.includes('...')) return existing
         return encrypt(newVal)
     }
 
