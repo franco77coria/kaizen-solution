@@ -1,0 +1,358 @@
+/**
+ * Sirve el formulario HTML como Web App.
+ * @param {Object} e - Objeto de evento (no utilizado)
+ * @returns {HtmlOutput} La página HTML del formulario
+ */
+function doGet(e) {
+    return HtmlService.createHtmlOutputFromFile('index')
+        .setTitle("Círculo de Confianza")
+        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.DEFAULT)
+        .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
+
+// ============================================
+// CONFIGURACIÓN DE HOJAS
+// ============================================
+const FORM_CONFIG = {
+    SHEET_ID: '1Sjceg62Q97-Bo8Y51biCBJeglTVvou3fO005GvhUfxY',
+    SHEET_NAME: 'ENCUESTA',
+    SHEET2_ID: '1fI81Mol5Rc8yoNdOnKWUIbJ9fd4iGodF4QOaCZRjEWY',
+    SHEET2_NAME: 'Base dash'
+};
+
+// ============================================
+// OBTENER LÍDERES ÚNICOS PARA SUGERIDOR
+// ============================================
+
+/**
+ * Lee NOMBRE_LIDER (col A) y CC_LIDER (col B) de ambas hojas
+ * y retorna una lista de líderes únicos con su CC.
+ * @returns {Array} Lista de objetos {nombre, cc}
+ */
+function getLideres() {
+    try {
+        const lideresMap = {};
+
+        // 1. Leer de ENCUESTA (hoja principal)
+        try {
+            const ss1 = SpreadsheetApp.openById(FORM_CONFIG.SHEET_ID);
+            const sheet1 = ss1.getSheetByName(FORM_CONFIG.SHEET_NAME);
+            if (sheet1 && sheet1.getLastRow() > 1) {
+                const data1 = sheet1.getRange(2, 1, sheet1.getLastRow() - 1, 2).getValues();
+                data1.forEach(row => {
+                    const nombre = String(row[0] || '').trim();
+                    const cc = String(row[1] || '').trim();
+                    if (nombre && nombre.toLowerCase() !== 'null' && nombre !== '') {
+                        const key = nombre.toUpperCase();
+                        if (!lideresMap[key]) {
+                            lideresMap[key] = { nombre: nombre, cc: cc };
+                        } else if (!lideresMap[key].cc && cc) {
+                            lideresMap[key].cc = cc;
+                        }
+                    }
+                });
+            }
+        } catch (e) {
+            console.warn('Error leyendo ENCUESTA:', e.toString());
+        }
+
+        // 2. Leer de Base dash (segunda fuente)
+        try {
+            const ss2 = SpreadsheetApp.openById(FORM_CONFIG.SHEET2_ID);
+            const sheet2 = ss2.getSheetByName(FORM_CONFIG.SHEET2_NAME);
+            if (sheet2 && sheet2.getLastRow() > 1) {
+                const data2 = sheet2.getRange(2, 1, sheet2.getLastRow() - 1, 2).getValues();
+                data2.forEach(row => {
+                    const nombre = String(row[0] || '').trim();
+                    const cc = String(row[1] || '').trim();
+                    if (nombre && nombre.toLowerCase() !== 'null' && nombre !== '') {
+                        const key = nombre.toUpperCase();
+                        if (!lideresMap[key]) {
+                            lideresMap[key] = { nombre: nombre, cc: cc };
+                        } else if (!lideresMap[key].cc && cc) {
+                            lideresMap[key].cc = cc;
+                        }
+                    }
+                });
+            }
+        } catch (e) {
+            console.warn('Error leyendo Base dash:', e.toString());
+        }
+
+        // Convertir a array y ordenar por nombre
+        const resultado = Object.values(lideresMap)
+            .sort((a, b) => a.nombre.localeCompare(b.nombre));
+
+        console.log('✅ Líderes cargados:', resultado.length);
+        return resultado;
+
+    } catch (error) {
+        console.error('Error en getLideres:', error.toString());
+        return [];
+    }
+}
+
+/**
+ * Lee los municipios de la hoja "DATOS" columna A (FILA 2 en adelante)
+ * @returns {Array} Lista ordenada de municipios únicos
+ */
+function getMunicipiosFromDatos() {
+    try {
+        const ss = SpreadsheetApp.openById(FORM_CONFIG.SHEET_ID);
+        const sheet = ss.getSheetByName('DATOS');
+
+        if (!sheet) {
+            console.warn('Hoja "DATOS" no encontrada');
+            return [];
+        }
+
+        const lastRow = sheet.getLastRow();
+        if (lastRow < 2) return [];
+
+        // Leer columna A (Municipios)
+        const data = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+        const municipios = new Set();
+
+        data.forEach(row => {
+            const mun = String(row[0] || '').trim();
+            if (mun && mun.toLowerCase() !== 'null' && mun !== '' && mun.length > 2) {
+                // Usar el dato exactamente como viene en la hoja (sin formateo)
+                municipios.add(mun);
+            }
+        });
+
+        const sorted = Array.from(municipios).sort();
+        console.log('✅ Municipios cargados de DATOS:', sorted.length);
+        return sorted;
+
+    } catch (error) {
+        console.error('Error en getMunicipiosFromDatos:', error.toString());
+        return [];
+    }
+}
+
+/**
+ * Verifica si un número de documento o teléfono ya existe en alguna de las hojas de datos.
+ * @param {string} documento - Número de documento a buscar
+ * @param {string} telefono - Teléfono a buscar
+ * @returns {boolean} Retorna true si encuentra duplicado, false de lo contrario.
+ */
+function verificarDuplicado(documento, telefono) {
+    if (!documento && !telefono) return false;
+
+    const docStr = String(documento || '').trim();
+    const telStr = String(telefono || '').trim();
+
+    try {
+        const checkSheet = (sheetId, sheetName) => {
+            const ss = SpreadsheetApp.openById(sheetId);
+            const sheet = ss.getSheetByName(sheetName);
+            if (!sheet || sheet.getLastRow() < 2) return false;
+
+            // Leer documento (Columna E / índice 4) y teléfono (Columna G / índice 6)
+            const data = sheet.getRange(2, 5, sheet.getLastRow() - 1, 3).getValues();
+            
+            for (let i = 0; i < data.length; i++) {
+                const docGuardado = String(data[i][0] || '').trim();
+                const telGuardado = String(data[i][2] || '').trim();
+
+                // Validar si existe coincidencia exacta
+                if ((docStr && docStr === docGuardado) || (telStr && telStr === telGuardado)) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        // Buscar en la hoja "ENCUESTA"
+        if (checkSheet(FORM_CONFIG.SHEET_ID, FORM_CONFIG.SHEET_NAME)) {
+            return true;
+        }
+
+        // Buscar en la hoja "Base dash"
+        if (checkSheet(FORM_CONFIG.SHEET2_ID, FORM_CONFIG.SHEET2_NAME)) {
+            return true;
+        }
+
+        return false;
+
+    } catch (error) {
+        console.error('Error verificando duplicado:', error.toString());
+        // En caso de error de lectura, permitimos el registro para no bloquear la aplicación.
+        // O alternativamente podemos retornar true para ser ultra cautelosos, pero afectaría UX.
+        return false;
+    }
+}
+
+/**
+* Guarda los datos del formulario en la hoja "ENCUESTA" de manera segura para múltiples usuarios.
+* Implementa bloqueo (lock) para evitar condiciones de carrera cuando varios usuarios
+* envían datos simultáneamente.
+* @param {Object} data - El objeto con los datos del formulario.
+* @returns {String} Un mensaje de éxito o error.
+*/
+function guardarDatos(data) {
+    const lock = LockService.getScriptLock();
+
+    try {
+        lock.waitLock(30000);
+
+        if (!data || typeof data !== 'object') {
+            throw new Error('No se recibieron datos válidos');
+        }
+
+        const spreadsheet = SpreadsheetApp.openById(FORM_CONFIG.SHEET_ID);
+        let hoja = spreadsheet.getSheetByName(FORM_CONFIG.SHEET_NAME);
+
+        if (!hoja) {
+            hoja = spreadsheet.insertSheet(FORM_CONFIG.SHEET_NAME);
+            Logger.log('📋 Hoja "ENCUESTA" creada automáticamente');
+        }
+
+        // Encabezados en el orden exacto de la hoja ENCUESTA (A a M)
+        const encabezadosDefinidos = [
+            "NOMBRE_LIDER", "CC_LIDER", "RELACION_PARENTESCO",
+            "A_QUIEN_REFIERE", "NUMERO_DOCUMENTO", "OCUPACION_NEGOCIO",
+            "TELEFONO", "DEPARTAMENTO", "MUNICIPIO", "FECHA_NACIMIENTO",
+            "USA_WHATSAPP", "FECHA_AUTORIZACION", "SEXO"
+        ];
+
+        const lastRow = hoja.getLastRow();
+        if (lastRow === 0) {
+            hoja.appendRow(encabezadosDefinidos);
+            const headerRange = hoja.getRange(1, 1, 1, encabezadosDefinidos.length);
+            headerRange.setFontWeight('bold');
+            headerRange.setBackground('#dc3545');
+            headerRange.setFontColor('#ffffff');
+            Logger.log('📝 Encabezados creados en la hoja');
+        }
+
+        const numColumnas = Math.max(hoja.getLastColumn(), encabezadosDefinidos.length);
+        const encabezadosReales = hoja.getRange(1, 1, 1, numColumnas).getValues()[0];
+
+        // Validar campos requeridos
+        const camposRequeridos = ['NOMBRE_LIDER', 'CC_LIDER', 'A_QUIEN_REFIERE', 'NUMERO_DOCUMENTO', 'TELEFONO', 'SEXO', 'DEPARTAMENTO', 'MUNICIPIO'];
+        const camposFaltantes = camposRequeridos.filter(campo => !data[campo] || data[campo].toString().trim() === '');
+
+        if (camposFaltantes.length > 0) {
+            throw new Error('Faltan campos requeridos: ' + camposFaltantes.join(', '));
+        }
+
+        // Sanitizar datos
+        Object.keys(data).forEach(key => {
+            if (typeof data[key] === 'string') {
+                data[key] = data[key].trim();
+                if (data[key].startsWith('=') || data[key].startsWith('+') || data[key].startsWith('-') || data[key].startsWith('@')) {
+                    data[key] = "'" + data[key];
+                }
+            }
+        });
+
+        // Validaciones específicas
+        if (!/^[0-9]{6,15}$/.test(data.CC_LIDER)) {
+            throw new Error('CC del líder inválido. Debe contener entre 6 y 15 dígitos.');
+        }
+
+        if (!/^[0-9]{6,15}$/.test(data.NUMERO_DOCUMENTO)) {
+            throw new Error('Número de documento inválido. Debe contener entre 6 y 15 dígitos.');
+        }
+
+        if (!/^[0-9]{7,10}$/.test(data.TELEFONO)) {
+            throw new Error('Número de teléfono inválido. Debe contener entre 7 y 10 dígitos.');
+        }
+
+        // ============================================
+        // VALIDACIÓN DE DUPLICADOS EN BASE DE DATOS
+        // ============================================
+        if (verificarDuplicado(data.NUMERO_DOCUMENTO, data.TELEFONO)) {
+            throw new Error('El aliado ya se encuentra registrado en la base de datos (Documento o Teléfono duplicado).');
+        }
+
+        // Añadir fecha de autorización
+        data.FECHA_AUTORIZACION = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
+
+        // Crear la nueva fila en el orden correcto
+        const nuevaFila = encabezadosReales.map(encabezado => {
+            if (data.hasOwnProperty(encabezado)) {
+                return data[encabezado];
+            }
+            return "";
+        });
+
+        hoja.appendRow(nuevaFila);
+
+        const timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
+        Logger.log(`✅ [${timestamp}] Datos guardados - Referido: ${data.A_QUIEN_REFIERE} | CC Líder: ${data.CC_LIDER}`);
+
+        lock.releaseLock();
+
+        return "¡Gracias! Tus datos han sido guardados correctamente. 👍";
+
+    } catch (error) {
+        try {
+            lock.releaseLock();
+        } catch (e) { }
+
+        const timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
+        Logger.log(`❌ [${timestamp}] Error al guardar datos: ${error.toString()}`);
+        Logger.log(`📊 Datos recibidos: ${JSON.stringify(data)}`);
+
+        let mensajeUsuario = error.message;
+
+        if (error.message.includes('Lock')) {
+            mensajeUsuario = 'El sistema está ocupado procesando otras solicitudes. Por favor, intenta nuevamente en unos segundos.';
+        } else if (error.message.includes('campos requeridos')) {
+            mensajeUsuario = error.message;
+        } else if (error.message.includes('inválido')) {
+            mensajeUsuario = error.message;
+        } else if (error.message.includes('duplicado') || error.message.includes('registrado en la base de datos')) {
+            mensajeUsuario = error.message; // Respetar el mensaje exacto para el toast de error frontal
+        } else {
+            mensajeUsuario = 'Ocurrió un error al guardar los datos. Por favor, verifica la información e intenta nuevamente.';
+        }
+
+        return "❌ Error: " + mensajeUsuario;
+    }
+}
+
+/**
+* Función auxiliar para obtener datos de Colombia (departamentos y municipios)
+* @returns {Object} Objeto con departamentos y sus municipios
+*/
+function getColombiaData() {
+    return {
+        "Amazonas": ["Leticia", "Puerto Nariño"],
+        "Antioquia": ["Medellín", "Bello", "Itagüí", "Envigado", "Apartadó", "Turbo", "Rionegro"],
+        "Arauca": ["Arauca", "Tame", "Saravena", "Arauquita"],
+        "Atlántico": ["Barranquilla", "Soledad", "Malambo", "Sabanalarga"],
+        "Bogotá D.C.": ["Bogotá"],
+        "Bolívar": ["Cartagena", "Magangué", "Turbaco", "Arjona"],
+        "Boyacá": ["Tunja", "Duitama", "Sogamoso", "Chiquinquirá"],
+        "Caldas": ["Manizales", "Villamaría", "La Dorada", "Chinchiná"],
+        "Caquetá": ["Florencia", "San Vicente del Caguán", "Puerto Rico"],
+        "Casanare": ["Yopal", "Aguazul", "Villanueva", "Monterrey"],
+        "Cauca": ["Popayán", "Santander de Quilichao", "Puerto Tejada"],
+        "Cesar": ["Valledupar", "Aguachica", "Bosconia", "Codazzi"],
+        "Chocó": ["Quibdó", "Istmina", "Condoto", "Tadó"],
+        "Córdoba": ["Montería", "Cereté", "Lorica", "Sahagún"],
+        "Cundinamarca": ["Soacha", "Fusagasugá", "Facatativá", "Zipaquirá"],
+        "Guainía": ["Inírida"],
+        "Guaviare": ["San José del Guaviare", "Calamar", "El Retorno"],
+        "Huila": ["Neiva", "Pitalito", "Garzón", "La Plata"],
+        "La Guajira": ["Riohacha", "Maicao", "Uribia", "Manaure"],
+        "Magdalena": ["Santa Marta", "Ciénaga", "Fundación"],
+        "Meta": ["Villavicencio", "Acacías", "Granada", "Puerto López"],
+        "Nariño": ["Pasto", "Tumaco", "Ipiales", "Túquerres"],
+        "Norte de Santander": ["Cúcuta", "Ocaña", "Villa del Rosario"],
+        "Putumayo": ["Mocoa", "Puerto Asís", "Valle del Guamuez"],
+        "Quindío": ["Armenia", "Calarcá", "La Tebaida", "Montenegro"],
+        "Risaralda": ["Pereira", "Dosquebradas", "Santa Rosa de Cabal"],
+        "San Andrés y Providencia": ["San Andrés", "Providencia"],
+        "Santander": ["Bucaramanga", "Floridablanca", "Girón", "Piedecuesta"],
+        "Sucre": ["Sincelejo", "Corozal", "Sampués", "San Marcos"],
+        "Tolima": ["Ibagué", "Espinal", "Melgar", "Honda"],
+        "Valle del Cauca": ["Cali", "Palmira", "Buenaventura", "Tuluá"],
+        "Vaupés": ["Mitú", "Carurú", "Taraira"],
+        "Vichada": ["Puerto Carreño", "La Primavera", "Santa Rosalía"]
+    };
+}

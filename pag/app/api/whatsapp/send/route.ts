@@ -41,7 +41,8 @@ export async function POST(request: NextRequest) {
             content = mensaje
         }
 
-        const msgId = result?.messages?.[0]?.id || null
+        const isTwilioResult = !!(result?.sid && !result?.messages)
+        const msgId = result?.messages?.[0]?.id || result?.sid || null
 
         // Save outbound message
         await prisma.whatsAppMessage.create({
@@ -67,10 +68,10 @@ export async function POST(request: NextRequest) {
         })
 
         await logApiUsage(
-            "whatsapp",
+            isTwilioResult ? "twilio" : "whatsapp",
             tipo === "template" ? "send_template" : "send_text",
             1,
-            0.0773,
+            isTwilioResult ? Math.abs(parseFloat(result?.price || "0")) : 0.0773,
             { phone: numero, template: template || null, messageId: msgId }
         )
 

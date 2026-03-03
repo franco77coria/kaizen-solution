@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
 
     try {
         const { searchParams } = new URL(request.url)
-        const service = searchParams.get("service") // "whatsapp" | "elevenlabs" | null (all)
+        const service = searchParams.get("service") // "whatsapp" | "elevenlabs" | "twilio" | null (all)
         const days = parseInt(searchParams.get("days") || "30")
 
         const since = new Date()
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
 
         const todayWhere = { createdAt: { gte: today } }
 
-        const [waToday, elToday, waMonth, elMonth] = await Promise.all([
+        const [waToday, elToday, twToday, waMonth, elMonth, twMonth] = await Promise.all([
             prisma.apiUsageLog.aggregate({
                 where: { ...todayWhere, service: "whatsapp" },
                 _sum: { units: true, cost: true },
@@ -44,12 +44,22 @@ export async function GET(request: NextRequest) {
                 _count: true,
             }),
             prisma.apiUsageLog.aggregate({
+                where: { ...todayWhere, service: "twilio" },
+                _sum: { units: true, cost: true },
+                _count: true,
+            }),
+            prisma.apiUsageLog.aggregate({
                 where: { ...where, service: "whatsapp" },
                 _sum: { units: true, cost: true },
                 _count: true,
             }),
             prisma.apiUsageLog.aggregate({
                 where: { ...where, service: "elevenlabs" },
+                _sum: { units: true, cost: true },
+                _count: true,
+            }),
+            prisma.apiUsageLog.aggregate({
+                where: { ...where, service: "twilio" },
                 _sum: { units: true, cost: true },
                 _count: true,
             }),
@@ -65,18 +75,21 @@ export async function GET(request: NextRequest) {
         })
 
         // Group by day
-        const dailyMap: Record<string, { whatsapp: number; elevenlabs: number }> = {}
+        const dailyMap: Record<string, { whatsapp: number; elevenlabs: number; twilio: number }> = {}
         for (let i = 0; i < 7; i++) {
             const d = new Date()
             d.setDate(d.getDate() - i)
             const key = d.toISOString().split("T")[0]
-            dailyMap[key] = { whatsapp: 0, elevenlabs: 0 }
+            dailyMap[key] = { whatsapp: 0, elevenlabs: 0, twilio: 0 }
         }
 
         for (const log of dailyLogs) {
             const key = log.createdAt.toISOString().split("T")[0]
             if (dailyMap[key]) {
-                dailyMap[key][log.service as "whatsapp" | "elevenlabs"] += log.units
+                const svc = log.service as "whatsapp" | "elevenlabs" | "twilio"
+                if (svc in dailyMap[key]) {
+                    dailyMap[key][svc] += log.units
+                }
             }
         }
 
@@ -97,6 +110,10 @@ export async function GET(request: NextRequest) {
                 elevenlabs: {
                     today: { chars: elToday._sum.units || 0, cost: elToday._sum.cost || 0, calls: elToday._count },
                     period: { chars: elMonth._sum.units || 0, cost: elMonth._sum.cost || 0, calls: elMonth._count },
+                },
+                twilio: {
+                    today: { messages: twToday._sum.units || 0, cost: twToday._sum.cost || 0, calls: twToday._count },
+                    period: { messages: twMonth._sum.units || 0, cost: twMonth._sum.cost || 0, calls: twMonth._count },
                 },
             },
             dailyChart,

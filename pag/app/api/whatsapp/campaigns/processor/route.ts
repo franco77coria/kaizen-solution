@@ -110,6 +110,7 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
 
             try {
                 let messageId = "";
+                let twilioPrice = 0;
 
                 if (isAudio) {
                     let prompt = audioConfig.prompt || "";
@@ -154,6 +155,7 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
                         Body: text,
                     });
                     messageId = data.sid || "";
+                    twilioPrice = Math.abs(parseFloat(data.price || "0"));
 
                 } else {
                     // Meta template
@@ -262,7 +264,7 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
                     provider,
                     isAudio ? "send_audio" : isImage ? "send_image" : "bulk_template",
                     1,
-                    isImage ? 0 : isTwilio ? 0.05 : 0.0773,
+                    isImage ? 0 : isTwilio ? twilioPrice : 0.0773,
                     { phone: job.phone, campaignId, messageId, provider }
                 );
                 successCount++;
