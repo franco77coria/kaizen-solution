@@ -105,7 +105,7 @@ export default function MensajesPage() {
     const loadMessages = async (phone: string) => {
         setChatLoading(true)
         try {
-            const res = await fetch(`/api/whatsapp/messages?phone=${phone}&limit=100`)
+            const res = await fetch(`/api/whatsapp/messages?phone=${encodeURIComponent(phone)}&limit=100`)
             const data = await res.json()
             setMessages(data.reverse())
 
