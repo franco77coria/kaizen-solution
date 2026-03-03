@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
                 const appUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || ""
                 if (!appUrl) throw new Error("NEXTAUTH_URL no está configurada. Se necesita para servir el audio a Twilio.")
 
-                const audioUrl = `${appUrl}/api/audio-cache/${hash}`
+                const audioUrl = `${appUrl}/api/audio-cache/${hash}.ogg`
 
                 // Send via Twilio with MediaUrl
                 const twilioResult = await callTwilioAPI(config, {

@@ -8,22 +8,27 @@ export async function GET(
 ) {
     try {
         const { hash } = await params
+
+        // Strip .ogg extension if present (URL can be /api/audio-cache/abc123.ogg)
+        const cleanHash = hash.replace(/\.ogg$/, "")
+
         const cached = await prisma.audioMessageCache.findUnique({
-            where: { hash },
+            where: { hash: cleanHash },
         })
 
         if (!cached || !cached.mediaUrl) {
             return NextResponse.json({ error: "Audio not found" }, { status: 404 })
         }
 
-        // mediaUrl stores base64-encoded audio data
+        // mediaUrl stores base64-encoded OGG Opus audio data
         const audioBuffer = Buffer.from(cached.mediaUrl, "base64")
 
         return new NextResponse(audioBuffer, {
             status: 200,
             headers: {
-                "Content-Type": "audio/ogg",
+                "Content-Type": "audio/ogg; codecs=opus",
                 "Content-Length": audioBuffer.length.toString(),
+                "Content-Disposition": 'inline; filename="voice_message.ogg"',
                 "Cache-Control": "public, max-age=3600",
             },
         })
