@@ -31,7 +31,24 @@ export async function POST(request: NextRequest) {
         if (!config) throw new Error("WhatsApp no configurado")
 
         // 1. Generate audio with ElevenLabs (formato OGG Opus nativo, sin ffmpeg)
-        const { audioBuffer, characterCount } = await generateAudioForWhatsApp(text, voiceId)
+        let audioBuffer: Buffer
+        let characterCount: number
+        try {
+            const result = await generateAudioForWhatsApp(text, voiceId)
+            audioBuffer = result.audioBuffer
+            characterCount = result.characterCount
+        } catch (elError: any) {
+            await logWhatsApp("send_audio_error", {
+                step: "elevenlabs_tts",
+                error: elError.message,
+                voiceId,
+                textLength: text.length,
+            })
+            return NextResponse.json(
+                { error: `Error de ElevenLabs: ${elError.message}` },
+                { status: 500 }
+            )
+        }
 
         const estimatedTtsCost = (characterCount / 1000) * 0.30
         await logApiUsage("elevenlabs", "tts_generate", characterCount, estimatedTtsCost, {
@@ -41,10 +58,36 @@ export async function POST(request: NextRequest) {
         })
 
         // 2. Subir el audio OGG Opus a Media API de Meta
-        const mediaId = await uploadMediaToWhatsApp(audioBuffer, "audio/ogg");
+        let mediaId: string
+        try {
+            mediaId = await uploadMediaToWhatsApp(audioBuffer, "audio/ogg")
+        } catch (uploadError: any) {
+            await logWhatsApp("send_audio_error", {
+                step: "upload_media",
+                error: uploadError.message,
+                audioSize: audioBuffer.length,
+            })
+            return NextResponse.json(
+                { error: `Error subiendo audio a WhatsApp: ${uploadError.message}` },
+                { status: 500 }
+            )
+        }
 
         // 3. Send audio message via WhatsApp usando el Media ID
-        const result = await sendWhatsAppAudio(numero, mediaId);
+        let result: any
+        try {
+            result = await sendWhatsAppAudio(numero, mediaId)
+        } catch (sendError: any) {
+            await logWhatsApp("send_audio_error", {
+                step: "send_whatsapp_audio",
+                error: sendError.message,
+                mediaId,
+            })
+            return NextResponse.json(
+                { error: `Error enviando audio por WhatsApp: ${sendError.message}` },
+                { status: 500 }
+            )
+        }
 
         const msgId = result?.messages?.[0]?.id || null
 
@@ -80,7 +123,7 @@ export async function POST(request: NextRequest) {
             characterCount,
         })
     } catch (error: any) {
-        await logWhatsApp("send_audio_error", { error: error.message })
+        await logWhatsApp("send_audio_error", { step: "unknown", error: error.message })
         return NextResponse.json(
             { error: error.message || "Error al enviar audio" },
             { status: 500 }
