@@ -277,14 +277,14 @@ export default function MensajesPage() {
                         <button
                             onClick={() => setIsNewChatModalOpen(true)}
                             className="w-8 h-8 rounded-full bg-green-50 text-green-600 hover:bg-green-100 flex items-center justify-center transition-colors"
-                            title="Nueva ConversaciÃ³n"
+                            title="Nueva Conversación"
                         >
                             +
                         </button>
                     </div>
                     <input
                         type="text"
-                        placeholder="Buscar conversaciÃ³n..."
+                        placeholder="Buscar conversación..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-400"
@@ -351,8 +351,8 @@ export default function MensajesPage() {
                 {!selectedPhone ? (
                     <div className="flex-1 flex items-center justify-center text-center">
                         <div>
-                            <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-4">ðŸ’¬</div>
-                            <p className="text-sm text-gray-500 font-medium">Selecciona una conversaciÃ³n</p>
+                            <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-4">💬</div>
+                            <p className="text-sm text-gray-500 font-medium">Selecciona una conversación</p>
                             <p className="text-xs text-gray-400 mt-1">Elige un contacto de la lista para ver el chat</p>
                         </div>
                     </div>
@@ -477,7 +477,7 @@ export default function MensajesPage() {
                                 </button>
                                 <input
                                     type="text"
-                                    placeholder={isAudioMode ? "Escribi el texto que la IA narrara..." : "Escribir mensaje..."}
+                                    placeholder={isAudioMode ? "Escribí el texto que la IA narrará..." : "Escribir mensaje..."}
                                     value={replyText}
                                     onChange={(e) => setReplyText(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && handleReply()}
@@ -501,17 +501,17 @@ export default function MensajesPage() {
                 )}
             </div>
 
-            {/* Modal Nueva ConversaciÃ³n */}
+            {/* Modal Nueva Conversación */}
             {isNewChatModalOpen && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
                     <div className="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden">
                         <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                            <h3 className="font-bold text-gray-900">Nueva ConversaciÃ³n</h3>
+                            <h3 className="font-bold text-gray-900">Nueva Conversación</h3>
                             <button onClick={() => setIsNewChatModalOpen(false)} className="text-gray-400 hover:text-gray-600 text-lg">x</button>
                         </div>
                         <div className="p-4 space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">NÃºmero de WhatsApp (con cÃ³digo de paÃ­s)</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Número de WhatsApp (con código de país)</label>
                                 <input
                                     type="text"
                                     placeholder="Ej: 54911223344"
@@ -540,7 +540,7 @@ export default function MensajesPage() {
                         <div className="p-4 border-b border-amber-200 bg-amber-50 flex justify-between items-center">
                             <div>
                                 <h3 className="font-bold text-amber-900">Enviar Plantilla (Regla 24h)</h3>
-                                <p className="text-xs text-amber-700/80 mt-1">Usa esto si Meta rechaza mensajes libres porque el cliente no te contactÃ³ recientemente.</p>
+                                <p className="text-xs text-amber-700/80 mt-1">Usa esto si Meta rechaza mensajes libres porque el cliente no te contactó recientemente.</p>
                             </div>
                             <button onClick={() => setIsTemplateModalOpen(false)} className="text-amber-500 hover:text-amber-700 text-lg">x</button>
                         </div>
@@ -573,7 +573,7 @@ export default function MensajesPage() {
 
                             {selectedTemplate && (
                                 <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                                    <p className="text-xs font-semibold text-gray-500 uppercase mb-2">PrevisualizaciÃ³n:</p>
+                                    <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Previsualización:</p>
                                     <p className="text-sm text-gray-700 whitespace-pre-wrap">
                                         {selectedTemplate.bodyText || 'Sin contenido'}
                                     </p>
