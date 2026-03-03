@@ -187,6 +187,24 @@ export async function testTwilioConnection(config: WhatsAppConfig) {
     return { friendlyName: data.friendly_name, status: data.status }
 }
 
+export async function getTwilioTemplates(config: WhatsAppConfig) {
+    if (!config.twilioAccountSid || !config.twilioAuthToken) {
+        throw new Error("Credenciales Twilio no configuradas")
+    }
+
+    const credentials = Buffer.from(`${config.twilioAccountSid}:${config.twilioAuthToken}`).toString("base64")
+    const response = await fetch("https://content.twilio.com/v1/Content?PageSize=50", {
+        headers: { Authorization: `Basic ${credentials}` },
+    })
+
+    const data = await response.json()
+    if (!response.ok) {
+        throw new Error(data?.message || `Twilio Content API error: ${response.status}`)
+    }
+
+    return (data.contents || []) as any[]
+}
+
 // ─── WhatsApp API helpers ───
 
 export async function callWhatsAppAPI(
