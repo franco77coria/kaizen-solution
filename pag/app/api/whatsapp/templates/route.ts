@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { getWhatsAppConfig } from "@/lib/whatsapp"
 
 export async function GET() {
     const session = await auth()
@@ -9,8 +10,17 @@ export async function GET() {
     }
 
     try {
+        const config = await getWhatsAppConfig()
+        const isTwilio = config?.provider === "twilio"
+
         const templates = await prisma.whatsAppTemplate.findMany({
-            where: { status: "APPROVED" },
+            where: {
+                status: "APPROVED",
+                ...(isTwilio
+                    ? { wabaId: { startsWith: "HX" } }
+                    : { OR: [{ wabaId: { not: { startsWith: "HX" } } }, { wabaId: null }] }
+                ),
+            },
             orderBy: { name: "asc" },
         })
         return NextResponse.json({ success: true, templates })

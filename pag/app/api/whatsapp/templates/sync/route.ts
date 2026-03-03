@@ -152,7 +152,13 @@ export async function GET() {
         if (!session) {
             return NextResponse.json({ error: "No autorizado" }, { status: 401 })
         }
+        const config = await getWhatsAppConfig()
+        const isTwilio = config?.provider === "twilio"
+
         const templates = await prisma.whatsAppTemplate.findMany({
+            where: isTwilio
+                ? { wabaId: { startsWith: "HX" } }
+                : { OR: [{ wabaId: { not: { startsWith: "HX" } } }, { wabaId: null }] },
             orderBy: { name: 'asc' }
         });
         return NextResponse.json(templates);
