@@ -253,13 +253,38 @@ export async function sendWhatsAppTemplate(
 
     if (config.provider === "twilio") {
         if (!config.twilioNumber) throw new Error("Número Twilio no configurado")
+
+        // Look up template to get ContentSid (HX...)
+        const dbTemplate = await prisma.whatsAppTemplate.findFirst({
+            where: { name: templateName, language: languageCode },
+            select: { wabaId: true },
+        })
+
+        if (dbTemplate?.wabaId?.startsWith("HX")) {
+            // Use ContentSid — works outside 24h window
+            const vars: Record<string, string> = {}
+            if (components.length > 0) {
+                const bodyComp = components.find((c: any) => c.type === "body")
+                const params: string[] = bodyComp?.parameters?.map((p: any) => p.text || "") || []
+                params.forEach((val, i) => { vars[String(i + 1)] = val })
+            }
+            const apiBody: Record<string, string> = {
+                From: `whatsapp:${config.twilioNumber}`,
+                To: `whatsapp:${phone}`,
+                ContentSid: dbTemplate.wabaId,
+            }
+            if (Object.keys(vars).length > 0) {
+                apiBody.ContentVariables = JSON.stringify(vars)
+            }
+            return callTwilioAPI(config, apiBody)
+        }
+
+        // Fallback: plain text substitution (within 24h window only)
         let text = templateBodyText || templateName
         if (components.length > 0) {
-            const bodyComponent = components.find((c: any) => c.type === "body")
-            const params: string[] = bodyComponent?.parameters?.map((p: any) => p.text || "") || []
-            params.forEach((val, i) => {
-                text = text.replace(`{{${i + 1}}}`, val)
-            })
+            const bodyComp = components.find((c: any) => c.type === "body")
+            const params: string[] = bodyComp?.parameters?.map((p: any) => p.text || "") || []
+            params.forEach((val, i) => { text = text.replace(`{{${i + 1}}}`, val) })
         }
         return callTwilioAPI(config, {
             From: `whatsapp:${config.twilioNumber}`,

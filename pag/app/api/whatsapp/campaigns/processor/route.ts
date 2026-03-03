@@ -141,21 +141,41 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
                     }
 
                 } else if (isTwilio) {
-                    // Template → texto libre para Twilio
-                    let text = templateBodyText || campaign.template?.name || "";
+                    const templateWabaId = campaign.template?.wabaId;
                     const sortedEntries = Object.entries(mapping).sort(([a], [b]) => Number(a) - Number(b));
-                    const bodyParams: string[] = sortedEntries.map(([, col]) => resolveContactField(contact, col as string) || "Usuario");
-                    const requiredVarsCount = new Set(templateBodyText.match(/\{\{\d+\}\}/g) || []).size;
-                    while (bodyParams.length < requiredVarsCount) bodyParams.push("...");
-                    bodyParams.forEach((val, i) => { text = text.replace(`{{${i + 1}}}`, val); });
 
-                    const data = await callTwilioAPI(config, {
-                        From: `whatsapp:${config.twilioNumber}`,
-                        To: `whatsapp:${job.phone}`,
-                        Body: text,
-                    });
-                    messageId = data.sid || "";
-                    twilioPrice = Math.abs(parseFloat(data.price || "0"));
+                    if (templateWabaId?.startsWith("HX")) {
+                        // Use ContentSid — works outside 24h window
+                        const vars: Record<string, string> = {};
+                        sortedEntries.forEach(([, col], i) => {
+                            vars[String(i + 1)] = resolveContactField(contact, col as string) || "Usuario";
+                        });
+                        const apiBody: Record<string, string> = {
+                            From: `whatsapp:${config.twilioNumber}`,
+                            To: `whatsapp:${job.phone}`,
+                            ContentSid: templateWabaId,
+                        };
+                        if (Object.keys(vars).length > 0) {
+                            apiBody.ContentVariables = JSON.stringify(vars);
+                        }
+                        const data = await callTwilioAPI(config, apiBody);
+                        messageId = data.sid || "";
+                        twilioPrice = Math.abs(parseFloat(data.price || "0"));
+                    } else {
+                        // Fallback: plain text substitution (within 24h window only)
+                        let text = templateBodyText || campaign.template?.name || "";
+                        const bodyParams: string[] = sortedEntries.map(([, col]) => resolveContactField(contact, col as string) || "Usuario");
+                        const requiredVarsCount = new Set(templateBodyText.match(/\{\{\d+\}\}/g) || []).size;
+                        while (bodyParams.length < requiredVarsCount) bodyParams.push("...");
+                        bodyParams.forEach((val, i) => { text = text.replace(`{{${i + 1}}}`, val); });
+                        const data = await callTwilioAPI(config, {
+                            From: `whatsapp:${config.twilioNumber}`,
+                            To: `whatsapp:${job.phone}`,
+                            Body: text,
+                        });
+                        messageId = data.sid || "";
+                        twilioPrice = Math.abs(parseFloat(data.price || "0"));
+                    }
 
                 } else {
                     // Meta template
