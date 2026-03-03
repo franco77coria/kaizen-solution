@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { getTemplatesFromMeta } from "@/lib/whatsapp"
+import { prisma } from "@/lib/prisma"
 
 export async function GET() {
     const session = await auth()
@@ -9,7 +9,10 @@ export async function GET() {
     }
 
     try {
-        const templates = await getTemplatesFromMeta()
+        const templates = await prisma.whatsAppTemplate.findMany({
+            where: { status: "APPROVED" },
+            orderBy: { name: "asc" },
+        })
         return NextResponse.json({ success: true, templates })
     } catch (error: any) {
         return NextResponse.json(
