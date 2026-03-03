@@ -273,7 +273,7 @@ export default function CampanasPage() {
                                             onClick={() => setNewCampaign({ ...newCampaign, type: "template", mapping: {} })}
                                             className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${newCampaign.type === 'template' ? 'bg-white text-green-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                                         >
-                                            Plantilla (Meta)
+                                            Plantilla
                                         </button>
                                         <button
                                             type="button"
@@ -387,11 +387,17 @@ export default function CampanasPage() {
 
                                 {newCampaign.type === 'template' && (
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Plantilla de Meta</label>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Plantilla</label>
                                         <select required value={newCampaign.templateId} onChange={(e) => handleTemplateSelect(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-gray-900 outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-400">
-                                            <option value="">Seleccione aprobada...</option>
-                                            {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                                            <option value="">Seleccione una plantilla aprobada...</option>
+                                            {templates.map(t => {
+                                                const isTw = typeof t.wabaId === "string" && t.wabaId.startsWith("HX")
+                                                return <option key={t.id} value={t.id}>[{isTw ? "Twilio" : "Meta"}] {t.name}</option>
+                                            })}
                                         </select>
+                                        {templates.length === 0 && (
+                                            <p className="text-xs text-amber-600 mt-1">No hay plantillas sincronizadas. Andá a la página de Plantillas y sincronizá primero.</p>
+                                        )}
                                     </div>
                                 )}
                                 {newCampaign.type === 'audio' && (
