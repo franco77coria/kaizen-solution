@@ -3,6 +3,8 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getWhatsAppConfig } from "@/lib/whatsapp"
 
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
     const session = await auth()
     if (!session) {

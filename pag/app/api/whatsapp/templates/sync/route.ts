@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { getWhatsAppConfig, getTwilioTemplates } from "@/lib/whatsapp";
 
+export const dynamic = 'force-dynamic';
+
 export async function POST() {
     try {
         const session = await auth()
