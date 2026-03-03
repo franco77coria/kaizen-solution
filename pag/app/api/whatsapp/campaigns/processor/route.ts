@@ -3,7 +3,13 @@ import { prisma } from "@/lib/prisma";
 import { Client } from "@upstash/qstash";
 import { verifySignatureAppRouter } from "@upstash/qstash/nextjs";
 import { generateAudioForWhatsApp, getElevenLabsConfig, logApiUsage } from "@/lib/elevenlabs";
-import { uploadMediaToWhatsApp, sendWhatsAppAudio, getWhatsAppConfig, sendWhatsAppImage } from "@/lib/whatsapp";
+import {
+    uploadMediaToWhatsApp,
+    sendWhatsAppAudio,
+    sendWhatsAppImage,
+    getWhatsAppConfig,
+    callTwilioAPI,
+} from "@/lib/whatsapp";
 
 const qstash = new Client({
     token: process.env.QSTASH_TOKEN || "NO_TOKEN",
@@ -44,7 +50,9 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
         }
 
         const config = await getWhatsAppConfig();
-        if (!config || !config.apiToken) throw new Error("Config WhatsApp faltante");
+        if (!config || !config.isConfigured) throw new Error("Config WhatsApp faltante");
+
+        const isTwilio = config.provider === "twilio";
 
         const phones = pendingJobs.map(j => j.phone);
         const contacts = await prisma.whatsAppContact.findMany({
@@ -62,14 +70,25 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
         let imageConfig: any = null;
 
         if (isAudio) {
+            if (isTwilio) {
+                await prisma.whatsAppCampaign.update({
+                    where: { id: campaignId },
+                    data: { status: "failed" }
+                });
+                return NextResponse.json({ error: "Campañas de audio no soportadas con proveedor Twilio" }, { status: 400 });
+            }
             audioConfig = JSON.parse(campaign.audioConfig || "{}");
             const elConfig = await getElevenLabsConfig();
-            if (!elConfig) throw new Error("ConfiguraciÃ³n ElevenLabs faltante para campaÃ±a de audio");
+            if (!elConfig) throw new Error("Configuración ElevenLabs faltante para campaña de audio");
         }
 
         if (isImage) {
             imageConfig = JSON.parse(campaign.audioConfig || "{}");
         }
+
+        // Texto del template (usado por Twilio y para contar variables)
+        const parsedComponents = campaign.template?.components ? JSON.parse(campaign.template.components) : [];
+        const templateBodyText = parsedComponents.find((c: any) => c.type === 'BODY')?.text || "";
 
         const resolveContactField = (contact: any, columnMapped: string): string => {
             if (!contact) return "";
@@ -98,35 +117,48 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
                         const val = resolveContactField(contact, columnMapped as string);
                         prompt = prompt.replace(new RegExp(`\\{${varKey}\\}`, 'g'), val);
                     }
-
                     const { audioBuffer } = await generateAudioForWhatsApp(prompt, audioConfig.voiceId);
                     const mediaId = await uploadMediaToWhatsApp(audioBuffer, 'audio/ogg');
                     const data = await sendWhatsAppAudio(job.phone, mediaId);
-
                     if (data.messages && data.messages.length > 0) {
                         messageId = data.messages[0].id;
                     } else {
                         throw new Error("No message ID returned (Audio)");
                     }
+
                 } else if (isImage) {
                     let caption = imageConfig.caption || "";
                     for (const [varKey, columnMapped] of Object.entries(mapping)) {
                         const val = resolveContactField(contact, columnMapped as string);
                         caption = caption.replace(new RegExp(`\\{${varKey}\\}`, 'g'), val);
                     }
-
                     const data = await sendWhatsAppImage(job.phone, imageConfig.imageUrl, caption);
-
                     if (data.messages && data.messages.length > 0) {
                         messageId = data.messages[0].id;
                     } else {
                         throw new Error("No message ID returned (Image)");
                     }
+
+                } else if (isTwilio) {
+                    // Template → texto libre para Twilio
+                    let text = templateBodyText || campaign.template?.name || "";
+                    const sortedEntries = Object.entries(mapping).sort(([a], [b]) => Number(a) - Number(b));
+                    const bodyParams: string[] = sortedEntries.map(([, col]) => resolveContactField(contact, col as string) || "Usuario");
+                    const requiredVarsCount = new Set(templateBodyText.match(/\{\{\d+\}\}/g) || []).size;
+                    while (bodyParams.length < requiredVarsCount) bodyParams.push("...");
+                    bodyParams.forEach((val, i) => { text = text.replace(`{{${i + 1}}}`, val); });
+
+                    const data = await callTwilioAPI(config, {
+                        From: `whatsapp:${config.twilioNumber}`,
+                        To: `whatsapp:${job.phone}`,
+                        Body: text,
+                    });
+                    messageId = data.sid || "";
+
                 } else {
+                    // Meta template
                     const componentsParam: any[] = [];
                     const bodyParams: any[] = [];
-
-                    const parsedComponents = campaign.template?.components ? JSON.parse(campaign.template.components) : [];
 
                     const allNamedParams: { componentType: string, param_name: string }[] = [];
                     for (const comp of parsedComponents) {
@@ -137,7 +169,6 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
                     }
 
                     const sortedEntries = Object.entries(mapping).sort(([a], [b]) => Number(a) - Number(b));
-
                     let paramIdx = 0;
                     for (const [, columnMapped] of sortedEntries) {
                         const val = resolveContactField(contact, columnMapped as string);
@@ -149,7 +180,6 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
                         });
                         paramIdx++;
                     }
-
                     while (bodyParams.length < allNamedParams.length) {
                         const paramInfo = allNamedParams[bodyParams.length];
                         bodyParams.push({
@@ -161,12 +191,8 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
 
                     const headerParams = bodyParams.filter((_: any, i: number) => allNamedParams[i]?.componentType === 'HEADER');
                     const realBodyParams = bodyParams.filter((_: any, i: number) => allNamedParams[i]?.componentType === 'BODY' || !allNamedParams[i]);
-                    if (headerParams.length > 0) {
-                        componentsParam.push({ type: "header", parameters: headerParams });
-                    }
-                    if (realBodyParams.length > 0) {
-                        componentsParam.push({ type: "body", parameters: realBodyParams });
-                    }
+                    if (headerParams.length > 0) componentsParam.push({ type: "header", parameters: headerParams });
+                    if (realBodyParams.length > 0) componentsParam.push({ type: "body", parameters: realBodyParams });
 
                     for (const comp of parsedComponents) {
                         if (comp.type === 'BUTTONS' && comp.buttons) {
@@ -199,7 +225,6 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
                         },
                         body: JSON.stringify(payload)
                     });
-
                     const data = await res.json();
                     if (res.ok && data.messages) {
                         messageId = data.messages[0].id;
@@ -210,13 +235,13 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
 
                 await prisma.campaignJob.update({
                     where: { id: job.id },
-                    data: { status: 'sent', messageId: messageId, processedAt: new Date() }
+                    data: { status: 'sent', messageId: messageId || undefined, processedAt: new Date() }
                 });
 
-                let msgContent = `[CampaÃ±a: ${campaign.name}]`
-                if (isAudio) msgContent = `[Audio IA - ${campaign.name}]`
-                else if (isImage) msgContent = `[Imagen - ${campaign.name}]`
-                else if (campaign.template?.name) msgContent = `[Template: ${campaign.template.name}]`
+                let msgContent = `[Campaña: ${campaign.name}]`;
+                if (isAudio) msgContent = `[Audio IA - ${campaign.name}]`;
+                else if (isImage) msgContent = `[Imagen - ${campaign.name}]`;
+                else if (campaign.template?.name) msgContent = `[Template: ${campaign.template.name}]`;
 
                 try {
                     await prisma.whatsAppMessage.create({
@@ -232,12 +257,13 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
                     });
                 } catch (_) {}
 
+                const provider = isTwilio ? "twilio" : "whatsapp";
                 await logApiUsage(
-                    "whatsapp",
+                    provider,
                     isAudio ? "send_audio" : isImage ? "send_image" : "bulk_template",
                     1,
-                    isImage ? 0 : 0.0773,
-                    { phone: job.phone, campaignId, messageId }
+                    isImage ? 0 : isTwilio ? 0.05 : 0.0773,
+                    { phone: job.phone, campaignId, messageId, provider }
                 );
                 successCount++;
 

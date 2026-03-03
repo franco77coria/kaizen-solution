@@ -110,14 +110,18 @@ model ChatLead {
 // ─── WhatsApp Integration ───
 
 model WhatsAppConfig {
-  id            String   @id @default(cuid())
-  apiToken      String   @db.Text
-  phoneNumberId String
-  wabaId        String?
-  verifyToken   String   @default("kaizen_whatsapp_2026")
-  apiVersion    String   @default("v21.0")
-  isConfigured  Boolean  @default(false)
-  updatedAt     DateTime @updatedAt
+  id               String   @id @default(cuid())
+  provider         String   @default("meta") // "meta" | "twilio"
+  apiToken         String   @db.Text
+  phoneNumberId    String
+  wabaId           String?
+  verifyToken      String   @default("kaizen_whatsapp_2026")
+  apiVersion       String   @default("v21.0")
+  isConfigured     Boolean  @default(false)
+  twilioAccountSid String?  @db.Text // encrypted
+  twilioAuthToken  String?  @db.Text // encrypted
+  twilioNumber     String?           // e.g. "+15077636379"
+  updatedAt        DateTime @updatedAt
 }
 
 model WhatsAppMessage {

@@ -224,7 +224,7 @@ export function extractTemplateVariables(text: string): string[] {
 // ─── Usage logging ───
 
 export async function logApiUsage(
-    service: "whatsapp" | "elevenlabs",
+    service: "whatsapp" | "elevenlabs" | "twilio",
     operation: string,
     units: number = 0,
     cost: number = 0,

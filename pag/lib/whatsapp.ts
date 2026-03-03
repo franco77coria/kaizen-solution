@@ -39,12 +39,16 @@ export function decrypt(encryptedText: string): string {
 // ─── Config helpers ───
 
 export interface WhatsAppConfig {
+    provider: string
     apiToken: string
     phoneNumberId: string
     wabaId: string | null
     verifyToken: string
     apiVersion: string
     isConfigured: boolean
+    twilioAccountSid: string | null
+    twilioAuthToken: string | null
+    twilioNumber: string | null
 }
 
 export async function getWhatsAppConfig(): Promise<WhatsAppConfig | null> {
@@ -52,56 +56,135 @@ export async function getWhatsAppConfig(): Promise<WhatsAppConfig | null> {
     if (!config) return null
 
     return {
+        provider: config.provider,
         apiToken: decrypt(config.apiToken),
         phoneNumberId: config.phoneNumberId,
         wabaId: config.wabaId,
         verifyToken: config.verifyToken,
         apiVersion: config.apiVersion?.replace('v21.0', 'v22.0') || 'v22.0',
         isConfigured: config.isConfigured,
+        twilioAccountSid: config.twilioAccountSid ? decrypt(config.twilioAccountSid) : null,
+        twilioAuthToken: config.twilioAuthToken ? decrypt(config.twilioAuthToken) : null,
+        twilioNumber: config.twilioNumber,
     }
 }
 
 export async function saveWhatsAppConfig(data: {
+    provider?: string
     apiToken: string
     phoneNumberId: string
     wabaId?: string
     verifyToken?: string
     apiVersion?: string
+    twilioAccountSid?: string
+    twilioAuthToken?: string
+    twilioNumber?: string
 }): Promise<void> {
     const existing = await prisma.whatsAppConfig.findFirst()
 
+    const provider = data.provider || "meta"
+
+    // Para cada campo sensible: si viene con **** mantenemos el existente, si no lo encriptamos
+    const encryptIfNew = (newVal: string | undefined, existing: string | null): string | null => {
+        if (!newVal) return existing
+        if (newVal.includes('****')) return existing
+        return encrypt(newVal)
+    }
+
     if (existing) {
-        // Si el frontend envía el token enmascarado (con asteriscos), mantenemos el existente.
-        // Si envía uno nuevo limpio, lo encriptamos.
-        let finalApiToken = existing.apiToken;
+        let finalApiToken = existing.apiToken
         if (data.apiToken && !data.apiToken.includes('****')) {
-            finalApiToken = encrypt(data.apiToken);
+            finalApiToken = encrypt(data.apiToken)
         }
 
         await prisma.whatsAppConfig.update({
             where: { id: existing.id },
             data: {
+                provider,
                 apiToken: finalApiToken,
                 phoneNumberId: data.phoneNumberId,
                 wabaId: data.wabaId || null,
                 verifyToken: data.verifyToken || "kaizen_whatsapp_2026",
                 apiVersion: data.apiVersion || "v22.0",
                 isConfigured: true,
+                twilioAccountSid: encryptIfNew(data.twilioAccountSid, existing.twilioAccountSid),
+                twilioAuthToken: encryptIfNew(data.twilioAuthToken, existing.twilioAuthToken),
+                twilioNumber: data.twilioNumber || existing.twilioNumber,
             },
         })
     } else {
-        const encrypted = encrypt(data.apiToken)
         await prisma.whatsAppConfig.create({
             data: {
-                apiToken: encrypted,
+                provider,
+                apiToken: encrypt(data.apiToken),
                 phoneNumberId: data.phoneNumberId,
                 wabaId: data.wabaId || null,
                 verifyToken: data.verifyToken || "kaizen_whatsapp_2026",
                 apiVersion: data.apiVersion || "v22.0",
                 isConfigured: true,
+                twilioAccountSid: data.twilioAccountSid ? encrypt(data.twilioAccountSid) : null,
+                twilioAuthToken: data.twilioAuthToken ? encrypt(data.twilioAuthToken) : null,
+                twilioNumber: data.twilioNumber || null,
             },
         })
     }
+}
+
+// ─── Twilio API helpers ───
+
+export async function callTwilioAPI(
+    config: WhatsAppConfig,
+    body: Record<string, string>
+) {
+    if (!config.twilioAccountSid || !config.twilioAuthToken) {
+        throw new Error("Twilio no está configurado. Agregá las credenciales en Configuración.")
+    }
+
+    const url = `https://api.twilio.com/2010-04-01/Accounts/${config.twilioAccountSid}/Messages.json`
+    const credentials = Buffer.from(`${config.twilioAccountSid}:${config.twilioAuthToken}`).toString("base64")
+
+    // Agregar StatusCallback para recibir actualizaciones de entrega
+    const appUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || ""
+    const params = { ...body }
+    if (appUrl) {
+        params.StatusCallback = `${appUrl}/api/whatsapp/twilio-status`
+    }
+
+    const response = await fetch(url, {
+        method: "POST",
+        headers: {
+            Authorization: `Basic ${credentials}`,
+            "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams(params).toString(),
+    })
+
+    const data = await response.json()
+    if (!response.ok) {
+        throw new Error(data?.message || `Twilio error: ${response.status}`)
+    }
+
+    return data
+}
+
+export async function testTwilioConnection(config: WhatsAppConfig) {
+    if (!config.twilioAccountSid || !config.twilioAuthToken) {
+        throw new Error("Credenciales Twilio no configuradas")
+    }
+
+    const url = `https://api.twilio.com/2010-04-01/Accounts/${config.twilioAccountSid}.json`
+    const credentials = Buffer.from(`${config.twilioAccountSid}:${config.twilioAuthToken}`).toString("base64")
+
+    const response = await fetch(url, {
+        headers: { Authorization: `Basic ${credentials}` },
+    })
+
+    const data = await response.json()
+    if (!response.ok) {
+        throw new Error(data?.message || `Twilio error: ${response.status}`)
+    }
+
+    return { friendlyName: data.friendly_name, status: data.status }
 }
 
 // ─── WhatsApp API helpers ───
@@ -144,25 +227,41 @@ export async function sendWhatsAppTemplate(
     phone: string,
     templateName: string,
     languageCode: string,
-    components?: Array<{ type: string; parameters: Array<{ type: string; text: string }> }>
+    components: any[] = [],
+    templateBodyText?: string
 ) {
     const config = await getWhatsAppConfig()
     if (!config) throw new Error("WhatsApp no configurado")
 
-    const templatePayload: any = {
-        name: templateName,
-        language: { code: languageCode },
+    if (config.provider === "twilio") {
+        if (!config.twilioNumber) throw new Error("Número Twilio no configurado")
+        let text = templateBodyText || templateName
+        if (components.length > 0) {
+            const bodyComponent = components.find((c: any) => c.type === "body")
+            const params: string[] = bodyComponent?.parameters?.map((p: any) => p.text || "") || []
+            params.forEach((val, i) => {
+                text = text.replace(`{{${i + 1}}}`, val)
+            })
+        }
+        return callTwilioAPI(config, {
+            From: `whatsapp:${config.twilioNumber}`,
+            To: `whatsapp:${phone}`,
+            Body: text,
+        })
     }
 
-    if (components && components.length > 0) {
-        templatePayload.components = components
-    }
-
-    const body = {
+    const body: any = {
         messaging_product: "whatsapp",
         to: phone,
         type: "template",
-        template: templatePayload,
+        template: {
+            name: templateName,
+            language: { code: languageCode },
+        },
+    }
+
+    if (components && components.length > 0) {
+        body.template.components = components
     }
 
     return callWhatsAppAPI(`${config.phoneNumberId}/messages`, "POST", body)
@@ -171,6 +270,15 @@ export async function sendWhatsAppTemplate(
 export async function sendWhatsAppText(phone: string, message: string) {
     const config = await getWhatsAppConfig()
     if (!config) throw new Error("WhatsApp no configurado")
+
+    if (config.provider === "twilio") {
+        if (!config.twilioNumber) throw new Error("Número Twilio no configurado")
+        return callTwilioAPI(config, {
+            From: `whatsapp:${config.twilioNumber}`,
+            To: `whatsapp:${phone}`,
+            Body: message,
+        })
+    }
 
     const body = {
         messaging_product: "whatsapp",
