@@ -222,7 +222,7 @@ export default function MensajesPage() {
                         })
                     }
                 }
-            } catch {}
+            } catch { }
 
             const res = await fetch('/api/whatsapp/send', {
                 method: 'POST',
@@ -407,9 +407,9 @@ export default function MensajesPage() {
                                                     className={`max-w-[70%] px-3.5 py-2 rounded-2xl text-sm relative ${msg.direction === 'outbound'
                                                         ? 'bg-[#d9fdd3] text-gray-800 rounded-tr-md'
                                                         : 'bg-white text-gray-800 border border-gray-100 rounded-tl-md shadow-sm'
-                                                    }`}
+                                                        }`}
                                                 >
-                                                    <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                                                    <MessageContent msg={msg} />
                                                     <div className={`flex items-center justify-end gap-1 mt-0.5 ${msg.direction === 'outbound' ? 'text-gray-500' : 'text-gray-400'}`}>
                                                         <span className="text-[10px]">{formatMessageTime(msg.timestamp)}</span>
                                                         {msg.direction === 'outbound' && <StatusTicks status={msg.status} />}
@@ -559,7 +559,7 @@ export default function MensajesPage() {
                                             try {
                                                 const varNames: string[] = JSON.parse((found as any).variables || "[]")
                                                 varNames.forEach(v => { vars[v] = "" })
-                                            } catch {}
+                                            } catch { }
                                         }
                                         setTemplateVariables(vars)
                                     }}
@@ -621,6 +621,115 @@ export default function MensajesPage() {
             )}
         </div>
     )
+}
+
+function MessageContent({ msg }: { msg: Message }) {
+    const { type, content } = msg
+
+    if (type === 'template') {
+        // Extract template name from content like "[Template: name]"
+        const templateName = content.match(/\[Template:\s*(.+?)\]/)?.[1] || content
+        return (
+            <div className="flex items-start gap-2">
+                <span className="text-base flex-shrink-0 mt-0.5">📋</span>
+                <div>
+                    <span className="inline-block text-[10px] font-bold uppercase tracking-wide text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded mb-1">
+                        Plantilla
+                    </span>
+                    <p className="text-sm text-gray-600 mt-0.5 italic">{templateName}</p>
+                </div>
+            </div>
+        )
+    }
+
+    if (type === 'image') {
+        const caption = content.replace(/^\[(?:Imagen|Archivo:[^\]]*)\]:?\s*/, '').trim()
+        return (
+            <div className="flex items-start gap-2">
+                <span className="text-base flex-shrink-0 mt-0.5">🖼️</span>
+                <div>
+                    <span className="inline-block text-[10px] font-bold uppercase tracking-wide text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded">
+                        Imagen
+                    </span>
+                    {caption && <p className="text-sm text-gray-600 mt-1">{caption}</p>}
+                </div>
+            </div>
+        )
+    }
+
+    if (type === 'audio') {
+        // Extract text from "[Audio IA: "text..."]" or just "[Audio]"
+        const audioText = content.match(/\[Audio IA:\s*"(.+?)"\]/)?.[1]
+        return (
+            <div className="flex items-start gap-2">
+                <span className="text-base flex-shrink-0 mt-0.5">🎵</span>
+                <div>
+                    <span className="inline-block text-[10px] font-bold uppercase tracking-wide text-purple-700 bg-purple-100 px-1.5 py-0.5 rounded">
+                        {audioText ? 'Audio IA' : 'Audio'}
+                    </span>
+                    {audioText && <p className="text-sm text-gray-600 mt-1 italic">&quot;{audioText}&quot;</p>}
+                </div>
+            </div>
+        )
+    }
+
+    if (type === 'video') {
+        return (
+            <div className="flex items-center gap-2">
+                <span className="text-base">🎬</span>
+                <span className="inline-block text-[10px] font-bold uppercase tracking-wide text-rose-700 bg-rose-100 px-1.5 py-0.5 rounded">
+                    Video
+                </span>
+            </div>
+        )
+    }
+
+    if (type === 'document') {
+        const filename = content.match(/\[(?:Documento|Archivo):\s*(.+?)\]/)?.[1] || ''
+        return (
+            <div className="flex items-start gap-2">
+                <span className="text-base flex-shrink-0 mt-0.5">📄</span>
+                <div>
+                    <span className="inline-block text-[10px] font-bold uppercase tracking-wide text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded">
+                        Documento
+                    </span>
+                    {filename && <p className="text-sm text-gray-600 mt-0.5 truncate max-w-[200px]">{filename}</p>}
+                </div>
+            </div>
+        )
+    }
+
+    if (type === 'sticker') {
+        return (
+            <div className="flex items-center gap-2">
+                <span className="text-2xl">😄</span>
+                <span className="text-[10px] font-bold uppercase tracking-wide text-gray-500">Sticker</span>
+            </div>
+        )
+    }
+
+    if (type === 'location') {
+        const coords = content.match(/\[Ubicación:\s*(.+?)\]/)?.[1] || ''
+        return (
+            <div className="flex items-start gap-2">
+                <span className="text-base flex-shrink-0 mt-0.5">📍</span>
+                <div>
+                    <span className="inline-block text-[10px] font-bold uppercase tracking-wide text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">
+                        Ubicación
+                    </span>
+                    {coords && <p className="text-xs text-gray-500 mt-0.5">{coords}</p>}
+                </div>
+            </div>
+        )
+    }
+
+    if (type === 'reaction') {
+        const emoji = content.match(/\[Reacción:\s*(.+?)\]/)?.[1] || '👍'
+        return <span className="text-2xl">{emoji}</span>
+    }
+
+    // Default: plain text
+    return <p className="whitespace-pre-wrap break-words">{content}</p>
 }
 
 function StatusTicks({ status }: { status: string }) {

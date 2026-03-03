@@ -65,6 +65,10 @@ export async function callElevenLabsAPI(
         throw new Error("ElevenLabs no está configurado. Ve a Configuración para agregar tu API Key.")
     }
 
+    if (!config.apiKey || config.apiKey.trim().length === 0) {
+        throw new Error("La API Key de ElevenLabs no se pudo desencriptar. Vuelve a ingresarla en Configuración > ElevenLabs.")
+    }
+
     let url = `https://api.elevenlabs.io/v1/${endpoint}`
     if (queryParams) {
         const params = new URLSearchParams(queryParams)
@@ -91,7 +95,11 @@ export async function callElevenLabsAPI(
 
     if (!response.ok) {
         const errData = await response.json().catch(() => ({}))
-        throw new Error(errData?.detail?.message || errData?.detail || `ElevenLabs API error: ${response.status}`)
+        const detail = errData?.detail?.message || errData?.detail || `Error ${response.status}`
+        if (response.status === 401 || (typeof detail === 'string' && detail.toLowerCase().includes('auth'))) {
+            throw new Error("Error de autenticación en ElevenLabs. Tu API Key puede ser inválida o haber expirado. Actualizala en Configuración > ElevenLabs.")
+        }
+        throw new Error(`ElevenLabs API: ${detail}`)
     }
 
     if (returnRaw) return response
