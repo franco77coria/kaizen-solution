@@ -192,37 +192,38 @@ export default function MensajesPage() {
         if (!selectedPhone || !selectedTemplate) return
         setSending(true)
 
-        const apiComponents: any[] = []
-        if (selectedTemplate.components && selectedTemplate.components.length > 0) {
-            selectedTemplate.components.forEach((c: any) => {
-                const namedParams = c.example?.header_text_named_params || c.example?.body_text_named_params || []
-                if (namedParams.length > 0) {
-                    const parameters = namedParams.map((p: any) => ({
-                        type: "text",
-                        parameter_name: p.param_name,
-                        text: templateVariables[p.param_name] || "..."
-                    }))
-                    apiComponents.push({
-                        type: c.type.toLowerCase(),
-                        parameters
-                    })
-                }
-                if (c.type === 'BUTTONS' && c.buttons) {
-                    c.buttons.forEach((btn: any, idx: number) => {
-                        if (btn.type === 'FLOW') {
-                            apiComponents.push({
-                                type: "button",
-                                sub_type: "flow",
-                                index: String(idx),
-                                parameters: []
-                            })
-                        }
-                    })
-                }
-            })
-        }
-
         try {
+            const apiComponents: any[] = []
+            const varKeys = Object.keys(templateVariables)
+
+            if (varKeys.length > 0) {
+                // Build body component from templateVariables (works for both Meta and Twilio)
+                apiComponents.push({
+                    type: "body",
+                    parameters: varKeys.map(key => ({
+                        type: "text",
+                        parameter_name: key,
+                        text: templateVariables[key] || "..."
+                    }))
+                })
+            }
+
+            // Also handle FLOW buttons from components (Meta only)
+            try {
+                const parsedComps: any[] = typeof selectedTemplate.components === 'string'
+                    ? JSON.parse(selectedTemplate.components)
+                    : (selectedTemplate.components || [])
+                for (const c of parsedComps) {
+                    if (c.type === 'BUTTONS' && c.buttons) {
+                        c.buttons.forEach((btn: any, idx: number) => {
+                            if (btn.type === 'FLOW') {
+                                apiComponents.push({ type: "button", sub_type: "flow", index: String(idx), parameters: [] })
+                            }
+                        })
+                    }
+                }
+            } catch {}
+
             const res = await fetch('/api/whatsapp/send', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -244,7 +245,7 @@ export default function MensajesPage() {
                 alert(data.error || 'Error enviando la plantilla oficial')
             }
         } catch (e) {
-            alert('Error de conexiÃ³n al enviar plantilla')
+            alert('Error de conexión al enviar plantilla')
         } finally {
             setSending(false)
         }
@@ -554,11 +555,11 @@ export default function MensajesPage() {
                                         const found = templates.find(t => t.id === e.target.value)
                                         setSelectedTemplate(found || null)
                                         const vars: Record<string, string> = {}
-                                        if (found && found.components) {
-                                            found.components.forEach((c: any) => {
-                                                const namedParams = c.example?.header_text_named_params || c.example?.body_text_named_params || []
-                                                namedParams.forEach((p: any) => { vars[p.param_name] = "" })
-                                            })
+                                        if (found) {
+                                            try {
+                                                const varNames: string[] = JSON.parse((found as any).variables || "[]")
+                                                varNames.forEach(v => { vars[v] = "" })
+                                            } catch {}
                                         }
                                         setTemplateVariables(vars)
                                     }}
