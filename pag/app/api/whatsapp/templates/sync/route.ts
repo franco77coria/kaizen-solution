@@ -157,12 +157,12 @@ export async function GET() {
         const config = await getWhatsAppConfig()
         const isTwilio = config?.provider === "twilio"
 
-        const templates = await prisma.whatsAppTemplate.findMany({
-            where: isTwilio
-                ? { wabaId: { startsWith: "HX" } }
-                : { OR: [{ wabaId: { not: { startsWith: "HX" } } }, { wabaId: null }] },
+        const allTemplates = await prisma.whatsAppTemplate.findMany({
             orderBy: { name: 'asc' }
         });
+        const templates = isTwilio
+            ? allTemplates.filter(t => t.wabaId?.startsWith("HX"))
+            : allTemplates.filter(t => !t.wabaId?.startsWith("HX"));
         return NextResponse.json(templates);
     } catch (error) {
         return NextResponse.json({ error: "Failed to fetch templates" }, { status: 500 });

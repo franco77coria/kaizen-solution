@@ -15,16 +15,13 @@ export async function GET() {
         const config = await getWhatsAppConfig()
         const isTwilio = config?.provider === "twilio"
 
-        const templates = await prisma.whatsAppTemplate.findMany({
-            where: {
-                status: "APPROVED",
-                ...(isTwilio
-                    ? { wabaId: { startsWith: "HX" } }
-                    : { OR: [{ wabaId: { not: { startsWith: "HX" } } }, { wabaId: null }] }
-                ),
-            },
+        const allTemplates = await prisma.whatsAppTemplate.findMany({
+            where: { status: "APPROVED" },
             orderBy: { name: "asc" },
         })
+        const templates = isTwilio
+            ? allTemplates.filter(t => t.wabaId?.startsWith("HX"))
+            : allTemplates.filter(t => !t.wabaId?.startsWith("HX"))
         return NextResponse.json({ success: true, templates })
     } catch (error: any) {
         return NextResponse.json(
