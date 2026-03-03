@@ -110,22 +110,26 @@ export default function PlantillasPage() {
                 <div className="text-center py-20 bg-white border border-gray-200 rounded-xl shadow-sm">
                     <MessageSquare className="mx-auto h-16 w-16 text-gray-300 mb-4" />
                     <h3 className="text-xl font-medium text-gray-900 mb-2">No hay plantillas sincronizadas</h3>
-                    <p className="text-gray-500 max-w-md mx-auto mb-6 text-sm">Presiona el botón "Sincronizar con Meta" para traer tus templates desde el WhatsApp Business Manager.</p>
+                    <p className="text-gray-500 max-w-md mx-auto mb-6 text-sm">Presioná el botón de sincronización para traer tus templates desde el proveedor activo.</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {templates.map((template) => {
                         let parsedVars: string[] = []
                         try { parsedVars = JSON.parse(template.variables) } catch (e) { }
+                        const isTwilioTemplate = typeof template.wabaId === "string" && template.wabaId.startsWith("HX")
 
                         return (
-                            <div key={template.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-blue-300 transition-colors flex flex-col shadow-sm">
-                                <div className="p-5 border-b border-gray-100 flex justify-between items-start bg-gray-50">
+                            <div key={template.id} className={`bg-white border rounded-xl overflow-hidden hover:border-blue-300 transition-colors flex flex-col shadow-sm ${isTwilioTemplate ? "border-blue-200" : "border-gray-200"}`}>
+                                <div className={`p-5 border-b border-gray-100 flex justify-between items-start ${isTwilioTemplate ? "bg-blue-50" : "bg-gray-50"}`}>
                                     <div>
                                         <h3 className="text-lg font-bold text-gray-900 mb-1 flex items-center gap-2">
                                             {template.name}
                                         </h3>
-                                        <div className="flex gap-2">
+                                        <div className="flex gap-2 flex-wrap">
+                                            <span className={`text-xs px-2 py-0.5 rounded font-semibold ${isTwilioTemplate ? "bg-blue-200 text-blue-800" : "bg-green-100 text-green-700"}`}>
+                                                {isTwilioTemplate ? "Twilio" : "Meta"}
+                                            </span>
                                             <span className="text-xs text-gray-500 bg-gray-200 px-2 py-0.5 rounded">{template.language}</span>
                                             <span className="text-xs text-gray-500 bg-gray-200 px-2 py-0.5 rounded">{template.category}</span>
                                         </div>
