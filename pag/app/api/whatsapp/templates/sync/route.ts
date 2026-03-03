@@ -25,6 +25,26 @@ export async function POST() {
                 return NextResponse.json({ count: 0, message: "No se encontraron plantillas en Twilio." });
             }
 
+            // Helper: fetch approval status from Twilio's dedicated endpoint
+            const credentials = Buffer.from(`${config.twilioAccountSid}:${config.twilioAuthToken}`).toString("base64")
+            const fetchApprovalStatus = async (sid: string): Promise<{ status: string; category: string }> => {
+                try {
+                    const res = await fetch(`https://content.twilio.com/v1/Content/${sid}/ApprovalRequests`, {
+                        headers: { Authorization: `Basic ${credentials}` },
+                    })
+                    if (!res.ok) return { status: "PENDING", category: "UTILITY" }
+                    const data = await res.json()
+                    // Twilio returns: { whatsapp: { status: "approved", category: "MARKETING", ... } }
+                    const wa = data?.whatsapp || data || {}
+                    return {
+                        status: (wa.status || "pending").toUpperCase(),
+                        category: (wa.category || "UTILITY").toUpperCase(),
+                    }
+                } catch {
+                    return { status: "PENDING", category: "UTILITY" }
+                }
+            }
+
             let syncedCount = 0;
             for (const t of contents) {
                 // Twilio template body lives in types e.g. "twilio/text" or "twilio/media"
@@ -36,22 +56,12 @@ export async function POST() {
                 const varMatches = bodyText.match(/\{\{(\w+)\}\}/g) || [];
                 const uniqueVars = Array.from(new Set(varMatches.map((v: string) => v.replace(/\{\{|\}\}/g, ""))));
 
-                // Twilio Content API: approval_requests can be nested differently
-                // Try multiple paths: approval_requests.whatsapp.status, approval_requests.status, top-level
-                const approvalReqs = t.approval_requests || {}
-                const rawStatus: string =
-                    approvalReqs?.whatsapp?.status ||
-                    approvalReqs?.status ||
-                    t.content_approval_status ||
-                    t.status ||
-                    "pending"
-                const approvalStatus = rawStatus.toUpperCase()
-                const category: string = approvalReqs?.whatsapp?.category || approvalReqs?.category || t.category || "UTILITY"
                 const language: string = t.language || "es"
                 const name: string = t.friendly_name || t.sid
 
-                // Debug: log template data for troubleshooting
-                console.log(`[Twilio Sync] Template "${name}" — raw status: "${rawStatus}", mapped: "${approvalStatus}", sid: ${t.sid}`)
+                // Fetch real approval status from Twilio
+                const approval = await fetchApprovalStatus(t.sid)
+                console.log(`[Twilio Sync] Template "${name}" (${t.sid}) — status: ${approval.status}, category: ${approval.category}`)
 
                 // Build a components-like structure for compatibility with campaign UI
                 const components = [{ type: "BODY", text: bodyText }];
@@ -59,8 +69,8 @@ export async function POST() {
                 await prisma.whatsAppTemplate.upsert({
                     where: { name_language: { name, language } },
                     update: {
-                        status: approvalStatus,
-                        category,
+                        status: approval.status,
+                        category: approval.category,
                         bodyText,
                         components: JSON.stringify(components),
                         variables: JSON.stringify(uniqueVars),
@@ -70,8 +80,8 @@ export async function POST() {
                         wabaId: t.sid,
                         name,
                         language,
-                        status: approvalStatus,
-                        category,
+                        status: approval.status,
+                        category: approval.category,
                         bodyText,
                         components: JSON.stringify(components),
                         variables: JSON.stringify(uniqueVars),
