@@ -36,10 +36,22 @@ export async function POST() {
                 const varMatches = bodyText.match(/\{\{(\w+)\}\}/g) || [];
                 const uniqueVars = Array.from(new Set(varMatches.map((v: string) => v.replace(/\{\{|\}\}/g, ""))));
 
-                const approvalStatus: string = (t.approval_requests?.status || "pending").toUpperCase();
-                const category: string = t.approval_requests?.category || "UTILITY";
-                const language: string = t.language || "es";
-                const name: string = t.friendly_name || t.sid;
+                // Twilio Content API: approval_requests can be nested differently
+                // Try multiple paths: approval_requests.whatsapp.status, approval_requests.status, top-level
+                const approvalReqs = t.approval_requests || {}
+                const rawStatus: string =
+                    approvalReqs?.whatsapp?.status ||
+                    approvalReqs?.status ||
+                    t.content_approval_status ||
+                    t.status ||
+                    "pending"
+                const approvalStatus = rawStatus.toUpperCase()
+                const category: string = approvalReqs?.whatsapp?.category || approvalReqs?.category || t.category || "UTILITY"
+                const language: string = t.language || "es"
+                const name: string = t.friendly_name || t.sid
+
+                // Debug: log template data for troubleshooting
+                console.log(`[Twilio Sync] Template "${name}" — raw status: "${rawStatus}", mapped: "${approvalStatus}", sid: ${t.sid}`)
 
                 // Build a components-like structure for compatibility with campaign UI
                 const components = [{ type: "BODY", text: bodyText }];
