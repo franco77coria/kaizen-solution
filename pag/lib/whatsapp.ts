@@ -458,7 +458,7 @@ export async function upsertContact(phone: string, name?: string) {
     await prisma.whatsAppContact.upsert({
         where: { phone: cleanPhone },
         update: {
-            name: name || undefined,
+            // Never overwrite CRM name with WhatsApp ProfileName — user's name takes priority
             lastMessageAt: new Date(),
             totalMessages: { increment: 1 },
         },
