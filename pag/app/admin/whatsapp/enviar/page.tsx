@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { SendHorizonal, Plus, PlayCircle, PauseCircle, Trash2, Clock, ImageIcon, Zap } from "lucide-react"
+import { SendHorizonal, Plus, PlayCircle, PauseCircle, Trash2, Clock, ImageIcon, Zap, Upload } from "lucide-react"
 
 export default function CampanasPage() {
     const [campaigns, setCampaigns] = useState<any[]>([])
@@ -25,6 +25,9 @@ export default function CampanasPage() {
     const [selectedTemplate, setSelectedTemplate] = useState<any>(null)
     const [activeWindowContacts, setActiveWindowContacts] = useState<any[]>([])
     const [loadingWindow, setLoadingWindow] = useState(false)
+    const [excludedContactIds, setExcludedContactIds] = useState<Set<string>>(new Set())
+    const [imageInputMode, setImageInputMode] = useState<"url" | "file">("url")
+    const [uploadingImage, setUploadingImage] = useState(false)
     const mockColumns = ["phone", "name", "tags", "source", "externalId"]
 
     useEffect(() => {
@@ -59,14 +62,51 @@ export default function CampanasPage() {
         }
     }
 
+    const handleImageFileUpload = async (file: File) => {
+        setUploadingImage(true)
+        try {
+            const fd = new FormData()
+            fd.append("file", file)
+            const res = await fetch("/api/whatsapp/media-upload", { method: "POST", body: fd })
+            const data = await res.json()
+            if (data.success) {
+                setNewCampaign(prev => ({ ...prev, audioConfig: { ...prev.audioConfig, imageUrl: data.url } }))
+            } else {
+                alert(data.error || "Error al subir la imagen")
+            }
+        } catch {
+            alert("Error al subir la imagen")
+        } finally {
+            setUploadingImage(false)
+        }
+    }
+
     const fetchActiveWindowContacts = async () => {
         setLoadingWindow(true)
         try {
             const res = await fetch("/api/whatsapp/contacts/active-window")
             const data = await res.json()
             setActiveWindowContacts(data.contacts || [])
+            setExcludedContactIds(new Set())
         } catch { setActiveWindowContacts([]) }
         finally { setLoadingWindow(false) }
+    }
+
+    const toggleExcludeContact = (id: string) => {
+        setExcludedContactIds(prev => {
+            const next = new Set(prev)
+            if (next.has(id)) next.delete(id)
+            else next.add(id)
+            return next
+        })
+    }
+
+    const toggleExcludeAll = () => {
+        if (excludedContactIds.size === activeWindowContacts.length) {
+            setExcludedContactIds(new Set())
+        } else {
+            setExcludedContactIds(new Set(activeWindowContacts.map((c: any) => c.id)))
+        }
     }
 
     const handleTemplateSelect = (tempId: string) => {
@@ -85,14 +125,17 @@ export default function CampanasPage() {
                 return alert("Falta configurar la voz o el texto del audio")
             }
             if (newCampaign.type === "image" && !newCampaign.audioConfig.imageUrl) {
-                return alert("Falta la URL de la imagen")
+                return alert("Falta la imagen (URL o archivo subido)")
             }
 
-            const payload = { ...newCampaign }
+            const payload: any = { ...newCampaign }
             if (payload.type === "template") {
                 payload.audioConfig = { voiceId: "", prompt: "", imageUrl: "", caption: "" };
             } else {
                 payload.templateId = "";
+            }
+            if (newCampaign.audienceMode === 'active_window' && excludedContactIds.size > 0) {
+                payload.excludedContactIds = Array.from(excludedContactIds)
             }
 
             const res = await fetch("/api/whatsapp/campaigns", {
@@ -129,7 +172,7 @@ export default function CampanasPage() {
                 return alert("Falta configurar la voz o el texto del audio")
             }
             if (newCampaign.type === "image" && !newCampaign.audioConfig.imageUrl) {
-                return alert("Falta la URL de la imagen")
+                return alert("Falta la imagen (URL o archivo subido)")
             }
 
             const payload = { ...newCampaign, testPhone }
@@ -364,20 +407,43 @@ export default function CampanasPage() {
                                                 </div>
                                             ) : (
                                                 <>
-                                                    <p className="text-2xl font-bold text-emerald-700">{activeWindowContacts.length} <span className="text-sm font-normal">contactos disponibles</span></p>
-                                                    <p className="text-[11px] text-emerald-600 mt-1">Estos contactos te escribieron en las últimas 24hs. Les podés enviar cualquier mensaje libre sin costo de Meta.</p>
-                                                    {activeWindowContacts.length > 0 && activeWindowContacts.length <= 10 && (
-                                                        <div className="mt-2 space-y-1">
-                                                            {activeWindowContacts.map((c: any) => (
-                                                                <div key={c.id} className="flex items-center justify-between text-xs bg-white/60 px-2 py-1 rounded">
-                                                                    <span className="text-gray-700">{c.name || c.phone}</span>
-                                                                    <span className="text-gray-400">{c.phone}</span>
-                                                                </div>
-                                                            ))}
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <p className="text-lg font-bold text-emerald-700">
+                                                            {activeWindowContacts.length - excludedContactIds.size}
+                                                            <span className="text-sm font-normal"> / {activeWindowContacts.length} seleccionados</span>
+                                                        </p>
+                                                        <button
+                                                            type="button"
+                                                            onClick={toggleExcludeAll}
+                                                            className="text-xs text-emerald-700 hover:text-emerald-900 underline"
+                                                        >
+                                                            {excludedContactIds.size === activeWindowContacts.length ? 'Seleccionar todos' : 'Deseleccionar todos'}
+                                                        </button>
+                                                    </div>
+                                                    <p className="text-[11px] text-emerald-600 mb-2">Desmarcá los contactos que no querés incluir en el envío.</p>
+                                                    {activeWindowContacts.length > 0 && (
+                                                        <div className="max-h-48 overflow-y-auto space-y-1 pr-1">
+                                                            {activeWindowContacts.map((c: any) => {
+                                                                const excluded = excludedContactIds.has(c.id)
+                                                                return (
+                                                                    <label
+                                                                        key={c.id}
+                                                                        className={`flex items-center justify-between text-xs px-2 py-1.5 rounded cursor-pointer transition-colors ${excluded ? 'bg-gray-100 opacity-50' : 'bg-white/70 hover:bg-white'}`}
+                                                                    >
+                                                                        <div className="flex items-center gap-2">
+                                                                            <input
+                                                                                type="checkbox"
+                                                                                checked={!excluded}
+                                                                                onChange={() => toggleExcludeContact(c.id)}
+                                                                                className="accent-emerald-600"
+                                                                            />
+                                                                            <span className="text-gray-800 font-medium">{c.name || 'Sin nombre'}</span>
+                                                                        </div>
+                                                                        <span className="text-gray-400 font-mono">{c.phone}</span>
+                                                                    </label>
+                                                                )
+                                                            })}
                                                         </div>
-                                                    )}
-                                                    {activeWindowContacts.length > 10 && (
-                                                        <p className="text-[11px] text-emerald-500 mt-2">Mostrando resumen. {activeWindowContacts.length} contactos serán incluidos.</p>
                                                     )}
                                                 </>
                                             )}
@@ -454,16 +520,59 @@ export default function CampanasPage() {
 
                             {newCampaign.type === 'image' && (
                                 <div className="space-y-4">
+                                    {/* Toggle URL / Archivo */}
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">URL de la Imagen *</label>
-                                        <input
-                                            type="url" required
-                                            value={newCampaign.audioConfig.imageUrl}
-                                            onChange={(e) => setNewCampaign(prev => ({ ...prev, audioConfig: { ...prev.audioConfig, imageUrl: e.target.value } }))}
-                                            className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 text-sm"
-                                            placeholder="https://ejemplo.com/imagen.jpg"
-                                        />
-                                        <p className="text-[11px] text-gray-400 mt-1">Debe ser una URL pública accesible (HTTPS). Formatos: JPG, PNG.</p>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Imagen *</label>
+                                        <div className="flex bg-gray-100 rounded-lg p-0.5 gap-0.5 mb-2 w-fit">
+                                            <button type="button" onClick={() => setImageInputMode("url")}
+                                                className={`px-4 py-1.5 text-xs font-medium rounded-md transition-colors ${imageInputMode === 'url' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+                                                URL
+                                            </button>
+                                            <button type="button" onClick={() => setImageInputMode("file")}
+                                                className={`px-4 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center gap-1 ${imageInputMode === 'file' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+                                                <Upload size={11} /> Subir archivo
+                                            </button>
+                                        </div>
+
+                                        {imageInputMode === 'url' ? (
+                                            <>
+                                                <input
+                                                    type="url"
+                                                    required={imageInputMode === 'url'}
+                                                    value={newCampaign.audioConfig.imageUrl}
+                                                    onChange={(e) => setNewCampaign(prev => ({ ...prev, audioConfig: { ...prev.audioConfig, imageUrl: e.target.value } }))}
+                                                    className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 text-sm"
+                                                    placeholder="https://ejemplo.com/imagen.jpg"
+                                                />
+                                                <p className="text-[11px] text-gray-400 mt-1">URL pública accesible (HTTPS). Formatos: JPG, PNG.</p>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <label className={`flex flex-col items-center justify-center w-full py-6 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${uploadingImage ? 'border-blue-300 bg-blue-50' : 'border-gray-200 hover:border-blue-400 hover:bg-blue-50/40'}`}>
+                                                    {uploadingImage ? (
+                                                        <>
+                                                            <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mb-2" />
+                                                            <span className="text-xs text-blue-600">Subiendo imagen...</span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Upload size={20} className="text-gray-400 mb-1" />
+                                                            <span className="text-xs text-gray-500">Clic para seleccionar o arrastrá la imagen</span>
+                                                            <span className="text-[10px] text-gray-400 mt-0.5">JPG, PNG, WEBP · Máx 5 MB</span>
+                                                        </>
+                                                    )}
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        className="hidden"
+                                                        onChange={(e) => { if (e.target.files?.[0]) handleImageFileUpload(e.target.files[0]) }}
+                                                    />
+                                                </label>
+                                                {newCampaign.audioConfig.imageUrl && (
+                                                    <p className="text-[11px] text-green-600 mt-1">Imagen subida correctamente</p>
+                                                )}
+                                            </>
+                                        )}
                                     </div>
 
                                     {newCampaign.audioConfig.imageUrl && (
@@ -582,7 +691,7 @@ export default function CampanasPage() {
                             {(() => {
                                 const isWindow = newCampaign.audienceMode === 'active_window';
                                 const selectedListObj = lists.find(l => l.id === newCampaign.listId);
-                                const subsCount = isWindow ? activeWindowContacts.length : (selectedListObj?._count?.subscribers || 0);
+                                const subsCount = isWindow ? (activeWindowContacts.length - excludedContactIds.size) : (selectedListObj?._count?.subscribers || 0);
                                 if (subsCount === 0) return null;
                                 const isFreeType = newCampaign.type === 'image' || newCampaign.type === 'audio';
                                 const estMeta = isFreeType ? 0 : subsCount * 0.0773;
@@ -608,7 +717,7 @@ export default function CampanasPage() {
                                 <button type="button" onClick={handleTestCampaign} disabled={(!newCampaign.listId && newCampaign.audienceMode !== 'active_window') || (newCampaign.type === 'template' && !newCampaign.templateId) || (newCampaign.type === 'image' && !newCampaign.audioConfig.imageUrl)} className="px-5 py-2 text-sm bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 disabled:opacity-50 rounded-lg transition-colors">
                                     Enviar Prueba a Mi WA
                                 </button>
-                                <button type="submit" disabled={(!newCampaign.listId && newCampaign.audienceMode !== 'active_window') || (newCampaign.type === 'template' && !newCampaign.templateId) || (newCampaign.type === 'image' && !newCampaign.audioConfig.imageUrl) || (newCampaign.audienceMode === 'active_window' && activeWindowContacts.length === 0)} className="px-5 py-2 text-sm bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white rounded-lg transition-colors">
+                                <button type="submit" disabled={(!newCampaign.listId && newCampaign.audienceMode !== 'active_window') || (newCampaign.type === 'template' && !newCampaign.templateId) || (newCampaign.type === 'image' && !newCampaign.audioConfig.imageUrl) || (newCampaign.audienceMode === 'active_window' && (activeWindowContacts.length - excludedContactIds.size) === 0)} className="px-5 py-2 text-sm bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white rounded-lg transition-colors">
                                     Guardar Borrador
                                 </button>
                             </div>

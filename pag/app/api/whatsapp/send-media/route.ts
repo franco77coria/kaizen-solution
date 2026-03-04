@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { uploadMediaToWhatsApp, getWhatsAppConfig } from "@/lib/whatsapp";
+import { uploadMediaToWhatsApp, getWhatsAppConfig, callTwilioAPI } from "@/lib/whatsapp";
 import { auth } from "@/lib/auth";
+import crypto from "crypto";
 
 export async function POST(req: Request) {
     try {
@@ -25,69 +26,98 @@ export async function POST(req: Request) {
         const buffer = Buffer.from(arrayBuffer);
         const mimeType = file.type;
 
-        // 2. Upload to Meta
-        const mediaId = await uploadMediaToWhatsApp(buffer, mimeType);
-
-        // 3. Determine Msg Type
+        // 2. Determine message type
         let whatsappMsgType = "document";
-        let mediaObject: any = { id: mediaId };
+        if (mimeType.startsWith("image/")) whatsappMsgType = "image";
+        else if (mimeType.startsWith("video/")) whatsappMsgType = "video";
+        else if (mimeType.startsWith("audio/")) whatsappMsgType = "audio";
 
-        if (mimeType.startsWith("image/")) {
-            whatsappMsgType = "image";
-        } else if (mimeType.startsWith("video/")) {
-            whatsappMsgType = "video";
-        } else if (mimeType.startsWith("audio/")) {
-            whatsappMsgType = "audio";
-        } else {
-            mediaObject.filename = file.name || "documento";
-        }
+        let messageId: string | undefined;
 
-        if (text && whatsappMsgType !== "audio") {
-            mediaObject.caption = text;
-        }
+        if (config.provider === "twilio") {
+            // Twilio path: store file in MediaCache, serve publicly via /api/media-cache/[hash]
+            const hash = crypto.createHash("sha256").update(buffer).digest("hex");
+            const db = prisma as any;
 
-        // 4. Send
-        const payload = {
-            messaging_product: "whatsapp",
-            recipient_type: "individual",
-            to: numero,
-            type: whatsappMsgType,
-            [whatsappMsgType]: mediaObject
-        };
-
-        const res = await fetch(`https://graph.facebook.com/${config.apiVersion}/${config.phoneNumberId}/messages`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${config.apiToken}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload)
-        });
-
-        const data = await res.json();
-
-        if (res.ok) {
-            // Guardar en BD
-            const uiContent = `[Archivo: ${file.name}] ${text ? text : ''}`;
-            await prisma.whatsAppMessage.create({
-                data: {
-                    messageId: data.messages[0].id,
-                    phone: numero,
-                    direction: "outbound",
-                    type: whatsappMsgType,
-                    content: uiContent.trim(),
-                    status: "sent"
-                }
+            await db.mediaCache.upsert({
+                where: { hash },
+                update: {},
+                create: {
+                    hash,
+                    mimeType,
+                    data: buffer.toString("base64"),
+                },
             });
 
-            return NextResponse.json({ success: true, messageId: data.messages[0].id });
+            const baseUrl = process.env.NEXTAUTH_URL || "";
+            const mediaUrl = `${baseUrl}/api/media-cache/${hash}`;
+
+            const twilioBody: Record<string, string> = {
+                From: `whatsapp:${config.twilioNumber}`,
+                To: `whatsapp:${numero}`,
+                MediaUrl: mediaUrl,
+            };
+            if (text && whatsappMsgType !== "audio") {
+                twilioBody.Body = text;
+            }
+
+            const twilioRes = await callTwilioAPI(config, twilioBody);
+            messageId = twilioRes?.sid;
+
         } else {
-            console.error(data);
-            return NextResponse.json({ error: data.error?.message || "Error Graph API" }, { status: 500 });
+            // Meta path: upload to Meta and send via Graph API
+            const mediaId = await uploadMediaToWhatsApp(buffer, mimeType);
+
+            let mediaObject: any = { id: mediaId };
+            if (whatsappMsgType === "document") {
+                mediaObject.filename = file.name || "documento";
+            }
+            if (text && whatsappMsgType !== "audio") {
+                mediaObject.caption = text;
+            }
+
+            const payload = {
+                messaging_product: "whatsapp",
+                recipient_type: "individual",
+                to: numero,
+                type: whatsappMsgType,
+                [whatsappMsgType]: mediaObject,
+            };
+
+            const res = await fetch(`https://graph.facebook.com/${config.apiVersion}/${config.phoneNumberId}/messages`, {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${config.apiToken}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(payload),
+            });
+
+            const data = await res.json();
+            if (!res.ok) {
+                console.error(data);
+                return NextResponse.json({ error: data.error?.message || "Error Graph API" }, { status: 500 });
+            }
+            messageId = data.messages?.[0]?.id;
         }
 
+        // 3. Save to DB
+        const uiContent = `[Archivo: ${file.name}] ${text ? text : ""}`;
+        await prisma.whatsAppMessage.create({
+            data: {
+                messageId: messageId || undefined,
+                phone: numero,
+                direction: "outbound",
+                type: whatsappMsgType,
+                content: uiContent.trim(),
+                status: "sent",
+            },
+        });
+
+        return NextResponse.json({ success: true, messageId });
+
     } catch (e: any) {
-        console.error("Upload Media Error: ", e);
+        console.error("Upload Media Error:", e);
         return NextResponse.json({ error: e.message || "Unknown error" }, { status: 500 });
     }
 }

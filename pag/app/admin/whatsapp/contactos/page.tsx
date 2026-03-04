@@ -10,6 +10,10 @@ function ContactosPageContent() {
     const [contacts, setContacts] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [search, setSearch] = useState("")
+    const [searchInput, setSearchInput] = useState("")
+    const [page, setPage] = useState(1)
+    const [pagination, setPagination] = useState<{ total: number; totalPages: number; pageSize: number } | null>(null)
+    const PAGE_SIZE = 50
 
     const [activeTab, setActiveTab] = useState<"list" | "import">("list")
 
@@ -38,18 +42,30 @@ function ContactosPageContent() {
     const searchParams = useSearchParams()
     const currentListId = searchParams.get("list")
 
+    // Debounce search input
+    useEffect(() => {
+        const t = setTimeout(() => {
+            setSearch(searchInput)
+            setPage(1)
+        }, 350)
+        return () => clearTimeout(t)
+    }, [searchInput])
+
     useEffect(() => {
         loadContacts()
         fetchLists()
-    }, [currentListId])
+    }, [currentListId, search, page])
 
     const loadContacts = async () => {
         setLoading(true)
         try {
-            const url = currentListId ? `/api/whatsapp/contacts?list=${currentListId}` : "/api/whatsapp/contacts"
-            const res = await fetch(url)
+            const params = new URLSearchParams({ page: String(page), pageSize: String(PAGE_SIZE) })
+            if (currentListId) params.set("list", currentListId)
+            if (search) params.set("search", search)
+            const res = await fetch(`/api/whatsapp/contacts?${params}`)
             const data = await res.json()
-            setContacts(Array.isArray(data) ? data : [])
+            setContacts(Array.isArray(data.contacts) ? data.contacts : [])
+            setPagination(data.pagination || null)
         } catch (e) {
             console.error(e)
         } finally {
@@ -130,11 +146,8 @@ function ContactosPageContent() {
         })
     }
 
-    const filtered = contacts.filter((c) => {
-        if (!search) return true
-        const q = search.toLowerCase()
-        return c.phone?.includes(q) || c.name?.toLowerCase().includes(q)
-    })
+    // No client-side filtering — search is server-side
+    const filtered = contacts
 
     const handleDeleteContact = async (id: string) => {
         if (!confirm("¿Seguro que deseas eliminar este contacto?")) return
@@ -235,7 +248,7 @@ function ContactosPageContent() {
                         <div className="relative flex-1 max-w-md">
                             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                             <input type="text" placeholder="Buscar por nombre o teléfono..."
-                                value={search} onChange={(e) => setSearch(e.target.value)}
+                                value={searchInput} onChange={(e) => setSearchInput(e.target.value)}
                                 className="w-full bg-white border border-gray-200 text-gray-900 pl-10 pr-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-400" />
                         </div>
                         <button onClick={() => { setShowAddManual(true); setManualPhone(""); setManualName("") }}
@@ -315,9 +328,35 @@ function ContactosPageContent() {
                                 </table>
                             </div>
                         )}
-                        {!loading && filtered.length > 0 && (
-                            <div className="px-6 py-3 border-t border-gray-100 bg-gray-50 text-xs text-gray-500">
-                                Mostrando {filtered.length} contacto{filtered.length !== 1 ? 's' : ''}
+                        {!loading && pagination && (
+                            <div className="px-6 py-3 border-t border-gray-100 bg-gray-50 flex items-center justify-between text-xs text-gray-500">
+                                <span>
+                                    {pagination.total === 0
+                                        ? 'Sin resultados'
+                                        : `${(page - 1) * PAGE_SIZE + 1}–${Math.min(page * PAGE_SIZE, pagination.total)} de ${pagination.total} contactos`
+                                    }
+                                </span>
+                                {pagination.totalPages > 1 && (
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => setPage(p => Math.max(1, p - 1))}
+                                            disabled={page === 1}
+                                            className="px-3 py-1 rounded border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                        >
+                                            ← Anterior
+                                        </button>
+                                        <span className="font-medium text-gray-700">
+                                            Pág. {page} / {pagination.totalPages}
+                                        </span>
+                                        <button
+                                            onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))}
+                                            disabled={page === pagination.totalPages}
+                                            className="px-3 py-1 rounded border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                        >
+                                            Siguiente →
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>

@@ -14,6 +14,10 @@ export default function ConfigElevenLabsPage() {
     const [voiceId, setVoiceId] = useState('21m00Tcm4TlvDq8ikWAM')
     const [modelId, setModelId] = useState('eleven_multilingual_v2')
     const [isConfigured, setIsConfigured] = useState(false)
+    const [speed, setSpeed] = useState(0.95)
+    const [stability, setStability] = useState(0.80)
+    const [similarityBoost, setSimilarityBoost] = useState(1.0)
+    const [styleExaggeration, setStyleExaggeration] = useState(0.30)
     const [voices, setVoices] = useState<Voice[]>([])
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
@@ -42,6 +46,10 @@ export default function ConfigElevenLabsPage() {
                 setVoiceId(data.voiceId)
                 setModelId(data.modelId)
                 setIsConfigured(true)
+                setSpeed(data.speed ?? 0.95)
+                setStability(data.stability ?? 0.80)
+                setSimilarityBoost(data.similarityBoost ?? 1.0)
+                setStyleExaggeration(data.styleExaggeration ?? 0.30)
             }
         } catch { showToast('Error cargando config', 'err') }
         finally { setLoading(false) }
@@ -64,7 +72,7 @@ export default function ConfigElevenLabsPage() {
             const res = await fetch('/api/elevenlabs/config', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ apiKey, voiceId, modelId }),
+                body: JSON.stringify({ apiKey, voiceId, modelId, speed, stability, similarityBoost, styleExaggeration }),
             })
             const data = await res.json()
             if (data.success) {
@@ -206,6 +214,35 @@ export default function ConfigElevenLabsPage() {
                                 className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-400" />
                         )}
                     </div>
+                    {/* Voice settings sliders */}
+                    <div className="pt-2 space-y-4 border-t border-gray-100">
+                        <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider pt-1">Parámetros de Voz</p>
+
+                        {[
+                            { label: 'Velocidad', value: speed, set: setSpeed, min: 0.7, max: 1.2, step: 0.01, format: (v: number) => `${v.toFixed(2)}x` },
+                            { label: 'Estabilidad', value: stability, set: setStability, min: 0, max: 1, step: 0.01, format: (v: number) => `${Math.round(v * 100)}%` },
+                            { label: 'Similitud', value: similarityBoost, set: setSimilarityBoost, min: 0, max: 1, step: 0.01, format: (v: number) => `${Math.round(v * 100)}%` },
+                            { label: 'Exageración de estilo', value: styleExaggeration, set: setStyleExaggeration, min: 0, max: 1, step: 0.01, format: (v: number) => `${Math.round(v * 100)}%` },
+                        ].map(({ label, value, set, min, max, step, format }) => (
+                            <div key={label}>
+                                <div className="flex justify-between items-center mb-1">
+                                    <label className="text-xs font-medium text-gray-600">{label}</label>
+                                    <span className="text-xs font-mono text-purple-600 bg-purple-50 px-2 py-0.5 rounded">{format(value)}</span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min={min} max={max} step={step}
+                                    value={value}
+                                    onChange={(e) => set(parseFloat(e.target.value))}
+                                    className="w-full h-1.5 bg-gray-200 rounded-full appearance-none cursor-pointer accent-purple-500"
+                                />
+                                <div className="flex justify-between text-[10px] text-gray-400 mt-0.5">
+                                    <span>{min}</span><span>{max}</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
                     <div className="flex gap-3 pt-2">
                         <button onClick={handleSave} disabled={saving}
                             className="flex-1 py-3 bg-purple-500 text-white rounded-xl text-sm font-semibold hover:bg-purple-600 disabled:opacity-50 transition-colors">

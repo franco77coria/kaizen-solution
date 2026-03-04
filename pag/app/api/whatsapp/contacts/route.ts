@@ -13,6 +13,9 @@ export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url)
         const listId = searchParams.get("list")
+        const search = searchParams.get("search") || ""
+        const page = Math.max(1, parseInt(searchParams.get("page") || "1"))
+        const pageSize = Math.min(200, Math.max(1, parseInt(searchParams.get("pageSize") || "50")))
 
         const whereClause: any = {}
         if (listId) {
@@ -20,11 +23,22 @@ export async function GET(request: NextRequest) {
                 some: { listId }
             }
         }
+        if (search) {
+            whereClause.OR = [
+                { phone: { contains: search } },
+                { name: { contains: search, mode: "insensitive" } },
+            ]
+        }
 
-        const contacts = await prisma.whatsAppContact.findMany({
-            where: whereClause,
-            orderBy: { lastMessageAt: "desc" },
-        })
+        const [total, contacts] = await Promise.all([
+            prisma.whatsAppContact.count({ where: whereClause }),
+            prisma.whatsAppContact.findMany({
+                where: whereClause,
+                orderBy: { lastMessageAt: "desc" },
+                skip: (page - 1) * pageSize,
+                take: pageSize,
+            }),
+        ])
 
         const now = new Date()
         const phones = contacts.map(c => c.phone)
@@ -77,7 +91,15 @@ export async function GET(request: NextRequest) {
             }
         })
 
-        return NextResponse.json(contactsWithMeta)
+        return NextResponse.json({
+            contacts: contactsWithMeta,
+            pagination: {
+                page,
+                pageSize,
+                total,
+                totalPages: Math.ceil(total / pageSize),
+            },
+        })
     } catch (error: any) {
         return NextResponse.json({ error: error.message || "Error al obtener contactos" }, { status: 500 })
     }

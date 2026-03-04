@@ -17,6 +17,10 @@ export async function GET() {
                 apiKey: "",
                 voiceId: "21m00Tcm4TlvDq8ikWAM",
                 modelId: "eleven_multilingual_v2",
+                speed: 0.95,
+                stability: 0.80,
+                similarityBoost: 1.0,
+                styleExaggeration: 0.30,
             })
         }
 
@@ -25,6 +29,10 @@ export async function GET() {
             apiKey: maskToken(config.apiKey),
             voiceId: config.voiceId,
             modelId: config.modelId,
+            speed: config.speed,
+            stability: config.stability,
+            similarityBoost: config.similarityBoost,
+            styleExaggeration: config.styleExaggeration,
         })
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 })
@@ -39,13 +47,13 @@ export async function PUT(request: NextRequest) {
 
     try {
         const body = await request.json()
-        const { apiKey, voiceId, modelId } = body
+        const { apiKey, voiceId, modelId, speed, stability, similarityBoost, styleExaggeration } = body
 
         if (!apiKey) {
             return NextResponse.json({ error: "API Key requerida" }, { status: 400 })
         }
 
-        await saveElevenLabsConfig({ apiKey, voiceId, modelId })
+        await saveElevenLabsConfig({ apiKey, voiceId, modelId, speed, stability, similarityBoost, styleExaggeration })
 
         return NextResponse.json({ success: true })
     } catch (error: any) {

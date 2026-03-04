@@ -11,6 +11,10 @@ export interface ElevenLabsConfigData {
     voiceId: string
     modelId: string
     isConfigured: boolean
+    speed: number
+    stability: number
+    similarityBoost: number
+    styleExaggeration: number
 }
 
 export async function getElevenLabsConfig(): Promise<ElevenLabsConfigData | null> {
@@ -22,6 +26,10 @@ export async function getElevenLabsConfig(): Promise<ElevenLabsConfigData | null
         voiceId: config.voiceId,
         modelId: config.modelId,
         isConfigured: config.isConfigured,
+        speed: config.speed ?? 0.95,
+        stability: config.stability ?? 0.80,
+        similarityBoost: config.similarityBoost ?? 1.0,
+        styleExaggeration: config.styleExaggeration ?? 0.30,
     }
 }
 
@@ -29,6 +37,10 @@ export async function saveElevenLabsConfig(data: {
     apiKey: string
     voiceId?: string
     modelId?: string
+    speed?: number
+    stability?: number
+    similarityBoost?: number
+    styleExaggeration?: number
 }): Promise<void> {
     const existing = await db.elevenLabsConfig.findFirst()
     const encrypted = encrypt(data.apiKey)
@@ -38,6 +50,10 @@ export async function saveElevenLabsConfig(data: {
         voiceId: data.voiceId || "21m00Tcm4TlvDq8ikWAM",
         modelId: data.modelId || "eleven_multilingual_v2",
         isConfigured: true,
+        speed: data.speed ?? 0.95,
+        stability: data.stability ?? 0.80,
+        similarityBoost: data.similarityBoost ?? 1.0,
+        styleExaggeration: data.styleExaggeration ?? 0.30,
     }
 
     if (existing) {
@@ -171,8 +187,10 @@ export async function generateAudio(
             text,
             model_id: model,
             voice_settings: {
-                stability: 0.5,
-                similarity_boost: 0.75,
+                stability: config.stability ?? 0.80,
+                similarity_boost: config.similarityBoost ?? 1.0,
+                style: config.styleExaggeration ?? 0.30,
+                speed: config.speed ?? 0.95,
             },
         },
         true,   // isJson

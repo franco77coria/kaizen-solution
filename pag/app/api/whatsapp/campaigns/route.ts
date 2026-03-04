@@ -30,17 +30,23 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "No autorizado" }, { status: 401 })
         }
         const body = await req.json();
-        const { name, type, listId, templateId, mapping, audioConfig, audienceMode } = body;
+        const { name, type, listId, templateId, mapping, audioConfig, audienceMode, excludedContactIds } = body;
+        const excluded: string[] = Array.isArray(excludedContactIds) ? excludedContactIds : [];
 
         let finalListId = listId;
 
         if (audienceMode === 'active_window' && (type === 'image' || type === 'audio')) {
             const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+            const whereClause: any = {
+                lastMessageAt: { gte: twentyFourHoursAgo },
+                optInStatus: true,
+            };
+            if (excluded.length > 0) {
+                whereClause.id = { notIn: excluded };
+            }
+
             const activeContacts = await prisma.whatsAppContact.findMany({
-                where: {
-                    lastMessageAt: { gte: twentyFourHoursAgo },
-                    optInStatus: true,
-                },
+                where: whereClause,
                 select: { id: true, phone: true }
             });
 

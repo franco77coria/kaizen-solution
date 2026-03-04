@@ -257,12 +257,16 @@ model WhatsAppLog {
 // ─── ElevenLabs Integration ───
 
 model ElevenLabsConfig {
-  id           String   @id @default(cuid())
-  apiKey       String   @db.Text // encrypted
-  voiceId      String   @default("21m00Tcm4TlvDq8ikWAM") // Rachel
-  modelId      String   @default("eleven_multilingual_v2")
-  isConfigured Boolean  @default(false)
-  updatedAt    DateTime @updatedAt
+  id                String   @id @default(cuid())
+  apiKey            String   @db.Text // encrypted
+  voiceId           String   @default("21m00Tcm4TlvDq8ikWAM") // Rachel
+  modelId           String   @default("eleven_multilingual_v2")
+  isConfigured      Boolean  @default(false)
+  speed             Float    @default(0.95)
+  stability         Float    @default(0.80)
+  similarityBoost   Float    @default(1.0)
+  styleExaggeration Float    @default(0.30)
+  updatedAt         DateTime @updatedAt
 }
 
 model AudioMessageCache {
@@ -272,6 +276,14 @@ model AudioMessageCache {
   mediaId   String?  // ID que devuelve WhatsApp al subirlo (opcional, dura 30 días)
   createdAt DateTime @default(now())
   expiresAt DateTime? // Si usamos un storage que expira
+}
+
+model MediaCache {
+  id        String   @id @default(cuid())
+  hash      String   @unique // SHA256 del buffer del archivo
+  mimeType  String            // e.g. "image/jpeg"
+  data      String   @db.Text // Base64 del archivo
+  createdAt DateTime @default(now())
 }
 
 // ─── API Usage Tracking ───
