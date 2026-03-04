@@ -421,28 +421,81 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
                         const val = resolveContactField(contact, columnMapped as string);
                         prompt = prompt.replace(new RegExp(`\\{${varKey}\\}`, 'g'), val);
                     }
-                    const { audioBuffer } = await generateAudioForWhatsApp(prompt, audioConfig.voiceId);
 
+                    let finalAudioBuffer: Buffer;
+
+                    if (audioConfig.preRecordedAudioUrl) {
+                        // IA + GRABADO: Generate AI greeting as MP3, concat with pre-recorded
+                        const crypto = await import("crypto");
+
+                        // Generate or retrieve cached AI greeting (MP3)
+                        const greetingHash = crypto.createHash("sha256").update(`mp3:${prompt}`).digest("hex").substring(0, 32);
+                        let greetingBuf: Buffer;
+                        const cachedGreet = await prisma.audioMessageCache.findUnique({ where: { hash: greetingHash } });
+                        if (cachedGreet) {
+                            greetingBuf = Buffer.from(cachedGreet.mediaUrl, 'base64');
+                        } else {
+                            const result = await withRetry(
+                                () => generateAudio(prompt, audioConfig.voiceId, undefined, "mp3_44100_128"),
+                                3, 2000
+                            );
+                            greetingBuf = result.audioBuffer;
+                            await prisma.audioMessageCache.upsert({
+                                where: { hash: greetingHash },
+                                update: { mediaUrl: greetingBuf.toString("base64") },
+                                create: { hash: greetingHash, mediaUrl: greetingBuf.toString("base64"), expiresAt: new Date(Date.now() + 86400000) },
+                            });
+                        }
+
+                        // Download or retrieve cached pre-recorded audio
+                        const preRecHash = crypto.createHash("sha256").update(`prerec:${audioConfig.preRecordedAudioUrl}`).digest("hex").substring(0, 32);
+                        let preRecBuf: Buffer;
+                        const cachedPreRec = await prisma.audioMessageCache.findUnique({ where: { hash: preRecHash } });
+                        if (cachedPreRec) {
+                            preRecBuf = Buffer.from(cachedPreRec.mediaUrl, 'base64');
+                        } else {
+                            const preRecRes = await fetch(audioConfig.preRecordedAudioUrl);
+                            if (!preRecRes.ok) throw new Error("No se pudo descargar el audio pregrabado");
+                            preRecBuf = Buffer.from(await preRecRes.arrayBuffer());
+                            await prisma.audioMessageCache.upsert({
+                                where: { hash: preRecHash },
+                                update: { mediaUrl: preRecBuf.toString("base64") },
+                                create: { hash: preRecHash, mediaUrl: preRecBuf.toString("base64"), expiresAt: new Date(Date.now() + 86400000) },
+                            });
+                        }
+
+                        // Concatenate into ONE MP3
+                        finalAudioBuffer = Buffer.concat([greetingBuf, preRecBuf]);
+                    } else {
+                        // Full AI: generate complete audio as OGG Opus
+                        const result = await withRetry(
+                            () => generateAudioForWhatsApp(prompt, audioConfig.voiceId),
+                            3, 2000
+                        );
+                        finalAudioBuffer = result.audioBuffer;
+                    }
+
+                    // Send the audio
                     if (isTwilio) {
-                        // Twilio: cache audio and send via MediaUrl
                         const crypto = await import("crypto");
                         const hash = crypto.createHash("sha256")
-                            .update(audioBuffer)
+                            .update(finalAudioBuffer)
                             .digest("hex")
                             .substring(0, 32);
 
                         await prisma.audioMessageCache.upsert({
                             where: { hash },
-                            update: { mediaUrl: audioBuffer.toString("base64") },
+                            update: { mediaUrl: finalAudioBuffer.toString("base64") },
                             create: {
                                 hash,
-                                mediaUrl: audioBuffer.toString("base64"),
+                                mediaUrl: finalAudioBuffer.toString("base64"),
                                 expiresAt: new Date(Date.now() + 3600000),
                             },
                         });
 
                         const appUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "";
-                        const audioUrl = `${appUrl}/api/audio-cache/${hash}.ogg`;
+                        const ext = audioConfig.preRecordedAudioUrl ? "mp3" : "ogg";
+                        const audioUrl = `${appUrl}/api/audio-cache/${hash}.${ext}`;
 
                         const data = await callTwilioAPI(config, {
                             From: `whatsapp:${config.twilioNumber}`,
@@ -452,8 +505,8 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
                         messageId = data?.sid || "";
                         twilioPrice = Math.abs(parseFloat(data?.price || "0"));
                     } else {
-                        // Meta: upload media then send
-                        const mediaId = await uploadMediaToWhatsApp(audioBuffer, 'audio/ogg');
+                        const mimeType = audioConfig.preRecordedAudioUrl ? 'audio/mpeg' : 'audio/ogg';
+                        const mediaId = await uploadMediaToWhatsApp(finalAudioBuffer, mimeType);
                         const data = await sendWhatsAppAudio(job.phone, mediaId);
                         if (data.messages && data.messages.length > 0) {
                             messageId = data.messages[0].id;

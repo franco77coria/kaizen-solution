@@ -557,8 +557,8 @@ export default function CampanasPage() {
 
                             {(newCampaign.type === 'audio' || newCampaign.type === 'sequence') && (
                                 <div className="col-span-2 space-y-3">
-                                    {/* Audio mode toggle - only for sequence */}
-                                    {newCampaign.type === 'sequence' && (
+                                    {/* Audio mode toggle */}
+                                    {(newCampaign.type === 'sequence' || newCampaign.type === 'audio') && (
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Modo de Audio</label>
                                             <div className="flex bg-gray-100 rounded-xl p-1 gap-1">
@@ -603,8 +603,8 @@ export default function CampanasPage() {
                                         ></textarea>
                                     </div>
 
-                                    {/* Pre-recorded audio upload - only in ai_plus_recorded mode */}
-                                    {audioMode === 'ai_plus_recorded' && newCampaign.type === 'sequence' && (
+                                    {/* Pre-recorded audio upload */}
+                                    {audioMode === 'ai_plus_recorded' && (newCampaign.type === 'sequence' || newCampaign.type === 'audio') && (
                                         <div className="p-4 bg-purple-50 border border-purple-200 rounded-xl space-y-2">
                                             <p className="text-xs font-medium text-purple-700">🎙️ Audio Pregrabado (mensaje principal — mismo para todos)</p>
                                             <label className={`flex flex-col items-center justify-center w-full py-5 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${uploadingAudio ? 'border-purple-300 bg-purple-100/50' : (newCampaign.audioConfig as any).preRecordedAudioUrl ? 'border-green-300 bg-green-50' : 'border-purple-200 hover:border-purple-400 hover:bg-purple-100/30'}`}>
