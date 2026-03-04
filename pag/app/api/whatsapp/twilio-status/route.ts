@@ -63,7 +63,9 @@ export async function POST(request: NextRequest) {
                 },
                 data: {
                     status,
-                    ...(status === "failed" ? { errorMessage: params.get("ErrorMessage") || "Fallo en entrega" } : {}),
+                    ...(status === "failed" ? {
+                        errorMessage: `${params.get("ErrorCode") || "?"}: ${params.get("ErrorMessage") || "Fallo en entrega"}`
+                    } : {}),
                 },
             })
 
