@@ -127,16 +127,28 @@ async function handleSequenceContinue(jobId: string): Promise<Response> {
                 });
             }
 
-            // Download pre-recorded audio (cached after first download)
+            // Load pre-recorded audio directly from DB (avoid serverless-to-serverless fetch)
             let preRecordedBuffer: Buffer;
             const preRecHash = crypto.createHash("sha256").update(`prerec:${audioConfig.preRecordedAudioUrl}`).digest("hex").substring(0, 32);
             const cachedPreRec = await prisma.audioMessageCache.findUnique({ where: { hash: preRecHash } });
             if (cachedPreRec) {
                 preRecordedBuffer = Buffer.from(cachedPreRec.mediaUrl, 'base64');
             } else {
-                const preRecRes = await fetch(audioConfig.preRecordedAudioUrl);
-                if (!preRecRes.ok) throw new Error("No se pudo descargar el audio pregrabado");
-                preRecordedBuffer = Buffer.from(await preRecRes.arrayBuffer());
+                // Extract hash from the media-cache URL and read directly from DB
+                const urlParts = audioConfig.preRecordedAudioUrl.split("/");
+                const mediaCacheHash = urlParts[urlParts.length - 1].replace(/\.[^.]+$/, "");
+                const mediaEntry = await (prisma as any).mediaCache.findUnique({ where: { hash: mediaCacheHash } });
+
+                if (mediaEntry && mediaEntry.data) {
+                    preRecordedBuffer = Buffer.from(mediaEntry.data, 'base64');
+                } else {
+                    // Fallback: try HTTP fetch
+                    const preRecRes = await fetch(audioConfig.preRecordedAudioUrl);
+                    if (!preRecRes.ok) throw new Error("No se pudo obtener el audio pregrabado");
+                    preRecordedBuffer = Buffer.from(await preRecRes.arrayBuffer());
+                }
+
+                // Cache in audioMessageCache for faster access on subsequent jobs
                 await prisma.audioMessageCache.upsert({
                     where: { hash: preRecHash },
                     update: { mediaUrl: preRecordedBuffer.toString("base64") },
@@ -455,9 +467,19 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
                         if (cachedPreRec) {
                             preRecBuf = Buffer.from(cachedPreRec.mediaUrl, 'base64');
                         } else {
-                            const preRecRes = await fetch(audioConfig.preRecordedAudioUrl);
-                            if (!preRecRes.ok) throw new Error("No se pudo descargar el audio pregrabado");
-                            preRecBuf = Buffer.from(await preRecRes.arrayBuffer());
+                            // Read directly from MediaCache DB
+                            const urlParts = audioConfig.preRecordedAudioUrl.split("/");
+                            const mediaCacheHash = urlParts[urlParts.length - 1].replace(/\.[^.]+$/, "");
+                            const mediaEntry = await (prisma as any).mediaCache.findUnique({ where: { hash: mediaCacheHash } });
+
+                            if (mediaEntry && mediaEntry.data) {
+                                preRecBuf = Buffer.from(mediaEntry.data, 'base64');
+                            } else {
+                                const preRecRes = await fetch(audioConfig.preRecordedAudioUrl);
+                                if (!preRecRes.ok) throw new Error("No se pudo obtener el audio pregrabado");
+                                preRecBuf = Buffer.from(await preRecRes.arrayBuffer());
+                            }
+
                             await prisma.audioMessageCache.upsert({
                                 where: { hash: preRecHash },
                                 update: { mediaUrl: preRecBuf.toString("base64") },
