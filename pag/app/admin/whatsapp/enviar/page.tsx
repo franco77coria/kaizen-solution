@@ -587,7 +587,7 @@ export default function CampanasPage() {
                                     )}
 
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Texto acompañante (Podés usar variables como <code className="bg-gray-100 px-1 rounded">{'{name}'}</code>)</label>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Texto acompañante <span className="text-gray-400 font-normal">(Opcional — podés usar <code className="bg-gray-100 px-1 rounded">{'{name}'}</code>)</span></label>
                                         <textarea
                                             value={newCampaign.audioConfig.caption}
                                             onChange={(e) => setNewCampaign(prev => ({ ...prev, audioConfig: { ...prev.audioConfig, caption: e.target.value } }))}

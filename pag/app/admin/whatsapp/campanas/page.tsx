@@ -47,6 +47,12 @@ export default function CampanasPage() {
         loadCampaigns()
     }
 
+    const handleDelete = async (id: string, name: string) => {
+        if (!confirm(`¿Eliminar la campaña "${name}"? Esta acción no se puede deshacer.`)) return
+        await fetch(`/api/whatsapp/campaigns/${id}`, { method: 'DELETE' })
+        loadCampaigns()
+    }
+
     if (loading) {
         return (
             <div className="flex items-center justify-center h-full min-h-[60vh]">
@@ -91,7 +97,7 @@ export default function CampanasPage() {
                                                 {statusInfo.label}
                                             </span>
                                             <span className="text-xs px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-500">
-                                                {c.type === 'audio' ? 'Audio' : 'Template'}
+                                                {c.type === 'audio' ? 'Audio IA' : c.type === 'image' ? 'Imagen' : 'Template'}
                                             </span>
                                         </div>
                                         <p className="text-xs text-gray-400 mt-0.5">
@@ -158,6 +164,14 @@ export default function CampanasPage() {
                                                     Cancelar
                                                 </button>
                                             </>
+                                        )}
+                                        {['completed', 'cancelled', 'failed', 'paused', 'draft'].includes(c.status) && (
+                                            <button
+                                                onClick={() => handleDelete(c.id, c.name)}
+                                                className="px-3 py-1.5 text-xs font-medium text-red-500 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
+                                            >
+                                                Eliminar
+                                            </button>
                                         )}
                                     </div>
                                 </div>

@@ -158,11 +158,23 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
                         const val = resolveContactField(contact, columnMapped as string);
                         caption = caption.replace(new RegExp(`\\{${varKey}\\}`, 'g'), val);
                     }
-                    const data = await sendWhatsAppImage(job.phone, imageConfig.imageUrl, caption);
-                    if (data.messages && data.messages.length > 0) {
-                        messageId = data.messages[0].id;
+                    if (isTwilio) {
+                        const apiBody: Record<string, string> = {
+                            From: `whatsapp:${config.twilioNumber}`,
+                            To: `whatsapp:${job.phone}`,
+                            MediaUrl: imageConfig.imageUrl,
+                        };
+                        if (caption) apiBody.Body = caption;
+                        const data = await callTwilioAPI(config, apiBody);
+                        messageId = data?.sid || "";
+                        twilioPrice = Math.abs(parseFloat(data?.price || "0"));
                     } else {
-                        throw new Error("No message ID returned (Image)");
+                        const data = await sendWhatsAppImage(job.phone, imageConfig.imageUrl, caption);
+                        if (data.messages && data.messages.length > 0) {
+                            messageId = data.messages[0].id;
+                        } else {
+                            throw new Error("No message ID returned (Image)");
+                        }
                     }
 
                 } else if (isTwilio) {

@@ -85,6 +85,7 @@ export default function CampaignDetailPage() {
     const [statusFilter, setStatusFilter] = useState('all')
     const [page, setPage] = useState(1)
     const [actioning, setActioning] = useState(false)
+    const [deleting, setDeleting] = useState(false)
 
     const load = useCallback(async (silent = false) => {
         if (!silent) setLoading(true)
@@ -107,6 +108,24 @@ export default function CampaignDetailPage() {
         const interval = setInterval(() => load(true), 5000)
         return () => clearInterval(interval)
     }, [data?.campaign.status, load])
+
+    const handleDelete = async () => {
+        if (!confirm('¿Eliminar esta campaña y todos sus registros? Esta acción no se puede deshacer.')) return
+        setDeleting(true)
+        try {
+            const res = await fetch(`/api/whatsapp/campaigns/${id}`, { method: 'DELETE' })
+            if (res.ok) {
+                router.push('/admin/whatsapp/campanas')
+            } else {
+                const json = await res.json()
+                alert(json.error || 'Error al eliminar')
+                setDeleting(false)
+            }
+        } catch {
+            alert('Error al eliminar la campaña')
+            setDeleting(false)
+        }
+    }
 
     const handleAction = async (action: 'start' | 'pause' | 'cancel') => {
         setActioning(true)
@@ -159,7 +178,7 @@ export default function CampaignDetailPage() {
                     <p className="text-xs text-gray-400 mt-1">
                         Lista: {campaign.list?.name}
                         {campaign.template && <> · Plantilla: {campaign.template.name}</>}
-                        {' · '}{campaign.type === 'audio' ? 'Audio' : 'Template'}
+                        {' · '}{campaign.type === 'audio' ? 'Audio IA' : campaign.type === 'image' ? 'Imagen' : 'Template'}
                     </p>
                 </div>
 
@@ -200,6 +219,15 @@ export default function CampaignDetailPage() {
                                 Cancelar
                             </button>
                         </>
+                    )}
+                    {['completed', 'cancelled', 'failed', 'paused', 'draft'].includes(campaign.status) && (
+                        <button
+                            onClick={handleDelete}
+                            disabled={deleting}
+                            className="px-4 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-xl hover:bg-red-100 disabled:opacity-50 transition-colors"
+                        >
+                            {deleting ? 'Eliminando...' : 'Eliminar'}
+                        </button>
                     )}
                 </div>
             </div>

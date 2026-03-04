@@ -80,3 +80,18 @@ export async function GET(
         return NextResponse.json({ error: error.message }, { status: 500 })
     }
 }
+
+export async function DELETE(
+    _request: NextRequest,
+    { params }: { params: { id: string } }
+) {
+    const session = await auth()
+    if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+
+    try {
+        await prisma.whatsAppCampaign.delete({ where: { id: params.id } })
+        return NextResponse.json({ success: true })
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+}
