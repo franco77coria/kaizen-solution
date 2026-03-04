@@ -70,13 +70,6 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
         let imageConfig: any = null;
 
         if (isAudio) {
-            if (isTwilio) {
-                await prisma.whatsAppCampaign.update({
-                    where: { id: campaignId },
-                    data: { status: "failed" }
-                });
-                return NextResponse.json({ error: "Campañas de audio no soportadas con proveedor Twilio" }, { status: 400 });
-            }
             audioConfig = JSON.parse(campaign.audioConfig || "{}");
             const elConfig = await getElevenLabsConfig();
             if (!elConfig) throw new Error("Configuración ElevenLabs faltante para campaña de audio");
@@ -119,12 +112,44 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
                         prompt = prompt.replace(new RegExp(`\\{${varKey}\\}`, 'g'), val);
                     }
                     const { audioBuffer } = await generateAudioForWhatsApp(prompt, audioConfig.voiceId);
-                    const mediaId = await uploadMediaToWhatsApp(audioBuffer, 'audio/ogg');
-                    const data = await sendWhatsAppAudio(job.phone, mediaId);
-                    if (data.messages && data.messages.length > 0) {
-                        messageId = data.messages[0].id;
+
+                    if (isTwilio) {
+                        // Twilio: cache audio and send via MediaUrl
+                        const crypto = await import("crypto");
+                        const hash = crypto.createHash("sha256")
+                            .update(audioBuffer)
+                            .digest("hex")
+                            .substring(0, 32);
+
+                        await prisma.audioMessageCache.upsert({
+                            where: { hash },
+                            update: { mediaUrl: audioBuffer.toString("base64") },
+                            create: {
+                                hash,
+                                mediaUrl: audioBuffer.toString("base64"),
+                                expiresAt: new Date(Date.now() + 3600000),
+                            },
+                        });
+
+                        const appUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "";
+                        const audioUrl = `${appUrl}/api/audio-cache/${hash}.ogg`;
+
+                        const data = await callTwilioAPI(config, {
+                            From: `whatsapp:${config.twilioNumber}`,
+                            To: `whatsapp:${job.phone}`,
+                            MediaUrl: audioUrl,
+                        });
+                        messageId = data?.sid || "";
+                        twilioPrice = Math.abs(parseFloat(data?.price || "0"));
                     } else {
-                        throw new Error("No message ID returned (Audio)");
+                        // Meta: upload media then send
+                        const mediaId = await uploadMediaToWhatsApp(audioBuffer, 'audio/ogg');
+                        const data = await sendWhatsAppAudio(job.phone, mediaId);
+                        if (data.messages && data.messages.length > 0) {
+                            messageId = data.messages[0].id;
+                        } else {
+                            throw new Error("No message ID returned (Audio)");
+                        }
                     }
 
                 } else if (isImage) {
