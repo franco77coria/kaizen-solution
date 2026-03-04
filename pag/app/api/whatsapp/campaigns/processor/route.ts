@@ -18,6 +18,22 @@ const qstash = new Client({
 const THROTTLE_MS = 150;
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
+// Retry helper with exponential backoff (for ElevenLabs rate limits at scale)
+async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3, baseDelayMs = 2000): Promise<T> {
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+            return await fn();
+        } catch (err: any) {
+            const isRateLimit = err.message?.includes("429") || err.message?.toLowerCase().includes("rate") || err.message?.toLowerCase().includes("too many");
+            if (attempt === maxRetries || !isRateLimit) throw err;
+            const delay = baseDelayMs * Math.pow(2, attempt) + Math.random() * 1000;
+            console.log(`[Retry] Attempt ${attempt + 1}/${maxRetries} after ${Math.round(delay)}ms: ${err.message}`);
+            await sleep(delay);
+        }
+    }
+    throw new Error("Unreachable");
+}
+
 async function handleSequenceContinue(jobId: string): Promise<Response> {
     const job = await prisma.campaignJob.findUnique({
         where: { id: jobId },
@@ -53,13 +69,16 @@ async function handleSequenceContinue(jobId: string): Promise<Response> {
     };
 
     try {
-        // 1. Generate + send audio
+        // 1. Generate + send audio (with retry for ElevenLabs rate limits)
         let audioPrompt = audioConfig.prompt || "";
         for (const [varKey, col] of Object.entries(mapping)) {
             audioPrompt = audioPrompt.replace(new RegExp(`\\{${varKey}\\}`, 'g'), resolveField(col as string));
         }
 
-        const { audioBuffer } = await generateAudioForWhatsApp(audioPrompt, audioConfig.voiceId);
+        const { audioBuffer } = await withRetry(
+            () => generateAudioForWhatsApp(audioPrompt, audioConfig.voiceId),
+            3, 2000
+        );
 
         if (isTwilio) {
             const crypto = await import("crypto");
@@ -93,6 +112,8 @@ async function handleSequenceContinue(jobId: string): Promise<Response> {
             if (isTwilio) {
                 const appUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "";
                 if (!imageUrl.startsWith(`${appUrl}/api/media-cache`)) {
+                    // Download and cache image ONCE, then update campaign config
+                    // so all subsequent jobs skip this download
                     const imgRes = await fetch(imageUrl);
                     if (imgRes.ok) {
                         const mimeType = imgRes.headers.get("content-type") || "image/jpeg";
@@ -104,6 +125,13 @@ async function handleSequenceContinue(jobId: string): Promise<Response> {
                             create: { hash, mimeType, data: buffer.toString("base64") },
                         });
                         imageUrl = `${appUrl}/api/media-cache/${hash}`;
+
+                        // Persist cached URL so other jobs skip downloading
+                        const updatedAudioConfig = { ...audioConfig, imageUrl };
+                        await prisma.whatsAppCampaign.update({
+                            where: { id: campaign.id },
+                            data: { audioConfig: JSON.stringify(updatedAudioConfig) },
+                        });
                     }
                 }
                 const apiBody: Record<string, string> = {
@@ -144,7 +172,29 @@ async function handleSequenceContinue(jobId: string): Promise<Response> {
             data: { stats: JSON.stringify(prevStats) }
         });
 
-        // 4. Check if campaign is complete
+        // 4. Expire stale awaiting_reply jobs (> 5h) and check completion
+        const fiveHoursAgo = new Date(Date.now() - 5 * 60 * 60 * 1000);
+        const expired = await prisma.campaignJob.updateMany({
+            where: {
+                campaignId: campaign.id,
+                status: "awaiting_reply",
+                processedAt: { lt: fiveHoursAgo },
+            },
+            data: { status: "expired" },
+        });
+        if (expired.count > 0) {
+            // Update stats with expired count
+            const freshCampaign = await prisma.whatsAppCampaign.findUnique({ where: { id: campaign.id } });
+            if (freshCampaign) {
+                const stats = JSON.parse(freshCampaign.stats || "{}");
+                stats.expired = (stats.expired || 0) + expired.count;
+                await prisma.whatsAppCampaign.update({
+                    where: { id: campaign.id },
+                    data: { stats: JSON.stringify(stats) },
+                });
+            }
+        }
+
         const remaining = await prisma.campaignJob.count({
             where: { campaignId: campaign.id, status: { in: ["pending", "awaiting_reply", "processing"] } }
         });
