@@ -59,10 +59,19 @@ export async function POST(request: NextRequest) {
 
                 await upsertContact(numero)
 
+                // Calculate estimated cost based on template category
+                const templateRecord = await prisma.whatsAppTemplate.findFirst({ where: { name: template } })
+                const category = (templateRecord?.category || "UTILITY").toUpperCase()
+                const estimatedCost = category === "MARKETING" ? 0.0615
+                    : category === "AUTHENTICATION" ? 0.0325
+                        : category === "UTILITY" ? 0.0200
+                            : 0.0085 // service/other
+
                 // Log usage
-                await logApiUsage("whatsapp", "bulk_template", 1, 0, {
+                await logApiUsage("whatsapp", "bulk_template", 1, estimatedCost, {
                     template,
                     numero,
+                    category,
                     batchIndex: i + 1,
                     batchTotal: cleanNumbers.length,
                 })

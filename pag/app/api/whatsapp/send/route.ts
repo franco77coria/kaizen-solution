@@ -67,11 +67,22 @@ export async function POST(request: NextRequest) {
             msgId,
         })
 
+        // Calculate estimated cost based on template category
+        let estimatedCost = 0.0085 // default: service/text conversation
+        if (tipo === "template" && template) {
+            const templateRecord = await prisma.whatsAppTemplate.findFirst({ where: { name: template } })
+            const category = (templateRecord?.category || "UTILITY").toUpperCase()
+            estimatedCost = category === "MARKETING" ? 0.0615
+                : category === "AUTHENTICATION" ? 0.0325
+                    : category === "UTILITY" ? 0.0200
+                        : 0.0085
+        }
+
         await logApiUsage(
             isTwilioResult ? "twilio" : "whatsapp",
             tipo === "template" ? "send_template" : "send_text",
             1,
-            isTwilioResult ? Math.abs(parseFloat(result?.price || "0")) : 0.0773,
+            estimatedCost,
             { phone: numero, template: template || null, messageId: msgId }
         )
 

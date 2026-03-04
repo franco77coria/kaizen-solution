@@ -277,15 +277,20 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
                             timestamp: new Date(),
                         }
                     });
-                } catch (_) {}
+                } catch (_) { }
 
                 const provider = isTwilio ? "twilio" : "whatsapp";
+                const templateCategory = (campaign.template?.category || "UTILITY").toUpperCase();
+                const estimatedMsgCost = templateCategory === "MARKETING" ? 0.0615
+                    : templateCategory === "AUTHENTICATION" ? 0.0325
+                        : templateCategory === "UTILITY" ? 0.0200
+                            : 0.0085;
                 await logApiUsage(
                     provider,
                     isAudio ? "send_audio" : isImage ? "send_image" : "bulk_template",
                     1,
-                    isImage ? 0 : isTwilio ? twilioPrice : 0.0773,
-                    { phone: job.phone, campaignId, messageId, provider }
+                    isImage ? 0 : isTwilio ? (twilioPrice || estimatedMsgCost) : estimatedMsgCost,
+                    { phone: job.phone, campaignId, messageId, provider, category: templateCategory }
                 );
                 successCount++;
 
