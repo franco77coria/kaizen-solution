@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { logWhatsApp } from "@/lib/whatsapp"
+import { logApiUsage } from "@/lib/elevenlabs"
 
 // Twilio status → nuestro status
 const STATUS_MAP: Record<string, string> = {
@@ -22,12 +23,23 @@ export async function POST(request: NextRequest) {
         const messageSid = params.get("MessageSid") || params.get("SmsSid") || ""
         const rawStatus = params.get("MessageStatus") || params.get("SmsStatus") || ""
         const status = STATUS_MAP[rawStatus] || rawStatus
+        const price = params.get("Price")         // e.g. "-0.005" (negative = charged)
+        const priceUnit = params.get("PriceUnit") || "USD"
 
         if (!messageSid) {
             return new NextResponse("ok", { status: 200 })
         }
 
-        await logWhatsApp("twilio_status_update", { messageSid, rawStatus, status })
+        await logWhatsApp("twilio_status_update", { messageSid, rawStatus, status, price, priceUnit })
+
+        // Log the REAL Twilio price when available
+        if (price && price !== "null" && parseFloat(price) !== 0) {
+            const realCost = Math.abs(parseFloat(price))
+            await logApiUsage("twilio", "real_cost", 1, realCost, {
+                messageSid, status: rawStatus, priceUnit,
+            })
+            console.log(`[Twilio Price] ${messageSid} → $${realCost} ${priceUnit}`)
+        }
 
         // Actualizar mensajes individuales
         await prisma.whatsAppMessage.updateMany({

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { logWhatsApp, upsertContact } from "@/lib/whatsapp"
+import { logWhatsApp, upsertContact, normalizePhone } from "@/lib/whatsapp"
 
 // POST — Twilio sends incoming WhatsApp messages as application/x-www-form-urlencoded
 export async function POST(request: NextRequest) {
@@ -9,7 +9,8 @@ export async function POST(request: NextRequest) {
         const params = new URLSearchParams(text)
 
         const messageSid = params.get("MessageSid") || ""
-        const from = (params.get("From") || "").replace("whatsapp:", "")
+        const rawFrom = (params.get("From") || "").replace("whatsapp:", "")
+        const from = normalizePhone(rawFrom)
         const body = params.get("Body") || ""
         const numMedia = parseInt(params.get("NumMedia") || "0")
         const profileName = params.get("ProfileName") || null

@@ -446,16 +446,24 @@ export async function logWhatsApp(type: string, payload: any) {
 
 // ─── Contact helper ───
 
+/** Strip all + signs and non-digit characters so numbers from Twilio (+549…) and Meta (549…) match */
+export function normalizePhone(phone: string): string {
+    return phone.replace(/^\++/, '').replace(/[^0-9]/g, '')
+}
+
 export async function upsertContact(phone: string, name?: string) {
+    const cleanPhone = normalizePhone(phone)
+    if (!cleanPhone) return
+
     await prisma.whatsAppContact.upsert({
-        where: { phone },
+        where: { phone: cleanPhone },
         update: {
             name: name || undefined,
             lastMessageAt: new Date(),
             totalMessages: { increment: 1 },
         },
         create: {
-            phone,
+            phone: cleanPhone,
             name: name || null,
             lastMessageAt: new Date(),
             totalMessages: 1,
