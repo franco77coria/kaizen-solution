@@ -34,6 +34,30 @@ async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3, baseDelayMs = 
     throw new Error("Unreachable");
 }
 
+// Helper to send an audio buffer to a contact via Twilio or Meta
+async function sendAudioToContact(
+    config: any, isTwilio: boolean, phone: string, audioBuffer: Buffer
+) {
+    if (isTwilio) {
+        const crypto = await import("crypto");
+        const hash = crypto.createHash("sha256").update(audioBuffer).digest("hex").substring(0, 32);
+        await prisma.audioMessageCache.upsert({
+            where: { hash },
+            update: { mediaUrl: audioBuffer.toString("base64") },
+            create: { hash, mediaUrl: audioBuffer.toString("base64"), expiresAt: new Date(Date.now() + 3600000) },
+        });
+        const appUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "";
+        await callTwilioAPI(config, {
+            From: `whatsapp:${config.twilioNumber}`,
+            To: `whatsapp:${phone}`,
+            MediaUrl: `${appUrl}/api/audio-cache/${hash}.ogg`,
+        });
+    } else {
+        const mediaId = await uploadMediaToWhatsApp(audioBuffer, 'audio/ogg');
+        await sendWhatsAppAudio(phone, mediaId);
+    }
+}
+
 async function handleSequenceContinue(jobId: string): Promise<Response> {
     const job = await prisma.campaignJob.findUnique({
         where: { id: jobId },
@@ -69,35 +93,41 @@ async function handleSequenceContinue(jobId: string): Promise<Response> {
     };
 
     try {
-        // 1. Generate + send audio (with retry for ElevenLabs rate limits)
+        // 1. Generate + send audio
+        // OPTIMIZATION: Cache audio by resolved text hash.
+        // If multiple contacts have the same name (e.g., 500 "Juan"),
+        // the audio is generated ONCE and reused — single voice note, no split.
         let audioPrompt = audioConfig.prompt || "";
         for (const [varKey, col] of Object.entries(mapping)) {
             audioPrompt = audioPrompt.replace(new RegExp(`\\{${varKey}\\}`, 'g'), resolveField(col as string));
         }
 
-        const { audioBuffer } = await withRetry(
-            () => generateAudioForWhatsApp(audioPrompt, audioConfig.voiceId),
-            3, 2000
-        );
+        const crypto = await import("crypto");
+        const textHash = crypto.createHash("sha256").update(audioPrompt).digest("hex").substring(0, 32);
 
-        if (isTwilio) {
-            const crypto = await import("crypto");
-            const hash = crypto.createHash("sha256").update(audioBuffer).digest("hex").substring(0, 32);
-            await prisma.audioMessageCache.upsert({
-                where: { hash },
-                update: { mediaUrl: audioBuffer.toString("base64") },
-                create: { hash, mediaUrl: audioBuffer.toString("base64"), expiresAt: new Date(Date.now() + 3600000) },
-            });
-            const appUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "";
-            await callTwilioAPI(config, {
-                From: `whatsapp:${config.twilioNumber}`,
-                To: `whatsapp:${job.phone}`,
-                MediaUrl: `${appUrl}/api/audio-cache/${hash}.ogg`,
-            });
+        // Check if audio for this exact text already exists in cache
+        const cachedAudio = await prisma.audioMessageCache.findUnique({ where: { hash: textHash } });
+
+        let audioBuffer: Buffer;
+        if (cachedAudio) {
+            // Reuse cached audio — no ElevenLabs call needed!
+            audioBuffer = Buffer.from(cachedAudio.mediaUrl, 'base64');
         } else {
-            const mediaId = await uploadMediaToWhatsApp(audioBuffer, 'audio/ogg');
-            await sendWhatsAppAudio(job.phone, mediaId);
+            // Generate and cache for future contacts with same text
+            const result = await withRetry(
+                () => generateAudioForWhatsApp(audioPrompt, audioConfig.voiceId),
+                3, 2000
+            );
+            audioBuffer = result.audioBuffer;
+
+            await prisma.audioMessageCache.upsert({
+                where: { hash: textHash },
+                update: { mediaUrl: audioBuffer.toString("base64") },
+                create: { hash: textHash, mediaUrl: audioBuffer.toString("base64"), expiresAt: new Date(Date.now() + 86400000) }, // 24h cache
+            });
         }
+
+        await sendAudioToContact(config, isTwilio, job.phone, audioBuffer);
 
         // 2. Sleep 3s then send image
         await sleep(3000);
