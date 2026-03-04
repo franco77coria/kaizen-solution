@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Plus, Users, Trash2, Edit, Upload, FileSpreadsheet, CheckCircle2, AlertCircle, UserPlus } from "lucide-react"
+import { Plus, Users, Trash2, Edit, Upload, FileSpreadsheet, CheckCircle2, AlertCircle, UserPlus, BookUser, Search } from "lucide-react"
 import Papa from "papaparse"
 
 export default function ListasPage() {
@@ -28,6 +28,14 @@ export default function ListasPage() {
     const [manualPhone, setManualPhone] = useState("")
     const [manualName, setManualName] = useState("")
     const [addingContact, setAddingContact] = useState(false)
+
+    // Import from Agenda/CRM
+    const [agendaListId, setAgendaListId] = useState<string | null>(null)
+    const [agendaContacts, setAgendaContacts] = useState<any[]>([])
+    const [agendaLoading, setAgendaLoading] = useState(false)
+    const [agendaSearch, setAgendaSearch] = useState("")
+    const [agendaSelected, setAgendaSelected] = useState<Set<string>>(new Set())
+    const [agendaImporting, setAgendaImporting] = useState(false)
 
     const fetchLists = async () => {
         try {
@@ -186,6 +194,75 @@ export default function ListasPage() {
         finally { setAddingContact(false) }
     }
 
+    const openAgendaModal = async (listId: string) => {
+        setAgendaListId(listId)
+        setAgendaSearch("")
+        setAgendaSelected(new Set())
+        setAgendaLoading(true)
+        try {
+            const res = await fetch("/api/whatsapp/contacts")
+            const data = await res.json()
+            setAgendaContacts(Array.isArray(data) ? data : [])
+        } catch (e) {
+            console.error(e)
+            setAgendaContacts([])
+        } finally {
+            setAgendaLoading(false)
+        }
+    }
+
+    const toggleAgendaContact = (id: string) => {
+        setAgendaSelected(prev => {
+            const next = new Set(prev)
+            if (next.has(id)) next.delete(id)
+            else next.add(id)
+            return next
+        })
+    }
+
+    const toggleAllAgenda = () => {
+        const filtered = agendaContacts.filter(c => {
+            if (!agendaSearch) return true
+            const q = agendaSearch.toLowerCase()
+            return c.phone?.includes(q) || c.name?.toLowerCase().includes(q)
+        })
+        if (agendaSelected.size === filtered.length) {
+            setAgendaSelected(new Set())
+        } else {
+            setAgendaSelected(new Set(filtered.map(c => c.id)))
+        }
+    }
+
+    const handleAgendaImport = async () => {
+        if (!agendaListId || agendaSelected.size === 0) return
+        setAgendaImporting(true)
+        try {
+            const selectedContacts = agendaContacts.filter(c => agendaSelected.has(c.id))
+            const payload = selectedContacts.map(c => ({ phone: c.phone, name: c.name || null }))
+            const res = await fetch("/api/whatsapp/import", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ contacts: payload, listId: agendaListId }),
+            })
+            if (res.ok) {
+                const data = await res.json()
+                alert(`✅ ${data.successCount} contactos agregados a la lista.`)
+                setAgendaListId(null)
+                fetchLists()
+            } else {
+                const data = await res.json()
+                alert(data.error || "Error al importar")
+            }
+        } catch (e) { console.error(e) }
+        finally { setAgendaImporting(false) }
+    }
+
+    const filteredAgenda = agendaContacts.filter(c => {
+        if (!agendaSearch) return true
+        const q = agendaSearch.toLowerCase()
+        return c.phone?.includes(q) || c.name?.toLowerCase().includes(q)
+    })
+
     return (
         <div className="p-6 max-w-7xl mx-auto">
             <div className="flex justify-between items-center mb-6">
@@ -243,6 +320,12 @@ export default function ListasPage() {
                                         <UserPlus size={14} /> Agregar Manual
                                     </button>
                                 </div>
+                                <button
+                                    onClick={() => openAgendaModal(list.id)}
+                                    className="w-full flex items-center justify-center gap-1.5 text-xs text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-3 py-2 rounded-lg font-medium transition-colors"
+                                >
+                                    <BookUser size={14} /> Importar desde Agenda
+                                </button>
                                 <div className="flex gap-2">
                                     <a href={`/admin/whatsapp/contactos?list=${list.id}`} className="flex-1 text-xs text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg text-center font-medium transition-colors">
                                         Ver Contactos
@@ -440,6 +523,99 @@ export default function ListasPage() {
                                 <button onClick={handleAddManualContact} disabled={!manualPhone || addingContact}
                                     className="px-4 py-2 text-sm bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white rounded-lg font-medium">
                                     {addingContact ? "Agregando..." : "Agregar"}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Importar desde Agenda */}
+            {agendaListId && (
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white border border-gray-200 rounded-xl w-full max-w-lg max-h-[85vh] flex flex-col shadow-xl overflow-hidden">
+                        <div className="p-4 border-b border-gray-100 flex justify-between items-center shrink-0">
+                            <div>
+                                <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                                    <BookUser size={20} className="text-purple-600" /> Importar desde Agenda
+                                </h2>
+                                <p className="text-xs text-gray-500 mt-0.5">Seleccioná los contactos que querés agregar a esta lista.</p>
+                            </div>
+                            <button onClick={() => setAgendaListId(null)} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+                        </div>
+
+                        <div className="p-3 border-b border-gray-100 shrink-0">
+                            <div className="relative">
+                                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                <input
+                                    type="text"
+                                    placeholder="Buscar contacto..."
+                                    value={agendaSearch}
+                                    onChange={(e) => setAgendaSearch(e.target.value)}
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-400"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto min-h-0">
+                            {agendaLoading ? (
+                                <div className="flex items-center justify-center py-16">
+                                    <div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+                                </div>
+                            ) : filteredAgenda.length === 0 ? (
+                                <div className="text-center py-16 text-sm text-gray-400">
+                                    {agendaSearch ? "Sin resultados" : "No hay contactos en la agenda"}
+                                </div>
+                            ) : (
+                                <div>
+                                    <div className="px-4 py-2 bg-gray-50 border-b border-gray-100 flex items-center gap-2 sticky top-0">
+                                        <input
+                                            type="checkbox"
+                                            checked={agendaSelected.size === filteredAgenda.length && filteredAgenda.length > 0}
+                                            onChange={toggleAllAgenda}
+                                            className="w-4 h-4 accent-purple-600 rounded"
+                                        />
+                                        <span className="text-xs text-gray-500 font-medium">
+                                            Seleccionar todos ({filteredAgenda.length})
+                                        </span>
+                                    </div>
+                                    {filteredAgenda.map((c) => (
+                                        <label key={c.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-purple-50/50 cursor-pointer border-b border-gray-50 transition-colors">
+                                            <input
+                                                type="checkbox"
+                                                checked={agendaSelected.has(c.id)}
+                                                onChange={() => toggleAgendaContact(c.id)}
+                                                className="w-4 h-4 accent-purple-600 rounded shrink-0"
+                                            />
+                                            <div className="w-8 h-8 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center font-bold text-xs border border-purple-200 shrink-0">
+                                                {c.name ? c.name.substring(0, 2).toUpperCase() : "?"}
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-medium text-gray-900 truncate">{c.name || "Sin nombre"}</p>
+                                                <p className="text-xs text-gray-500 font-mono">+{c.phone}</p>
+                                            </div>
+                                        </label>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="p-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between shrink-0">
+                            <span className="text-sm text-gray-600">
+                                {agendaSelected.size > 0
+                                    ? <span className="font-medium text-purple-700">{agendaSelected.size} seleccionado{agendaSelected.size !== 1 ? "s" : ""}</span>
+                                    : "Ninguno seleccionado"}
+                            </span>
+                            <div className="flex gap-2">
+                                <button onClick={() => setAgendaListId(null)} className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700">
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={handleAgendaImport}
+                                    disabled={agendaSelected.size === 0 || agendaImporting}
+                                    className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white rounded-lg font-medium transition-colors"
+                                >
+                                    {agendaImporting ? "Importando..." : `Agregar ${agendaSelected.size > 0 ? agendaSelected.size : ""} contacto${agendaSelected.size !== 1 ? "s" : ""}`}
                                 </button>
                             </div>
                         </div>
