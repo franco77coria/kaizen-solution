@@ -79,29 +79,37 @@ export async function POST(request: NextRequest) {
         // Sequence campaign: check for awaiting_reply jobs
         try {
             const fiveHoursAgo = new Date(Date.now() - 5 * 60 * 60 * 1000)
+            // Match both normalized and +prefixed phones (legacy contacts may have '+')
+            const phoneVariants = [from, `+${from}`]
 
             // Expire stale awaiting_reply jobs (> 5h old)
             await prisma.campaignJob.updateMany({
                 where: {
-                    phone: from,
+                    phone: { in: phoneVariants },
                     status: "awaiting_reply",
                     processedAt: { lt: fiveHoursAgo },
                 },
                 data: { status: "expired" },
             })
 
-            // Atomically claim any active awaiting_reply job
+            // Atomically claim any active awaiting_reply job (only from sequence campaigns)
             const claimed = await prisma.campaignJob.updateMany({
-                where: { phone: from, status: "awaiting_reply" },
+                where: {
+                    phone: { in: phoneVariants },
+                    status: "awaiting_reply",
+                    campaign: { type: "sequence" },
+                },
                 data: { status: "processing" },
             })
 
             if (claimed.count > 0) {
-                const processingJob = await prisma.campaignJob.findFirst({
-                    where: { phone: from, status: "processing" },
+                await logWhatsApp("sequence_reply_detected", { phone: from, claimedJobs: claimed.count })
+
+                const processingJobs = await prisma.campaignJob.findMany({
+                    where: { phone: { in: phoneVariants }, status: "processing" },
                     orderBy: { processedAt: "desc" },
                 })
-                if (processingJob) {
+                for (const processingJob of processingJobs) {
                     const webhookUrl = process.env.UPSTASH_WEBHOOK_URL
                     if (process.env.QSTASH_TOKEN && webhookUrl) {
                         const qstash = new Client({ token: process.env.QSTASH_TOKEN })
@@ -109,6 +117,7 @@ export async function POST(request: NextRequest) {
                             url: webhookUrl,
                             body: { action: "sequence_continue", jobId: processingJob.id },
                         })
+                        await logWhatsApp("sequence_continue_queued", { jobId: processingJob.id, phone: from })
                     }
                 }
             }
