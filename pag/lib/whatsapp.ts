@@ -464,7 +464,7 @@ export async function upsertContact(phone: string, name?: string) {
         },
         create: {
             phone: cleanPhone,
-            name: name || null,
+            // name intentionally omitted — only set manually via CRM
             lastMessageAt: new Date(),
             totalMessages: 1,
         },
