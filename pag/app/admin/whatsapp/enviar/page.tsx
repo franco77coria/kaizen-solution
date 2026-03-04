@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { SendHorizonal, Plus, PlayCircle, PauseCircle, Trash2, Clock, ImageIcon, Zap, Upload } from "lucide-react"
+import Link from "next/link"
+import { SendHorizonal, Plus, PlayCircle, PauseCircle, Trash2, Clock, ImageIcon, Zap, Upload, ExternalLink } from "lucide-react"
 
 export default function CampanasPage() {
     const [campaigns, setCampaigns] = useState<any[]>([])
@@ -206,6 +207,14 @@ export default function CampanasPage() {
         } catch (e) { console.error(e) }
     }
 
+    const handleDeleteCampaign = async (id: string, name: string) => {
+        if (!confirm(`¿Eliminar la campaña "${name}"? Esta acción no se puede deshacer.`)) return
+        try {
+            await fetch(`/api/whatsapp/campaigns/${id}`, { method: 'DELETE' })
+            fetchData()
+        } catch (e) { console.error(e) }
+    }
+
     const getStatusBadge = (status: string) => {
         switch (status) {
             case 'running': return <span className="px-2 py-1 bg-blue-50 text-blue-600 text-xs rounded-full border border-blue-200">En Progreso</span>
@@ -281,6 +290,9 @@ export default function CampanasPage() {
                                 </div>
 
                                 <div className="flex items-center gap-2 pl-6">
+                                    <Link href={`/admin/whatsapp/campanas/${camp.id}`} className="p-2 text-gray-400 hover:bg-gray-100 rounded-lg transition-colors" title="Ver detalle">
+                                        <ExternalLink size={18} />
+                                    </Link>
                                     {camp.status === 'draft' || camp.status === 'paused' ? (
                                         <button onClick={() => handleStatusChange(camp.id, 'start')} className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Iniciar Envío">
                                             <PlayCircle size={24} />
@@ -290,7 +302,7 @@ export default function CampanasPage() {
                                             <PauseCircle size={24} />
                                         </button>
                                     ) : null}
-                                    <button onClick={() => handleStatusChange(camp.id, 'cancel')} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Cancelar / Eliminar">
+                                    <button onClick={() => handleDeleteCampaign(camp.id, camp.name)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar campaña">
                                         <Trash2 size={20} />
                                     </button>
                                 </div>
