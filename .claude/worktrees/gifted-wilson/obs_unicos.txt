@@ -1,0 +1,239 @@
+
+Name  : SE ENVIO MENSAJE
+Count : 16995
+
+Name  : MENSAJE ENVIADO
+Count : 543
+
+Name  : NO CONTESTO
+Count : 418
+
+Name  : Contesto
+Count : 387
+
+Name  : Se envío mensaje
+Count : 267
+
+Name  : mensajes enviados
+Count : 194
+
+Name  : se envio mensajes
+Count : 117
+
+Name  : fuera de servicio
+Count : 101
+
+Name  : ENVIADO MENSAJE
+Count : 69
+
+Name  : NO CONTESTA
+Count : 53
+
+Name  : SE MANDO ENVIO MENSAJE
+Count : 53
+
+Name  : SE MANDO MENSAJE
+Count : 50
+
+Name  : MESAJE ENVIADO
+Count : 48
+
+Name  : YA SE LLAMO
+Count : 39
+
+Name  : numero incorrecto
+Count : 35
+
+Name  : NÚMERO INCORRECTO
+Count : 35
+
+Name  : Fuera de Servicio/ No sirve
+Count : 30
+
+Name  : NO LA CONOCEN
+Count : 16
+
+Name  : NO LE INTERESA
+Count : 14
+
+Name  : VERIFICAR NUMERO DE IDENTIFICACION
+Count : 9
+
+Name  : Desconoce el candidato
+Count : 8
+
+Name  : Numero Equivocado
+Count : 6
+
+Name  : Número equivocado
+Count : 5
+
+Name  : Llamado
+Count : 5
+
+Name  : apagado
+Count : 5
+
+Name  : EQUIVOCADO
+Count : 3
+
+Name  : Concejal Mariano
+Count : 3
+
+Name  : Llamada
+Count : 3
+
+Name  : Adriana Ortiz
+Count : 3
+
+Name  : Numero no disponible
+Count : 3
+
+Name  : no tiene numero
+Count : 2
+
+Name  : No conoce a Santiago Leon
+Count : 2
+
+Name  : Numero mal escrito
+Count : 2
+
+Name  : pidio informacion para compartir
+Count : 1
+
+Name  : PRIMER TANDA DE 2 SIRVIERON 0
+Count : 1
+
+Name  : PRIMER TANDA DE 3 SIRVIERON 2
+Count : 1
+
+Name  : Que cual alex, no le interesa
+Count : 1
+
+Name  : REUNIÓN VIRTUAL
+Count : 1
+
+Name  : Revisar número de cédula
+Count : 1
+
+Name  : Numero desativado
+Count : 1
+
+Name  : Rosmery
+Count : 1
+
+Name  : Número desactivado
+Count : 1
+
+Name  : NOMBRE
+Count : 1
+
+Name  : uniformes de futbol
+Count : 1
+
+Name  : volver a llamar
+Count : 1
+
+Name  : VOTA EN PUTUMAYO
+Count : 1
+
+Name  : No se llama Melissa
+Count : 1
+
+Name  : PRIMERA TANDA DE 46 SIRVIERON 33
+Count : 1
+
+Name  : 10 mn llamar
+Count : 1
+
+Name  : No existe el celular
+Count : 1
+
+Name  : colgaron
+Count : 1
+
+Name  : colgó
+Count : 1
+
+Name  : CONCEJAL
+Count : 1
+
+Name  : Contesto pero estaba ocupada
+Count : 1
+
+Name  : Contesto pero no hablaba despues de nombrarle a Alex
+Count : 1
+
+Name  : Contesto pero no tiene tiempo para hablar con nadie
+Count : 1
+
+Name  : DE 24 SIRVIERON 12
+Count : 1
+
+Name  : desconoce referido
+Count : 1
+
+Name  : EDILES - CARLOS MUÑOZ - JULIANA ORTIZ
+Count : 1
+
+Name  : EDILES - NO AYUDAS, NECESITA SABER QUÉ VA A PASAR, LLAMARLO MAÑANA POR ALGUNA RAZÓN
+Count : 1
+
+Name  : Enviar informacion por wsp
+Count : 1
+
+Name  : Escucho a Alex y colgo
+Count : 1
+
+Name  : Escucho Alex Prieto y colgo
+Count : 1
+
+Name  : La hermana organizo todo
+Count : 1
+
+Name  : le falta un numero al celular
+Count : 1
+
+Name  : llamar a la señora el dia de elecciones
+Count : 1
+
+Name  : llamar mañana
+Count : 1
+
+Name  : Llamar por la noche
+Count : 1
+
+Name  : Mañana llamar 1-130
+Count : 1
+
+Name  : Martha Bermudez
+Count : 1
+
+Name  : MERCADO
+Count : 1
+
+Name  : NECESITA PUBLICIDAD Y PANELES SOLARES PROMETIDOS POR ISABELA
+Count : 1
+
+Name  : No asistio a ninguna reuinon, ¿por que tienen su contacto
+Count : 1
+
+Name  : No conoce a Roman Vargas
+Count : 1
+
+Name  : No conoce del proceso - llamar en la tarde
+Count : 1
+
+Name  : no conoce el referido
+Count : 1
+
+Name  : No esta en servicio
+Count : 1
+
+Name  : No interesada en votar, no conoce a santiago leon
+Count : 1
+
+Name  : Ya sellamo
+Count : 1
+
+

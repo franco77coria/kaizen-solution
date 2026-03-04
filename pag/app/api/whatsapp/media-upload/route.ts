@@ -16,14 +16,19 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Falta el archivo" }, { status: 400 })
         }
 
-        const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"]
+        const allowedTypes = [
+            "image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif",
+            "audio/mpeg", "audio/mp3", "audio/ogg", "audio/wav", "audio/x-m4a", "audio/mp4", "audio/aac",
+        ]
         if (!allowedTypes.includes(file.type)) {
-            return NextResponse.json({ error: "Formato no soportado. Usá JPG, PNG, WEBP o GIF." }, { status: 400 })
+            return NextResponse.json({ error: "Formato no soportado. Usá JPG, PNG, WEBP, GIF, MP3, OGG, WAV o M4A." }, { status: 400 })
         }
 
-        // 5 MB limit
-        if (file.size > 5 * 1024 * 1024) {
-            return NextResponse.json({ error: "La imagen supera el límite de 5 MB" }, { status: 400 })
+        // 10 MB limit for audio, 5 MB for images
+        const isAudio = file.type.startsWith("audio/")
+        const maxSize = isAudio ? 10 * 1024 * 1024 : 5 * 1024 * 1024
+        if (file.size > maxSize) {
+            return NextResponse.json({ error: `El archivo supera el límite de ${isAudio ? '10' : '5'} MB` }, { status: 400 })
         }
 
         const arrayBuffer = await file.arrayBuffer()

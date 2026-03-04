@@ -1,0 +1,1613 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Testigos PL - Mesas de Votación</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --rojo: #E31837;
+            --rojo-o: #B71530;
+            --rojo-p: #8B0A1E;
+            --blanco: #FFF;
+            --gris-c: #F5F5F7;
+            --gris-m: #E0E0E0;
+            --gris-t: #6B7280;
+            --gris-o: #2D2D2D;
+            --negro: #1A1A1A;
+            --verde: #10B981;
+            --amarillo: #F59E0B;
+            --azul: #3B82F6;
+            --naranja: #F97316;
+            --sombra: 0 8px 32px rgba(0, 0, 0, .08);
+            --radio: 16px;
+            --btn-r: 12px;
+            --trans: all .3s cubic-bezier(.4, 0, .2, 1)
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--gris-c);
+            color: var(--gris-o);
+            min-height: 100vh;
+            overflow-x: hidden
+        }
+
+        /* CARGA */
+        #pantallaCarga {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, var(--rojo), var(--rojo-p));
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity .5s
+        }
+
+        #pantallaCarga.ocultar {
+            opacity: 0;
+            pointer-events: none
+        }
+
+        .loader-ring {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, .2);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin .8s linear infinite;
+            margin-bottom: 16px
+        }
+
+        .loader-text {
+            color: #fff;
+            font-size: 14px;
+            font-weight: 500
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg)
+            }
+        }
+
+        /* LOGIN */
+        #pantallaLogin {
+            display: none;
+            min-height: 100vh;
+            background: linear-gradient(160deg, var(--rojo) 0%, var(--rojo-p) 50%, var(--negro) 100%);
+            position: relative
+        }
+
+        #pantallaLogin.activo {
+            display: flex;
+            align-items: center;
+            justify-content: center
+        }
+
+        .login-bg {
+            position: absolute;
+            inset: 0;
+            background-image: radial-gradient(circle at 20% 80%, rgba(255, 255, 255, .05) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255, 255, 255, .08) 0%, transparent 50%);
+            pointer-events: none
+        }
+
+        .login-box {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            max-width: 420px;
+            padding: 24px
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 40px
+        }
+
+        .login-escudo {
+            width: 90px;
+            height: 90px;
+            background: rgba(255, 255, 255, .15);
+            backdrop-filter: blur(10px);
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 42px;
+            border: 2px solid rgba(255, 255, 255, .25);
+            animation: pulse 3s ease-in-out infinite
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 20px rgba(255, 255, 255, .1)
+            }
+
+            50% {
+                box-shadow: 0 0 40px rgba(255, 255, 255, .2)
+            }
+        }
+
+        .login-title {
+            color: #fff;
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 6px
+        }
+
+        .login-sub {
+            color: rgba(255, 255, 255, .7);
+            font-size: 13px;
+            line-height: 1.5
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, .1);
+            backdrop-filter: blur(20px);
+            border-radius: var(--radio);
+            padding: 32px 28px;
+            border: 1px solid rgba(255, 255, 255, .15)
+        }
+
+        .login-label {
+            display: block;
+            color: rgba(255, 255, 255, .85);
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 8px
+        }
+
+        .login-iw {
+            position: relative;
+            margin-bottom: 24px
+        }
+
+        .login-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 20px;
+            opacity: .6
+        }
+
+        #inputCedula {
+            width: 100%;
+            padding: 16px 16px 16px 52px;
+            border: 2px solid rgba(255, 255, 255, .2);
+            border-radius: var(--btn-r);
+            background: rgba(255, 255, 255, .08);
+            color: #fff;
+            font-family: 'Poppins', sans-serif;
+            font-size: 18px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            transition: var(--trans);
+            outline: none
+        }
+
+        #inputCedula::placeholder {
+            color: rgba(255, 255, 255, .35);
+            font-weight: 400;
+            letter-spacing: .5px;
+            font-size: 14px
+        }
+
+        #inputCedula:focus {
+            border-color: rgba(255, 255, 255, .5);
+            background: rgba(255, 255, 255, .12);
+            box-shadow: 0 0 0 4px rgba(255, 255, 255, .1)
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: var(--btn-r);
+            background: #fff;
+            color: var(--rojo);
+            font-family: 'Poppins', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--trans)
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, .2)
+        }
+
+        .btn-login:disabled {
+            opacity: .6;
+            cursor: not-allowed;
+            transform: none
+        }
+
+        .login-error {
+            background: rgba(239, 68, 68, .2);
+            border: 1px solid rgba(239, 68, 68, .4);
+            color: #FCA5A5;
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            margin-top: 16px;
+            display: none;
+            animation: shake .4s ease
+        }
+
+        .login-error.visible {
+            display: block
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0)
+            }
+
+            25% {
+                transform: translateX(-8px)
+            }
+
+            75% {
+                transform: translateX(8px)
+            }
+        }
+
+        .login-footer {
+            text-align: center;
+            margin-top: 32px;
+            color: rgba(255, 255, 255, .4);
+            font-size: 11px
+        }
+
+        /* PANTALLA INFO PUESTO */
+        #pantallaInfo {
+            display: none;
+            min-height: 100vh;
+            background: linear-gradient(160deg, var(--rojo) 0%, var(--rojo-p) 50%, var(--negro) 100%);
+            position: relative
+        }
+
+        #pantallaInfo.activo {
+            display: flex;
+            align-items: center;
+            justify-content: center
+        }
+
+        .info-container {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            max-width: 480px;
+            padding: 24px
+        }
+
+        .info-card {
+            background: rgba(255, 255, 255, .12);
+            backdrop-filter: blur(20px);
+            border-radius: var(--radio);
+            padding: 32px 24px;
+            border: 1px solid rgba(255, 255, 255, .15);
+            text-align: center
+        }
+
+        .info-card h2 {
+            color: #fff;
+            font-size: 20px;
+            margin-bottom: 20px
+        }
+
+        .info-dato {
+            background: rgba(255, 255, 255, .1);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 10px;
+            color: #fff;
+            font-size: 14px
+        }
+
+        .info-dato .lbl {
+            font-size: 11px;
+            color: rgba(255, 255, 255, .6);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: block;
+            margin-bottom: 4px
+        }
+
+        .info-dato .val {
+            font-weight: 700;
+            font-size: 16px
+        }
+
+        .info-mesas-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 8px
+        }
+
+        .info-mesa-b {
+            background: rgba(255, 255, 255, .2);
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 14px;
+            color: #fff
+        }
+
+        .info-instructivo {
+            margin-top: 24px;
+            text-align: left
+        }
+
+        .info-instructivo h3 {
+            color: #fff;
+            font-size: 15px;
+            margin-bottom: 14px;
+            text-align: center
+        }
+
+        .paso-item {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+            color: #fff;
+            font-size: 12px;
+            line-height: 1.5;
+            align-items: flex-start
+        }
+
+        .paso-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+            font-weight: 700
+        }
+
+        .paso-1 .paso-icon {
+            background: rgba(245, 158, 11, .3)
+        }
+
+        .paso-2 .paso-icon {
+            background: rgba(59, 130, 246, .3)
+        }
+
+        .paso-3 .paso-icon {
+            background: rgba(249, 115, 22, .3)
+        }
+
+        .paso-4 .paso-icon {
+            background: rgba(227, 24, 55, .3)
+        }
+
+        .paso-text strong {
+            display: block;
+            font-size: 13px;
+            margin-bottom: 2px
+        }
+
+        .btn-continuar {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: var(--btn-r);
+            background: #fff;
+            color: var(--rojo);
+            font-family: 'Poppins', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--trans);
+            margin-top: 24px
+        }
+
+        .btn-continuar:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, .2)
+        }
+
+        /* RELOJ PRUEBA */
+        .test-clock {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: linear-gradient(135deg, #1E293B, #334155);
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 12px;
+            color: #94A3B8;
+            border-bottom: 2px solid var(--amarillo)
+        }
+
+        .test-clock input[type=time] {
+            background: #0F172A;
+            border: 1px solid #475569;
+            color: #fff;
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            font-weight: 600
+        }
+
+        .test-clock label {
+            font-weight: 600;
+            color: var(--amarillo)
+        }
+
+        /* DASHBOARD */
+        #pantallaDashboard {
+            display: none;
+            min-height: 100vh;
+            padding-bottom: 32px
+        }
+
+        #pantallaDashboard.activo {
+            display: block;
+            animation: fadeUp .5s ease
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        .dash-header {
+            background: linear-gradient(135deg, var(--rojo), var(--rojo-p));
+            padding: 24px 20px 60px;
+            position: relative;
+            overflow: hidden
+        }
+
+        .dash-header::after {
+            content: '';
+            position: absolute;
+            bottom: -30px;
+            left: -5%;
+            right: -5%;
+            height: 60px;
+            background: var(--gris-c);
+            border-radius: 50% 50% 0 0
+        }
+
+        .hdr-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px
+        }
+
+        .hdr-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 600
+        }
+
+        .btn-logout {
+            background: rgba(255, 255, 255, .15);
+            border: 1px solid rgba(255, 255, 255, .25);
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--trans)
+        }
+
+        .hdr-info {
+            color: #fff
+        }
+
+        .hdr-nombre {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 4px
+        }
+
+        .hdr-detalle {
+            font-size: 13px;
+            opacity: .85;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap
+        }
+
+        .hdr-badge {
+            background: rgba(255, 255, 255, .2);
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500
+        }
+
+        .dash-content {
+            padding: 0 16px;
+            margin-top: -28px;
+            position: relative;
+            z-index: 2
+        }
+
+        .resumen {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 24px
+        }
+
+        .resumen-item {
+            background: #fff;
+            border-radius: 14px;
+            padding: 14px 12px;
+            text-align: center;
+            box-shadow: var(--sombra)
+        }
+
+        .resumen-num {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--rojo);
+            line-height: 1;
+            margin-bottom: 4px
+        }
+
+        .resumen-lbl {
+            font-size: 10px;
+            color: var(--gris-t);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: .5px
+        }
+
+        .sec-titulo {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--negro);
+            margin-bottom: 14px;
+            padding-left: 4px
+        }
+
+        .mesas-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 14px
+        }
+
+        /* MESA CARD */
+        .mesa-card {
+            background: #fff;
+            border-radius: var(--radio);
+            padding: 20px;
+            box-shadow: var(--sombra);
+            cursor: pointer;
+            transition: var(--trans);
+            border-left: 5px solid var(--gris-m);
+            position: relative
+        }
+
+        .mesa-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 16px 48px rgba(0, 0, 0, .12)
+        }
+
+        .mesa-card.st-pendiente {
+            border-left-color: var(--gris-m)
+        }
+
+        .mesa-card.st-en_progreso {
+            border-left-color: var(--amarillo)
+        }
+
+        .mesa-card.st-completada {
+            border-left-color: var(--verde)
+        }
+
+        .mc-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px
+        }
+
+        .mc-num {
+            display: flex;
+            align-items: center;
+            gap: 10px
+        }
+
+        .mc-badge {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, var(--rojo), var(--rojo-o));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 18px;
+            font-weight: 800
+        }
+
+        .mc-text {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--negro)
+        }
+
+        .mc-estado {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600
+        }
+
+        .bg-pend {
+            background: #F3F4F6;
+            color: #6B7280
+        }
+
+        .bg-prog {
+            background: #FEF3C7;
+            color: #D97706
+        }
+
+        .bg-comp {
+            background: #D1FAE5;
+            color: #059669
+        }
+
+        .mc-datos {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-bottom: 12px
+        }
+
+        .mc-d {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--gris-t)
+        }
+
+        .mc-dv {
+            font-weight: 600;
+            color: var(--negro)
+        }
+
+        /* BARRA PROGRESO */
+        .progress-wrap {
+            margin-top: 8px
+        }
+
+        .progress-label {
+            font-size: 11px;
+            color: var(--gris-t);
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #E5E7EB;
+            border-radius: 4px;
+            overflow: hidden
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width .5s ease;
+            background: linear-gradient(90deg, var(--amarillo), var(--verde))
+        }
+
+        .mc-arrow {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 18px;
+            color: var(--gris-m);
+            transition: var(--trans)
+        }
+
+        .mesa-card:hover .mc-arrow {
+            color: var(--rojo);
+            transform: translateY(-50%) translateX(4px)
+        }
+
+        .ult-act {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 11px;
+            color: var(--gris-t)
+        }
+
+        /* MODAL */
+        .modal-ov {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .5);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            display: none;
+            align-items: flex-end;
+            justify-content: center
+        }
+
+        .modal-ov.activo {
+            display: flex;
+            animation: fadeIn .2s ease
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0
+            }
+
+            to {
+                opacity: 1
+            }
+        }
+
+        .modal-cont {
+            background: #fff;
+            border-radius: 24px 24px 0 0;
+            width: 100%;
+            max-width: 500px;
+            max-height: 92vh;
+            overflow-y: auto;
+            animation: slideUp .3s cubic-bezier(.4, 0, .2, 1)
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%)
+            }
+
+            to {
+                transform: translateY(0)
+            }
+        }
+
+        .modal-hdr {
+            background: linear-gradient(135deg, var(--rojo), var(--rojo-o));
+            padding: 20px 24px;
+            border-radius: 24px 24px 0 0;
+            position: sticky;
+            top: 0;
+            z-index: 10
+        }
+
+        .modal-hdr-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between
+        }
+
+        .modal-title {
+            color: #fff;
+            font-size: 18px;
+            font-weight: 700
+        }
+
+        .modal-close {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, .2);
+            border: none;
+            color: #fff;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--trans)
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 255, 255, .35)
+        }
+
+        .modal-body {
+            padding: 24px
+        }
+
+        /* SECCIONES HORARIAS */
+        .seccion-horaria {
+            border-radius: 14px;
+            padding: 18px;
+            margin-bottom: 16px;
+            border: 2px solid #E5E7EB;
+            position: relative;
+            transition: var(--trans)
+        }
+
+        .seccion-horaria.activa {
+            border-color: var(--verde);
+            background: rgba(16, 185, 129, .03)
+        }
+
+        .seccion-horaria.bloqueada {
+            opacity: .55;
+            pointer-events: none;
+            background: #F9FAFB
+        }
+
+        .seccion-horaria.completada {
+            border-color: #D1FAE5;
+            background: rgba(16, 185, 129, .02)
+        }
+
+        .sh-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px
+        }
+
+        .sh-titulo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 700
+        }
+
+        .sh-icono {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px
+        }
+
+        .sh-estado {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 12px
+        }
+
+        .sh-aviso {
+            font-size: 12px;
+            color: var(--gris-t);
+            padding: 10px 14px;
+            background: #F3F4F6;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            line-height: 1.6
+        }
+
+        .sh-aviso strong {
+            color: var(--negro)
+        }
+
+        .f-grupo {
+            margin-bottom: 14px
+        }
+
+        .f-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--gris-t);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: .5px
+        }
+
+        .f-input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid var(--gris-m);
+            border-radius: 10px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--negro);
+            transition: var(--trans);
+            outline: none;
+            background: var(--gris-c);
+            -moz-appearance: textfield
+        }
+
+        .f-input::-webkit-outer-spin-button,
+        .f-input::-webkit-inner-spin-button {
+            -webkit-appearance: none
+        }
+
+        .f-input:focus {
+            border-color: var(--rojo);
+            background: #fff;
+            box-shadow: 0 0 0 4px rgba(227, 24, 55, .1)
+        }
+
+        .f-input:disabled {
+            background: #F3F4F6;
+            color: #9CA3AF;
+            cursor: not-allowed
+        }
+
+        .f-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px
+        }
+
+        .btn-seccion {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: var(--btn-r);
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--trans);
+            color: #fff;
+            margin-top: 8px
+        }
+
+        .btn-seccion:disabled {
+            opacity: .5;
+            cursor: not-allowed
+        }
+
+        .btn-s1 {
+            background: linear-gradient(135deg, #D97706, #B45309)
+        }
+
+        .btn-s2 {
+            background: linear-gradient(135deg, var(--azul), #1D4ED8)
+        }
+
+        .btn-s3 {
+            background: linear-gradient(135deg, var(--naranja), #EA580C)
+        }
+
+        .btn-s4 {
+            background: linear-gradient(135deg, var(--rojo), var(--rojo-o))
+        }
+
+        /* FOTOS */
+        .foto-area {
+            border: 2px dashed var(--gris-m);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--trans);
+            position: relative;
+            margin-bottom: 12px
+        }
+
+        .foto-area:hover {
+            border-color: var(--rojo);
+            background: rgba(227, 24, 55, .03)
+        }
+
+        .foto-area.con-foto {
+            border-style: solid;
+            border-color: var(--verde);
+            padding: 8px
+        }
+
+        .foto-prev {
+            width: 100%;
+            max-height: 200px;
+            object-fit: contain;
+            border-radius: 8px;
+            display: none
+        }
+
+        .foto-prev.visible {
+            display: block
+        }
+
+        .foto-st {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 6px;
+            font-size: 12px;
+            font-weight: 500
+        }
+
+        .foto-st.ok {
+            color: var(--verde)
+        }
+
+        .foto-st.err {
+            color: var(--rojo)
+        }
+
+        /* MODAL CONFIRMACION */
+        .confirm-ov {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .6);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center
+        }
+
+        .confirm-ov.activo {
+            display: flex
+        }
+
+        .confirm-box {
+            background: #fff;
+            border-radius: 20px;
+            padding: 32px 24px;
+            max-width: 360px;
+            width: 90%;
+            text-align: center;
+            animation: slideUp .3s ease
+        }
+
+        .confirm-box h3 {
+            font-size: 18px;
+            margin-bottom: 8px;
+            color: var(--negro)
+        }
+
+        .confirm-box p {
+            font-size: 14px;
+            color: var(--gris-t);
+            margin-bottom: 20px;
+            line-height: 1.6
+        }
+
+        .confirm-box .valor-confirm {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--rojo);
+            display: block;
+            margin: 12px 0
+        }
+
+        .confirm-btns {
+            display: flex;
+            gap: 10px
+        }
+
+        .confirm-btns button {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: var(--btn-r);
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--trans)
+        }
+
+        .btn-revisar {
+            background: #F3F4F6;
+            color: var(--gris-o)
+        }
+
+        .btn-confirmar {
+            background: linear-gradient(135deg, var(--verde), #059669);
+            color: #fff
+        }
+
+        /* TOAST */
+        .toast-cont {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            width: 90%;
+            max-width: 400px
+        }
+
+        .toast {
+            padding: 14px 20px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: toastIn .3s ease;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, .15);
+            margin-bottom: 8px
+        }
+
+        .toast-ok {
+            background: #059669;
+            color: #fff
+        }
+
+        .toast-err {
+            background: #DC2626;
+            color: #fff
+        }
+
+        .toast-info {
+            background: #2563EB;
+            color: #fff
+        }
+
+        @keyframes toastIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        .spinner-i {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, .3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin .6s linear infinite;
+            vertical-align: middle;
+            margin-right: 6px
+        }
+
+        .oculto {
+            display: none !important
+        }
+
+        @media(min-width:768px) {
+            .mesas-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+                gap: 16px
+            }
+
+            .modal-ov {
+                align-items: center
+            }
+
+            .modal-cont {
+                border-radius: 24px
+            }
+
+            .modal-hdr {
+                border-radius: 24px 24px 0 0
+            }
+
+            .dash-content {
+                max-width: 900px;
+                margin-left: auto;
+                margin-right: auto
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- CARGA -->
+    <div id="pantallaCarga">
+        <div class="loader-ring"></div>
+        <div class="loader-text">CARGANDO...</div>
+    </div>
+
+    <!-- LOGIN -->
+    <div id="pantallaLogin">
+        <div class="login-bg"></div>
+        <div class="login-box">
+            <div class="login-header">
+                <div class="login-escudo">🗳️</div>
+                <h1 class="login-title">Testigos Electorales</h1>
+                <p class="login-sub">Partido Liberal de Colombia<br>Cundinamarca 2026</p>
+            </div>
+            <div class="login-card">
+                <label class="login-label">NÚMERO DE CÉDULA</label>
+                <div class="login-iw"><span class="login-icon">🪪</span><input type="number" id="inputCedula"
+                        placeholder="Ingrese su cédula" autocomplete="off" inputmode="numeric"></div>
+                <button class="btn-login" id="btnLogin" onclick="procesarLogin()">INGRESAR</button>
+                <div class="login-error" id="loginError"></div>
+            </div>
+            <div class="login-footer">Partido Liberal • Cundinamarca • 2026</div>
+        </div>
+    </div>
+
+    <!-- INFO PUESTO -->
+    <div id="pantallaInfo">
+        <div class="login-bg"></div>
+        <div class="info-container">
+            <div class="info-card">
+                <h2>📋 Su Asignación</h2>
+                <div class="info-dato"><span class="lbl">Municipio</span><span class="val" id="infoMunicipio">—</span>
+                </div>
+                <div class="info-dato"><span class="lbl">Puesto de Votación</span><span class="val"
+                        id="infoPuesto">—</span></div>
+                <div class="info-dato"><span class="lbl">Mesas Asignadas</span>
+                    <div class="info-mesas-badges" id="infoMesas"></div>
+                </div>
+            </div>
+            <div class="info-instructivo">
+                <h3>📖 ¿Cómo llenar los datos?</h3>
+                <div class="paso-item paso-1">
+                    <div class="paso-icon">🟡</div>
+                    <div class="paso-text"><strong>8:00 - 9:59 AM · Censo</strong>Registre el total de votantes
+                        habilitados en cada mesa al inicio de la jornada.</div>
+                </div>
+                <div class="paso-item paso-2">
+                    <div class="paso-icon">🔵</div>
+                    <div class="paso-text"><strong>10:00 AM - 12:59 PM · Conteo 10AM</strong>Reporte la cantidad de
+                        personas que han votado hasta las 10 AM.</div>
+                </div>
+                <div class="paso-item paso-3">
+                    <div class="paso-icon">🟠</div>
+                    <div class="paso-text"><strong>1:00 - 3:59 PM · Conteo 1PM</strong>Reporte la cantidad de personas
+                        que han votado hasta la 1 PM.</div>
+                </div>
+                <div class="paso-item paso-4">
+                    <div class="paso-icon">🔴</div>
+                    <div class="paso-text"><strong>4:00 PM en adelante · Resultados</strong>Registre los votos finales
+                        de cada candidato y suba las fotos del E-14.</div>
+                </div>
+            </div>
+            <button class="btn-continuar" onclick="irAlDashboard()">✅ Entendido, Continuar</button>
+        </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="pantallaDashboard">
+        <div class="test-clock"><label>⚙️ RELOJ PRUEBA:</label><input type="time" id="relojPrueba" value="08:00"
+                onchange="actualizarReloj()"><span id="horaActualTxt">08:00</span></div>
+        <div class="dash-header">
+            <div class="hdr-top">
+                <div class="hdr-brand"><span>🗳️</span><span>Testigos PL</span></div><button class="btn-logout"
+                    onclick="cerrarSesion()">Cerrar Sesión</button>
+            </div>
+            <div class="hdr-info">
+                <div class="hdr-nombre" id="hdrNombre">—</div>
+                <div class="hdr-detalle"><span class="hdr-badge" id="hdrMun">—</span><span class="hdr-badge"
+                        id="hdrPuesto">—</span></div>
+            </div>
+        </div>
+        <div class="dash-content">
+            <div class="resumen">
+                <div class="resumen-item">
+                    <div class="resumen-num" id="rTotal">0</div>
+                    <div class="resumen-lbl">Mesas</div>
+                </div>
+                <div class="resumen-item">
+                    <div class="resumen-num" id="rComp">0</div>
+                    <div class="resumen-lbl">Completadas</div>
+                </div>
+                <div class="resumen-item">
+                    <div class="resumen-num" id="rPend">0</div>
+                    <div class="resumen-lbl">Pendientes</div>
+                </div>
+            </div>
+            <h2 class="sec-titulo">📋 Mis Mesas Asignadas</h2>
+            <div class="mesas-grid" id="mesasGrid"></div>
+            <div class="ult-act" id="ultAct">Última actualización: —</div>
+        </div>
+    </div>
+
+    <!-- MODAL MESA -->
+    <div class="modal-ov" id="modalMesa">
+        <div class="modal-cont">
+            <div class="modal-hdr">
+                <div class="modal-hdr-top">
+                    <h2 class="modal-title" id="modalTit">Mesa #—</h2><button class="modal-close"
+                        onclick="cerrarModal()">✕</button>
+                </div>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+        </div>
+    </div>
+
+    <!-- MODAL CONFIRMACION -->
+    <div class="confirm-ov" id="confirmModal">
+        <div class="confirm-box">
+            <h3 id="confirmTitulo">¿Está seguro?</h3>
+            <p id="confirmMsg">mensaje</p>
+            <div class="confirm-btns"><button class="btn-revisar" onclick="cerrarConfirm()">Revisar</button><button
+                    class="btn-confirmar" id="btnConfirmar" onclick="">Confirmar</button></div>
+        </div>
+    </div>
+
+    <!-- TOAST -->
+    <div class="toast-cont" id="toastCont"></div>
+
+    <script>
+        // === ESTADO ===
+        var sesion = { cedula: null, testigo: null, mesas: [], intervalo: null };
+        var fotosTemp = { camara: null, senado: null };
+        var horaSimulada = null;
+
+        // === INIT ===
+        window.addEventListener('load', function () {
+            setTimeout(function () { document.getElementById('pantallaCarga').classList.add('ocultar'); document.getElementById('pantallaLogin').classList.add('activo'); document.getElementById('inputCedula').focus(); }, 800);
+        });
+        document.getElementById('inputCedula').addEventListener('keypress', function (e) { if (e.key === 'Enter') procesarLogin(); });
+
+        // === HORA ===
+        function obtenerHora() {
+            if (horaSimulada !== null) return horaSimulada;
+            var n = new Date(); return n.getHours() * 60 + n.getMinutes();
+        }
+        function actualizarReloj() {
+            var v = document.getElementById('relojPrueba').value;
+            if (v) { var p = v.split(':'); horaSimulada = parseInt(p[0]) * 60 + parseInt(p[1]); document.getElementById('horaActualTxt').textContent = v; }
+            // Re-render si hay modal abierto
+            if (document.getElementById('modalMesa').classList.contains('activo')) {
+                var mn = document.getElementById('modalBody').dataset.mesa;
+                var mesa = sesion.mesas.find(function (m) { return m.mesa === mn; });
+                if (mesa) renderModalBody(mesa);
+            }
+        }
+        function getSeccionActiva() {
+            var m = obtenerHora();
+            if (m >= 480 && m < 600) return 1; // 8:00-9:59
+            if (m >= 600 && m < 780) return 2; // 10:00-12:59
+            if (m >= 780 && m < 960) return 3; // 13:00-15:59
+            if (m >= 960) return 4; // 16:00+
+            return 0;
+        }
+        function getNombreSeccion(s) { return ['Fuera de horario', '🟡 Censo de Votantes', '🔵 Conteo 10:00 AM', '🟠 Conteo 1:00 PM', '🔴 Resultados Finales'][s]; }
+        function getHorarioSeccion(s) { return ['', '8:00 - 9:59 AM', '10:00 AM - 12:59 PM', '1:00 - 3:59 PM', '4:00 PM en adelante'][s]; }
+        function getColorSeccion(s) { return ['#9CA3AF', '#D97706', '#2563EB', '#F97316', '#E31837'][s]; }
+
+        // === LOGIN ===
+        function procesarLogin() {
+            var c = document.getElementById('inputCedula').value.trim(), b = document.getElementById('btnLogin'), e = document.getElementById('loginError');
+            if (!c) { mostrarErrorLogin('Por favor ingrese su número de cédula.'); return; }
+            b.disabled = true; b.innerHTML = '<span class="spinner-i"></span> VERIFICANDO...'; e.classList.remove('visible');
+            google.script.run.withSuccessHandler(function (r) {
+                b.disabled = false; b.innerHTML = 'INGRESAR';
+                if (r.exito) { sesion.cedula = c; sesion.testigo = r.testigo; sesion.mesas = r.mesas; mostrarInfoPuesto(); }
+                else { mostrarErrorLogin(r.mensaje); }
+            }).withFailureHandler(function (err) { b.disabled = false; b.innerHTML = 'INGRESAR'; mostrarErrorLogin('Error de conexión.'); }).iniciarSesion(c);
+        }
+        function mostrarErrorLogin(m) { var e = document.getElementById('loginError'); e.textContent = m; e.classList.add('visible'); }
+
+        // === INFO PUESTO ===
+        function mostrarInfoPuesto() {
+            document.getElementById('pantallaLogin').classList.remove('activo');
+            document.getElementById('pantallaInfo').classList.add('activo');
+            document.getElementById('infoMunicipio').textContent = sesion.testigo.municipio;
+            document.getElementById('infoPuesto').textContent = sesion.testigo.puestoVotacion;
+            var mc = document.getElementById('infoMesas'); mc.innerHTML = '';
+            sesion.mesas.forEach(function (m) { var b = document.createElement('span'); b.className = 'info-mesa-b'; b.textContent = 'Mesa ' + m.mesa; mc.appendChild(b); });
+        }
+        function irAlDashboard() {
+            document.getElementById('pantallaInfo').classList.remove('activo');
+            document.getElementById('pantallaDashboard').classList.add('activo');
+            renderDashboard(); iniciarRefresh();
+        }
+
+        // === DASHBOARD ===
+        function renderDashboard() {
+            document.getElementById('hdrNombre').textContent = sesion.testigo.nombre;
+            document.getElementById('hdrMun').textContent = '📍 ' + sesion.testigo.municipio;
+            document.getElementById('hdrPuesto').textContent = '🏫 ' + sesion.testigo.puestoVotacion;
+            actualizarResumen(); renderTarjetas(); actualizarHora();
+        }
+        function actualizarResumen() {
+            var t = sesion.mesas.length, c = sesion.mesas.filter(function (m) { return m.estado === 'completada'; }).length;
+            document.getElementById('rTotal').textContent = t; document.getElementById('rComp').textContent = c; document.getElementById('rPend').textContent = t - c;
+        }
+        function renderTarjetas() {
+            var g = document.getElementById('mesasGrid'); g.innerHTML = '';
+            sesion.mesas.forEach(function (mesa) {
+                var d = document.createElement('div'); d.className = 'mesa-card st-' + mesa.estado; d.onclick = function () { abrirMesa(mesa); };
+                var et = { 'pendiente': '⏳ Pendiente', 'en_progreso': '📊 En Progreso', 'completada': '✅ Completada' };
+                var bc = { 'pendiente': 'bg-pend', 'en_progreso': 'bg-prog', 'completada': 'bg-comp' };
+                var censo = mesa.cantidadVotantesMesa || 0, v10 = mesa.votantes10am || 0, v1 = mesa.votantes1pm || 0;
+                var total = parseInt(censo) || 0, votaron = Math.max(parseInt(v10) || 0, parseInt(v1) || 0);
+                var pct = total > 0 ? Math.min(Math.round(votaron / total * 100), 100) : 0;
+                var pctTxt = total > 0 ? votaron + ' de ' + total + ' (' + pct + '%)' : 'Pendiente censo';
+                d.innerHTML = '<div class="mc-header"><div class="mc-num"><div class="mc-badge">' + mesa.mesa + '</div><span class="mc-text">Mesa ' + mesa.mesa + '</span></div><span class="mc-estado ' + bc[mesa.estado] + '">' + et[mesa.estado] + '</span></div>' +
+                    '<div class="mc-datos"><div class="mc-d">👥 Hab: <span class="mc-dv">' + (mesa.cantidadVotantesMesa || '—') + '</span></div><div class="mc-d">🕙 10AM: <span class="mc-dv">' + (mesa.votantes10am || '—') + '</span></div><div class="mc-d">🕐 1PM: <span class="mc-dv">' + (mesa.votantes1pm || '—') + '</span></div><div class="mc-d">🗳️ Alex: <span class="mc-dv">' + (mesa.votosAlexP || '—') + '</span></div></div>' +
+                    '<div class="progress-wrap"><div class="progress-label"><span>Participación</span><span>' + pctTxt + '</span></div><div class="progress-bar"><div class="progress-fill" style="width:' + pct + '%"></div></div></div>' +
+                    '<span class="mc-arrow">›</span>';
+                g.appendChild(d);
+            });
+        }
+        function actualizarHora() { var n = new Date(); document.getElementById('ultAct').textContent = 'Última actualización: ' + n.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', second: '2-digit' }); }
+        function iniciarRefresh() { if (sesion.intervalo) clearInterval(sesion.intervalo); sesion.intervalo = setInterval(refrescar, 30000); }
+        function refrescar() { if (!sesion.cedula) return; google.script.run.withSuccessHandler(function (r) { if (r.exito) { sesion.mesas = r.mesas; actualizarResumen(); renderTarjetas(); actualizarHora(); } }).withFailureHandler(function () { }).refrescarDashboard(sesion.cedula); }
+        function cerrarSesion() { if (sesion.intervalo) { clearInterval(sesion.intervalo); sesion.intervalo = null; } sesion.cedula = null; sesion.testigo = null; sesion.mesas = []; document.getElementById('pantallaDashboard').classList.remove('activo'); document.getElementById('pantallaLogin').classList.add('activo'); document.getElementById('inputCedula').value = ''; document.getElementById('inputCedula').focus(); }
+
+        // === MODAL MESA ===
+        function abrirMesa(mesa) {
+            fotosTemp = { camara: null, senado: null };
+            document.getElementById('modalTit').textContent = 'Mesa #' + mesa.mesa;
+            document.getElementById('modalBody').dataset.mesa = mesa.mesa;
+            renderModalBody(mesa);
+            document.getElementById('modalMesa').classList.add('activo');
+            document.body.style.overflow = 'hidden';
+        }
+        function cerrarModal() { document.getElementById('modalMesa').classList.remove('activo'); document.body.style.overflow = ''; }
+
+        function renderModalBody(mesa) {
+            var sa = getSeccionActiva(), body = document.getElementById('modalBody');
+            var secciones = [
+                { id: 1, campos: ['cantidadVotantesMesa'], labels: ['Total Votantes Habilitados'], aviso: 'Registre el número total de votantes habilitados que aparece en el formulario E-11 de esta mesa. Este dato es fundamental para medir la participación.' },
+                { id: 2, campos: ['votantes10am'], labels: ['Votantes hasta las 10:00 AM'], aviso: 'Cuente las personas que han votado en esta mesa hasta las 10:00 AM. Acérquese al jurado para confirmar el dato.' },
+                { id: 3, campos: ['votantes1pm'], labels: ['Votantes hasta la 1:00 PM'], aviso: 'Cuente las personas que han votado en esta mesa hasta la 1:00 PM. Este es el segundo corte del día.' },
+                { id: 4, campos: ['votosAlexP', 'votosCamaraCunPL', 'votosOscarSanchezSenado', 'votosSenadoPL'], labels: ['Votos Alex P (Cámara)', 'Votos Cámara CUN PL', 'Votos Oscar Sánchez (Senado)', 'Votos Senado PL'], aviso: 'Registre los resultados finales del escrutinio. Verifique cuidadosamente cada dato antes de guardar. También suba las fotos del E-14.', fotos: true }
+            ];
+            var html = '';
+            secciones.forEach(function (sec) {
+                var activa = sa === sec.id;
+                var pasada = sa > sec.id;
+                var tieneDatos = sec.campos.some(function (c) { return mesa[c] && mesa[c] !== ''; });
+                var clase = activa ? 'activa' : (pasada ? (tieneDatos ? 'completada' : 'activa') : 'bloqueada');
+                var estadoTxt = activa ? '✅ Activa ahora' : (pasada ? (tieneDatos ? '✅ Completada' : '⚠️ Pendiente (habilitada)') : '🔒 Se habilitará');
+                var estadoColor = activa ? 'background:#D1FAE5;color:#059669' : (pasada ? (tieneDatos ? 'background:#D1FAE5;color:#059669' : 'background:#FEF3C7;color:#D97706') : 'background:#F3F4F6;color:#9CA3AF');
+                html += '<div class="seccion-horaria ' + clase + '">';
+                html += '<div class="sh-header"><div class="sh-titulo"><div class="sh-icono" style="background:' + getColorSeccion(sec.id) + '22;color:' + getColorSeccion(sec.id) + '">' + sec.id + '</div>' + getNombreSeccion(sec.id) + '</div><span class="sh-estado" style="' + estadoColor + '">' + estadoTxt + '</span></div>';
+                html += '<div style="font-size:11px;color:var(--gris-t);margin-bottom:10px">' + getHorarioSeccion(sec.id) + '</div>';
+                if (clase === 'bloqueada') { html += '<div class="sh-aviso">🔒 Esta sección se habilitará a las <strong>' + getHorarioSeccion(sec.id).split(' ')[0] + '</strong>. Por favor espere.</div>'; }
+                else { html += '<div class="sh-aviso">💡 ' + sec.aviso + '</div>'; }
+                var disabled = (clase === 'bloqueada') || (pasada && tieneDatos) ? 'disabled' : '';
+                if (sec.campos.length <= 2) {
+                    sec.campos.forEach(function (c, i) { html += '<div class="f-grupo"><label class="f-label">' + sec.labels[i] + '</label><input type="number" class="f-input" id="f_' + c + '" value="' + (mesa[c] || '') + '" placeholder="0" inputmode="numeric" ' + disabled + '></div>'; });
+                } else {
+                    html += '<div class="f-row">';
+                    sec.campos.forEach(function (c, i) {
+                        if (i === 2) html += '</div><div class="f-row">';
+                        html += '<div class="f-grupo"><label class="f-label">' + sec.labels[i] + '</label><input type="number" class="f-input" id="f_' + c + '" value="' + (mesa[c] || '') + '" placeholder="0" inputmode="numeric" ' + disabled + '></div>';
+                    });
+                    html += '</div>';
+                }
+                if (sec.fotos && clase !== 'bloqueada') {
+                    html += '<div style="margin-top:12px"><label class="f-label">Foto E-14 Cámara</label><div class="foto-area" id="fotoCamArea" onclick="document.getElementById(\'inFotoCam\').click()"><div id="fotoCamIcon">📷</div><div id="fotoCamTxt">' + (mesa.fotoCamara ? '✅ Foto ya subida' : 'Toca para tomar foto') + '</div><img class="foto-prev" id="fotoCamPrev"><input type="file" id="inFotoCam" accept="image/*" capture="environment" style="display:none" onchange="prevFoto(this,\'camara\')"></div><div class="foto-st" id="fotoCamSt"></div></div>';
+                    html += '<div style="margin-top:12px"><label class="f-label">Foto E-14 Senado</label><div class="foto-area" id="fotoSenArea" onclick="document.getElementById(\'inFotoSen\').click()"><div id="fotoSenIcon">📷</div><div id="fotoSenTxt">' + (mesa.fotoSenado ? '✅ Foto ya subida' : 'Toca para tomar foto') + '</div><img class="foto-prev" id="fotoSenPrev"><input type="file" id="inFotoSen" accept="image/*" capture="environment" style="display:none" onchange="prevFoto(this,\'senado\')"></div><div class="foto-st" id="fotoSenSt"></div></div>';
+                }
+                if (clase !== 'bloqueada' && !(pasada && tieneDatos)) {
+                    html += '<button class="btn-seccion btn-s' + sec.id + '" onclick="preGuardarSeccion(' + sec.id + ',\'' + mesa.mesa + '\')">💾 Guardar ' + getNombreSeccion(sec.id).replace(/[🟡🔵🟠🔴]\s?/, '') + '</button>';
+                }
+                html += '</div>';
+            });
+            body.innerHTML = html;
+        }
+
+        // === FOTOS ===
+        function prevFoto(input, tipo) {
+            if (!input.files || !input.files[0]) return;
+            var r = new FileReader();
+            r.onload = function (e) {
+                var pId = tipo === 'camara' ? 'fotoCamPrev' : 'fotoSenPrev';
+                var p = document.getElementById(pId); p.src = e.target.result; p.classList.add('visible');
+                document.getElementById(tipo === 'camara' ? 'fotoCamIcon' : 'fotoSenIcon').style.display = 'none';
+                document.getElementById(tipo === 'camara' ? 'fotoCamTxt' : 'fotoSenTxt').textContent = 'Foto seleccionada ✓';
+                comprimirImg(e.target.result, function (b64) { fotosTemp[tipo] = b64; });
+            };
+            r.readAsDataURL(input.files[0]);
+        }
+        function comprimirImg(b64, cb) {
+            var img = new Image(); img.onload = function () {
+                var c = document.createElement('canvas'), mw = 1200, mh = 1600, w = img.width, h = img.height;
+                if (w > mw || h > mh) { var r = Math.min(mw / w, mh / h); w = Math.round(w * r); h = Math.round(h * r); }
+                c.width = w; c.height = h; c.getContext('2d').drawImage(img, 0, 0, w, h); cb(c.toDataURL('image/jpeg', .7));
+            }; img.src = b64;
+        }
+
+        // === CONFIRMACION Y GUARDADO ===
+        function preGuardarSeccion(secId, mesaNum) {
+            var campos, labels, valores = [];
+            if (secId === 1) { campos = ['cantidadVotantesMesa']; labels = ['Votantes Habilitados']; }
+            else if (secId === 2) { campos = ['votantes10am']; labels = ['Votantes 10AM']; }
+            else if (secId === 3) { campos = ['votantes1pm']; labels = ['Votantes 1PM']; }
+            else { campos = ['votosAlexP', 'votosCamaraCunPL', 'votosOscarSanchezSenado', 'votosSenadoPL']; labels = ['Votos Alex P', 'Votos Cámara CUN', 'Votos Oscar Sánchez', 'Votos Senado PL']; }
+
+            var resumen = '';
+            campos.forEach(function (c, i) {
+                var v = document.getElementById('f_' + c).value || '0';
+                valores.push({ campo: c, valor: v });
+                resumen += '<strong>' + labels[i] + ':</strong> <span style="color:var(--rojo);font-weight:800">' + v + '</span><br>';
+            });
+
+            document.getElementById('confirmTitulo').textContent = 'Mesa ' + mesaNum + ' — ' + getNombreSeccion(secId).replace(/[🟡🔵🟠🔴]\s?/, '');
+            document.getElementById('confirmMsg').innerHTML = '¿Está seguro de guardar estos datos?<br><br>' + resumen + '<br>Una vez guardados, verifique en el dashboard.';
+            document.getElementById('btnConfirmar').onclick = function () { cerrarConfirm(); guardarSeccion(secId, mesaNum, valores); };
+            document.getElementById('confirmModal').classList.add('activo');
+        }
+        function cerrarConfirm() { document.getElementById('confirmModal').classList.remove('activo'); }
+
+        function guardarSeccion(secId, mesaNum, valores) {
+            var datos = { cedula: sesion.cedula, mesa: mesaNum };
+            valores.forEach(function (v) { datos[v.campo] = v.valor; });
+            var btn = document.querySelector('.btn-s' + secId); if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-i"></span> Guardando...'; }
+            google.script.run.withSuccessHandler(function (r) {
+                if (r.exito) {
+                    if (secId === 4 && (fotosTemp.camara || fotosTemp.senado)) {
+                        subirFotos(mesaNum, function () {
+                            if (btn) { btn.disabled = false; btn.innerHTML = '💾 Guardado ✓'; }
+                            toast('ok', '✅', r.mensaje); cerrarModal(); refrescar();
+                        });
+                    } else {
+                        if (btn) { btn.disabled = false; btn.innerHTML = '💾 Guardado ✓'; }
+                        toast('ok', '✅', r.mensaje); cerrarModal(); refrescar();
+                    }
+                } else { if (btn) { btn.disabled = false; btn.innerHTML = '💾 Reintentar'; } toast('err', '❌', r.mensaje); }
+            }).withFailureHandler(function (e) { if (btn) { btn.disabled = false; btn.innerHTML = '💾 Reintentar'; } toast('err', '❌', 'Error: ' + e.message); }).guardarDatosMesa(datos);
+        }
+
+        function subirFotos(mesaNum, cb) {
+            var pend = [];
+            if (fotosTemp.camara) pend.push({ b64: fotosTemp.camara, tipo: 'camara' });
+            if (fotosTemp.senado) pend.push({ b64: fotosTemp.senado, tipo: 'senado' });
+            if (!pend.length) { cb(); return; }
+            var done = 0;
+            pend.forEach(function (f) {
+                var st = document.getElementById(f.tipo === 'camara' ? 'fotoCamSt' : 'fotoSenSt');
+                if (st) st.innerHTML = '<span class="foto-st">⏳ Subiendo...</span>';
+                google.script.run.withSuccessHandler(function (r) {
+                    done++; if (st) st.innerHTML = '<span class="foto-st ' + (r.exito ? 'ok' : 'err') + '">' + (r.exito ? '✅ Subida' : '❌ Error') + '</span>';
+                    if (done === pend.length) cb();
+                }).withFailureHandler(function () {
+                    done++; if (st) st.innerHTML = '<span class="foto-st err">❌ Error</span>'; if (done === pend.length) cb();
+                }).subirFotoADrive(f.b64, f.tipo, sesion.cedula, mesaNum);
+            });
+        }
+
+        // === TOAST ===
+        function toast(t, i, m) { var c = document.getElementById('toastCont'), d = document.createElement('div'); d.className = 'toast toast-' + t; d.innerHTML = '<span>' + i + '</span> ' + m; c.appendChild(d); setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, 3000); }
+
+        // === EVENTOS ===
+        document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { cerrarModal(); cerrarConfirm(); } });
+        document.getElementById('modalMesa').addEventListener('click', function (e) { if (e.target === this) cerrarModal(); });
+        document.getElementById('confirmModal').addEventListener('click', function (e) { if (e.target === this) cerrarConfirm(); });
+    </script>
+</body>
+
+</html>

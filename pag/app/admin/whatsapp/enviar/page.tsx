@@ -19,7 +19,7 @@ export default function CampanasPage() {
         listId: "",
         templateId: "",
         mapping: {} as Record<string, string>,
-        audioConfig: { voiceId: "", prompt: "", imageUrl: "", imageCaption: "", caption: "" },
+        audioConfig: { voiceId: "", prompt: "", imageUrl: "", imageCaption: "", caption: "", preRecordedAudioUrl: "" } as any,
         scheduledFor: ""
     })
 
@@ -29,6 +29,8 @@ export default function CampanasPage() {
     const [excludedContactIds, setExcludedContactIds] = useState<Set<string>>(new Set())
     const [imageInputMode, setImageInputMode] = useState<"url" | "file">("url")
     const [uploadingImage, setUploadingImage] = useState(false)
+    const [audioMode, setAudioMode] = useState<"full_ai" | "ai_plus_recorded">("full_ai")
+    const [uploadingAudio, setUploadingAudio] = useState(false)
     const mockColumns = ["phone", "name", "tags", "source", "externalId"]
 
     useEffect(() => {
@@ -79,6 +81,25 @@ export default function CampanasPage() {
             alert("Error al subir la imagen")
         } finally {
             setUploadingImage(false)
+        }
+    }
+
+    const handleAudioFileUpload = async (file: File) => {
+        setUploadingAudio(true)
+        try {
+            const fd = new FormData()
+            fd.append("file", file)
+            const res = await fetch("/api/whatsapp/media-upload", { method: "POST", body: fd })
+            const data = await res.json()
+            if (data.success) {
+                setNewCampaign(prev => ({ ...prev, audioConfig: { ...prev.audioConfig, preRecordedAudioUrl: data.url } }))
+            } else {
+                alert(data.error || "Error al subir el audio")
+            }
+        } catch {
+            alert("Error al subir el audio")
+        } finally {
+            setUploadingAudio(false)
         }
     }
 
@@ -260,7 +281,7 @@ export default function CampanasPage() {
                 <div className="grid grid-cols-1 gap-4">
                     {campaigns.map((camp) => {
                         let stats: any = {}
-                        try { stats = JSON.parse(camp.stats || "{}") } catch {}
+                        try { stats = JSON.parse(camp.stats || "{}") } catch { }
                         const progress = stats.total > 0 ? Math.round((stats.sent / stats.total) * 100) : 0
 
                         return (
@@ -535,22 +556,84 @@ export default function CampanasPage() {
                             </div>
 
                             {(newCampaign.type === 'audio' || newCampaign.type === 'sequence') && (
-                                <div className="col-span-2">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        {newCampaign.type === 'sequence' ? 'Texto del audio (se envía al responder)' : 'Texto a Narrar'}
-                                        {' '}<span className="text-gray-400 font-normal">(podés usar <code className="bg-gray-100 px-1 rounded">{'{name}'}</code>)</span>
-                                    </label>
-                                    <textarea
-                                        required
-                                        value={newCampaign.audioConfig.prompt}
-                                        onChange={(e) => {
-                                            const prompt = e.target.value
-                                            setNewCampaign(prev => ({ ...prev, audioConfig: { ...prev.audioConfig, prompt } }))
-                                        }}
-                                        rows={4}
-                                        className="w-full bg-gray-50 border border-gray-200 rounded-lg p-4 text-gray-900 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-400 outline-none resize-none font-mono text-sm"
-                                        placeholder="Hola {name}, te recordamos tu cita en Kaizen Solution para el día..."
-                                    ></textarea>
+                                <div className="col-span-2 space-y-3">
+                                    {/* Audio mode toggle - only for sequence */}
+                                    {newCampaign.type === 'sequence' && (
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Modo de Audio</label>
+                                            <div className="flex bg-gray-100 rounded-xl p-1 gap-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setAudioMode("full_ai")}
+                                                    className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${audioMode === 'full_ai' ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                                >
+                                                    🤖 IA Completa
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setAudioMode("ai_plus_recorded")}
+                                                    className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${audioMode === 'ai_plus_recorded' ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                                >
+                                                    🤖+🎙️ IA + Grabado
+                                                </button>
+                                            </div>
+                                            {audioMode === 'ai_plus_recorded' && (
+                                                <p className="text-xs text-indigo-600 mt-1.5 bg-indigo-50 py-1.5 px-3 rounded-lg border border-indigo-200">
+                                                    💡 La parte personalizada (ej: &quot;Hola Juan&quot;) se genera con IA. El mensaje principal se envía con tu audio grabado. <strong>Ahorro ~90% en ElevenLabs.</strong>
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            {audioMode === 'ai_plus_recorded' ? 'Texto personalizado IA (saludo corto)' : (newCampaign.type === 'sequence' ? 'Texto del audio (se envía al responder)' : 'Texto a Narrar')}
+                                            {' '}<span className="text-gray-400 font-normal">(podés usar <code className="bg-gray-100 px-1 rounded">{'{name}'}</code>)</span>
+                                        </label>
+                                        <textarea
+                                            required
+                                            value={newCampaign.audioConfig.prompt}
+                                            onChange={(e) => {
+                                                const prompt = e.target.value
+                                                setNewCampaign(prev => ({ ...prev, audioConfig: { ...prev.audioConfig, prompt } }))
+                                            }}
+                                            rows={audioMode === 'ai_plus_recorded' ? 2 : 4}
+                                            className="w-full bg-gray-50 border border-gray-200 rounded-lg p-4 text-gray-900 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-400 outline-none resize-none font-mono text-sm"
+                                            placeholder={audioMode === 'ai_plus_recorded' ? '¡Hola, {Nombre}!, ¡un placer saludarte!' : 'Hola {name}, te recordamos tu cita en Kaizen Solution para el día...'}
+                                        ></textarea>
+                                    </div>
+
+                                    {/* Pre-recorded audio upload - only in ai_plus_recorded mode */}
+                                    {audioMode === 'ai_plus_recorded' && newCampaign.type === 'sequence' && (
+                                        <div className="p-4 bg-purple-50 border border-purple-200 rounded-xl space-y-2">
+                                            <p className="text-xs font-medium text-purple-700">🎙️ Audio Pregrabado (mensaje principal — mismo para todos)</p>
+                                            <label className={`flex flex-col items-center justify-center w-full py-5 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${uploadingAudio ? 'border-purple-300 bg-purple-100/50' : (newCampaign.audioConfig as any).preRecordedAudioUrl ? 'border-green-300 bg-green-50' : 'border-purple-200 hover:border-purple-400 hover:bg-purple-100/30'}`}>
+                                                {uploadingAudio ? (
+                                                    <>
+                                                        <div className="w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin mb-2" />
+                                                        <span className="text-xs text-purple-600">Subiendo audio...</span>
+                                                    </>
+                                                ) : (newCampaign.audioConfig as any).preRecordedAudioUrl ? (
+                                                    <>
+                                                        <span className="text-green-600 text-sm font-medium">✅ Audio subido correctamente</span>
+                                                        <span className="text-xs text-gray-500 mt-1">Clic para reemplazar</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Upload size={20} className="text-purple-400 mb-1" />
+                                                        <span className="text-xs text-purple-600 font-medium">Clic para subir tu audio grabado</span>
+                                                        <span className="text-[10px] text-gray-400 mt-0.5">MP3, OGG, WAV, M4A · Máx 10 MB</span>
+                                                    </>
+                                                )}
+                                                <input
+                                                    type="file"
+                                                    accept="audio/*"
+                                                    className="hidden"
+                                                    onChange={(e) => { if (e.target.files?.[0]) handleAudioFileUpload(e.target.files[0]) }}
+                                                />
+                                            </label>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
@@ -674,45 +757,45 @@ export default function CampanasPage() {
                                             if (p.param_name && !detectedVars.includes(p.param_name)) detectedVars.push(p.param_name)
                                         }
                                     }
-                                } catch {}
+                                } catch { }
                                 if (detectedVars.length === 0) {
                                     try {
                                         const dbVars = JSON.parse(selectedTemplate.variables || "[]")
                                         for (const v of dbVars) { if (!detectedVars.includes(v)) detectedVars.push(v) }
-                                    } catch {}
+                                    } catch { }
                                 }
 
                                 return (
-                                <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-4">
-                                    <h4 className="text-sm font-medium text-green-700">Personalización de Variables de Plantilla</h4>
-                                    <p className="text-xs text-gray-500">Mapea las variables de la plantilla a los datos de tus contactos.</p>
+                                    <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-4">
+                                        <h4 className="text-sm font-medium text-green-700">Personalización de Variables de Plantilla</h4>
+                                        <p className="text-xs text-gray-500">Mapea las variables de la plantilla a los datos de tus contactos.</p>
 
-                                    {detectedVars.length === 0 ? (
-                                        <div className="text-sm text-gray-400 italic">Esta plantilla no requiere variables personalizadas.</div>
-                                    ) : (
-                                        <div className="space-y-3">
-                                            {detectedVars.map((v: string) => (
-                                                <div key={v} className="flex items-center gap-4">
-                                                    <span className="w-auto min-w-[4rem] text-center bg-gray-200 px-2 py-1 rounded text-gray-700 text-xs font-mono">{`{{${v}}}`}</span>
-                                                    <span className="text-gray-500 text-sm">reemplazar con</span>
-                                                    <select
-                                                        required
-                                                        value={newCampaign.mapping[v] || ""}
-                                                        onChange={(e) => setNewCampaign({ ...newCampaign, mapping: { ...newCampaign.mapping, [v]: e.target.value } })}
-                                                        className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-gray-900 text-sm outline-none focus:ring-2 focus:ring-green-500/20"
-                                                    >
-                                                        <option value="">Columna del CSV/Contacto</option>
-                                                        {mockColumns.map(mc => <option key={mc} value={mc}>{mc}</option>)}
-                                                    </select>
-                                                </div>
-                                            ))}
+                                        {detectedVars.length === 0 ? (
+                                            <div className="text-sm text-gray-400 italic">Esta plantilla no requiere variables personalizadas.</div>
+                                        ) : (
+                                            <div className="space-y-3">
+                                                {detectedVars.map((v: string) => (
+                                                    <div key={v} className="flex items-center gap-4">
+                                                        <span className="w-auto min-w-[4rem] text-center bg-gray-200 px-2 py-1 rounded text-gray-700 text-xs font-mono">{`{{${v}}}`}</span>
+                                                        <span className="text-gray-500 text-sm">reemplazar con</span>
+                                                        <select
+                                                            required
+                                                            value={newCampaign.mapping[v] || ""}
+                                                            onChange={(e) => setNewCampaign({ ...newCampaign, mapping: { ...newCampaign.mapping, [v]: e.target.value } })}
+                                                            className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-gray-900 text-sm outline-none focus:ring-2 focus:ring-green-500/20"
+                                                        >
+                                                            <option value="">Columna del CSV/Contacto</option>
+                                                            {mockColumns.map(mc => <option key={mc} value={mc}>{mc}</option>)}
+                                                        </select>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        <div className="mt-4 p-3 bg-white border border-gray-200 rounded-lg">
+                                            <p className="text-xs font-mono text-gray-500 whitespace-pre-wrap">{selectedTemplate.bodyText}</p>
                                         </div>
-                                    )}
-
-                                    <div className="mt-4 p-3 bg-white border border-gray-200 rounded-lg">
-                                        <p className="text-xs font-mono text-gray-500 whitespace-pre-wrap">{selectedTemplate.bodyText}</p>
                                     </div>
-                                </div>
                                 )
                             })()}
 
@@ -722,7 +805,7 @@ export default function CampanasPage() {
                                     ? newCampaign.audioConfig.prompt
                                     : (newCampaign.audioConfig.caption || "")
                                 const matches = textToScan.match(/\{(\w+)\}/g)
-                                const vars = matches ? Array.from(new Set(matches.map((m: string) => m.replace(/[{}]/g, "")))) : []
+                                const vars: string[] = matches ? Array.from(new Set(matches.map((m: string) => m.replace(/[{}]/g, "")))) : []
                                 if (vars.length === 0) return null
 
                                 return (
@@ -759,7 +842,7 @@ export default function CampanasPage() {
                                 if (subsCount === 0) return null;
                                 const isFreeType = newCampaign.type === 'image' || newCampaign.type === 'audio';
                                 const estMeta = (isFreeType && newCampaign.type !== 'sequence') ? 0 : subsCount * 0.0773;
-                                const estEleven = (newCampaign.type === 'audio' || newCampaign.type === 'sequence') ? subsCount * 0.015 : 0;
+                                const estEleven = (newCampaign.type === 'audio' || newCampaign.type === 'sequence') ? (audioMode === 'ai_plus_recorded' ? subsCount * 0.002 : subsCount * 0.015) : 0;
                                 const estTotal = estMeta + estEleven;
 
                                 return (

@@ -1,0 +1,34 @@
+import { NextResponse } from "next/server"
+import { prisma } from "@/lib/prisma"
+
+export async function DELETE(
+    request: Request,
+    { params }: { params: { id: string } }
+) {
+    try {
+        await prisma.whatsAppContact.delete({
+            where: { id: params.id }
+        })
+        return NextResponse.json({ success: true })
+    } catch (e: any) {
+        return NextResponse.json({ success: false, error: e.message }, { status: 500 })
+    }
+}
+
+export async function PUT(
+    request: Request,
+    { params }: { params: { id: string } }
+) {
+    try {
+        const body = await request.json()
+        const { name, phone } = body
+
+        await prisma.whatsAppContact.update({
+            where: { id: params.id },
+            data: { name, phone }
+        })
+        return NextResponse.json({ success: true })
+    } catch (e: any) {
+        return NextResponse.json({ success: false, error: e.message }, { status: 500 })
+    }
+}

@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taller Muñoz - Sistema de Gestión</title>
+    <meta name="description" content="Sistema de gestión de órdenes de trabajo para Taller Muñoz">
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔧</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="loader"></div>
+            <p>Cargando datos...</p>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-container">
+                <img src="https://drive.google.com/uc?export=view&id=1Yf2XFVVNGqONy-kjxRYSQnWgtaYXlVHf"
+                    alt="Muñoz Inyección" class="logo-image">
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="#" class="nav-item active" data-section="dashboard">
+                <i class="fas fa-chart-line"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="#" class="nav-item" data-section="ordenes">
+                <i class="fas fa-clipboard-list"></i>
+                <span>Órdenes de Trabajo</span>
+            </a>
+            <a href="#" class="nav-item" data-section="nueva-orden">
+                <i class="fas fa-plus-circle"></i>
+                <span>Nueva Orden</span>
+            </a>
+            <a href="#" class="nav-item" data-section="presupuestos">
+                <i class="fas fa-file-invoice-dollar"></i>
+                <span>Presupuestos</span>
+            </a>
+            <a href="#" class="nav-item" data-section="vehiculos">
+                <i class="fas fa-car"></i>
+                <span>Vehículos</span>
+            </a>
+            <a href="#" class="nav-item" data-section="estadisticas">
+                <i class="fas fa-chart-bar"></i>
+                <span>Estadísticas</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="connection-status" id="connectionStatus">
+                <span class="status-dot"></span>
+                <span class="status-text">Conectando...</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Header -->
+        <header class="main-header">
+            <button class="menu-toggle" id="menuToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="header-search">
+                <i class="fas fa-search"></i>
+                <input type="text" id="globalSearch" placeholder="Buscar por patente, cliente o OT...">
+            </div>
+            <div class="header-actions">
+                <button class="btn-icon" id="refreshBtn" title="Actualizar datos">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+                <span class="date-display" id="dateDisplay"></span>
+            </div>
+        </header>
+
+        <!-- Content Sections -->
+        <div class="content-wrapper">
+            <!-- Dashboard Section -->
+            <section class="content-section active" id="section-dashboard">
+                <div class="section-header">
+                    <h2><i class="fas fa-chart-line"></i> Dashboard</h2>
+                    <p>Resumen general del taller</p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card gradient-purple">
+                        <div class="stat-icon">
+                            <i class="fas fa-tools"></i>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="statTotalTrabajos">-</span>
+                            <span class="stat-label">Total Trabajos</span>
+                        </div>
+                    </div>
+                    <div class="stat-card gradient-blue">
+                        <div class="stat-icon">
+                            <i class="fas fa-spinner"></i>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="statPendientes">-</span>
+                            <span class="stat-label">En Trabajo</span>
+                        </div>
+                    </div>
+                    <div class="stat-card gradient-green">
+                        <div class="stat-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="statCompletados">-</span>
+                            <span class="stat-label">Finalizados</span>
+                        </div>
+                    </div>
+                    <div class="stat-card gradient-gold">
+                        <div class="stat-icon">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="statIngresos">-</span>
+                            <span class="stat-label">Ingresos Totales</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <div class="card recent-orders">
+                        <div class="card-header">
+                            <h3><i class="fas fa-clock"></i> Trabajos Recientes</h3>
+                            <a href="#" class="btn-link" data-section="ordenes">Ver todos</a>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container">
+                                <table id="recentOrdersTable">
+                                    <thead>
+                                        <tr>
+                                            <th>OT</th>
+                                            <th>Patente</th>
+                                            <th>Vehículo</th>
+                                            <th>Cliente</th>
+                                            <th>Estado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card working-now">
+                        <div class="card-header">
+                            <h3><i class="fas fa-wrench"></i> En Taller Ahora</h3>
+                        </div>
+                        <div class="card-body">
+                            <div id="workingNowList" class="working-list"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Órdenes de Trabajo Section -->
+            <section class="content-section" id="section-ordenes">
+                <div class="section-header">
+                    <h2><i class="fas fa-clipboard-list"></i> Órdenes de Trabajo</h2>
+                    <p>Gestión de todas las órdenes</p>
+                </div>
+
+                <div class="filters-bar">
+                    <div class="filter-group">
+                        <label>Estado:</label>
+                        <select id="filterEstado">
+                            <option value="">Todos</option>
+                            <option value="Trabajando">En Trabajo</option>
+                            <option value="Finalizado">Finalizado</option>
+                            <option value="Pendiente">Pendiente</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Buscar:</label>
+                        <input type="text" id="filterBuscar" placeholder="Patente o cliente...">
+                    </div>
+                    <button class="btn btn-primary" onclick="navigateTo('nueva-orden')">
+                        <i class="fas fa-plus"></i> Nueva Orden
+                    </button>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table id="ordenesTable" class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>OT</th>
+                                        <th>Patente</th>
+                                        <th>Vehículo</th>
+                                        <th>Cliente</th>
+                                        <th>Anomalía</th>
+                                        <th>Mano de Obra</th>
+                                        <th>Estado</th>
+                                        <th>PDF</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ordenesTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Nueva Orden Section -->
+            <section class="content-section" id="section-nueva-orden">
+                <div class="section-header">
+                    <h2><i class="fas fa-plus-circle"></i> Nueva Orden de Trabajo</h2>
+                    <p>Crear una nueva orden</p>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <form id="nuevaOrdenForm" class="form-grid">
+                            <div class="form-section">
+                                <h3><i class="fas fa-car"></i> Datos del Vehículo</h3>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="inputPatente">Patente *</label>
+                                        <input type="text" id="inputPatente" required placeholder="ABC 123">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="inputMarca">Marca/Modelo *</label>
+                                        <input type="text" id="inputMarca" required placeholder="Ford Focus">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="inputKilometraje">Kilometraje</label>
+                                        <input type="number" id="inputKilometraje" placeholder="100000">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-section">
+                                <h3><i class="fas fa-user"></i> Datos del Cliente</h3>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="inputCliente">Nombre *</label>
+                                        <input type="text" id="inputCliente" required placeholder="Juan Pérez">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="inputTelefono">Teléfono</label>
+                                        <input type="tel" id="inputTelefono" placeholder="11 1234-5678">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="inputEmail">Email</label>
+                                        <input type="email" id="inputEmail" placeholder="email@ejemplo.com">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-section">
+                                <h3><i class="fas fa-clipboard"></i> Detalles del Trabajo</h3>
+                                <div class="form-row">
+                                    <div class="form-group full-width">
+                                        <label for="inputAnomalia">Anomalía del Cliente *</label>
+                                        <textarea id="inputAnomalia" required rows="3"
+                                            placeholder="Descripción del problema..."></textarea>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="inputFechaEntrada">Fecha de Entrada</label>
+                                        <input type="date" id="inputFechaEntrada">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="inputEstado">Estado Inicial</label>
+                                        <select id="inputEstado">
+                                            <option value="Trabajando">En Trabajo</option>
+                                            <option value="Pendiente">Pendiente</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="button" class="btn btn-secondary" onclick="clearForm()">
+                                    <i class="fas fa-eraser"></i> Limpiar
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Guardar Orden
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Presupuestos Section -->
+            <section class="content-section" id="section-presupuestos">
+                <div class="section-header">
+                    <h2><i class="fas fa-file-invoice-dollar"></i> Presupuestos</h2>
+                    <p>Gestión de presupuestos</p>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table id="presupuestosTable" class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>N° Presupuesto</th>
+                                        <th>Patente</th>
+                                        <th>Cliente</th>
+                                        <th>Descripción</th>
+                                        <th>Total</th>
+                                        <th>PDF</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="presupuestosTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Vehículos Section -->
+            <section class="content-section" id="section-vehiculos">
+                <div class="section-header">
+                    <h2><i class="fas fa-car"></i> Vehículos</h2>
+                    <p>Historial de vehículos atendidos</p>
+                </div>
+
+                <div class="filters-bar">
+                    <div class="filter-group">
+                        <input type="text" id="filterVehiculo" placeholder="Buscar por patente...">
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table id="vehiculosTable" class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Patente</th>
+                                        <th>Marca/Modelo</th>
+                                        <th>Cliente</th>
+                                        <th>Total Servicios</th>
+                                        <th>Último Servicio</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="vehiculosTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Estadísticas Section -->
+            <section class="content-section" id="section-estadisticas">
+                <div class="section-header">
+                    <h2><i class="fas fa-chart-bar"></i> Estadísticas</h2>
+                    <p>Análisis financiero y operativo</p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card gradient-purple">
+                        <div class="stat-icon"><i class="fas fa-money-bill-wave"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="statTotalManoObra">-</span>
+                            <span class="stat-label">Total Mano de Obra</span>
+                        </div>
+                    </div>
+                    <div class="stat-card gradient-blue">
+                        <div class="stat-icon"><i class="fas fa-receipt"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="statPromedioTicket">-</span>
+                            <span class="stat-label">Promedio por Trabajo</span>
+                        </div>
+                    </div>
+                    <div class="stat-card gradient-green">
+                        <div class="stat-icon"><i class="fas fa-car-side"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="statVehiculosUnicos">-</span>
+                            <span class="stat-label">Vehículos Únicos</span>
+                        </div>
+                    </div>
+                    <div class="stat-card gradient-gold">
+                        <div class="stat-icon"><i class="fas fa-calendar-check"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="statSemanaActual">-</span>
+                            <span class="stat-label">Esta Semana</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Modal de Detalles de Orden -->
+    <div class="modal" id="ordenModal">
+        <div class="modal-overlay" onclick="closeModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-file-alt"></i> Detalle de Orden</h3>
+                <button class="modal-close" onclick="closeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="ordenModalBody">
+                <!-- Content loaded dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">Cerrar</button>
+                <button class="btn btn-primary" id="btnGenerarPDF" onclick="generatePDF()">
+                    <i class="fas fa-file-pdf"></i> Generar PDF
+                </button>
+                <button class="btn btn-success" id="btnImprimirPDF" onclick="printPDF()">
+                    <i class="fas fa-print"></i> Imprimir
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

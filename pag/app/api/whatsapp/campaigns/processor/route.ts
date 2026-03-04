@@ -129,7 +129,27 @@ async function handleSequenceContinue(jobId: string): Promise<Response> {
 
         await sendAudioToContact(config, isTwilio, job.phone, audioBuffer);
 
-        // 2. Sleep 3s then send image
+        // 2a. If there's a pre-recorded audio (IA + Grabado mode), send it right after
+        if (audioConfig.preRecordedAudioUrl) {
+            await sleep(1000);
+            if (isTwilio) {
+                await callTwilioAPI(config, {
+                    From: `whatsapp:${config.twilioNumber}`,
+                    To: `whatsapp:${job.phone}`,
+                    MediaUrl: audioConfig.preRecordedAudioUrl,
+                });
+            } else {
+                // For Meta: download the pre-recorded audio and send it
+                const audioRes = await fetch(audioConfig.preRecordedAudioUrl);
+                if (audioRes.ok) {
+                    const audioData = Buffer.from(await audioRes.arrayBuffer());
+                    const mediaId = await uploadMediaToWhatsApp(audioData, 'audio/ogg');
+                    await sendWhatsAppAudio(job.phone, mediaId);
+                }
+            }
+        }
+
+        // 2b. Sleep 3s then send image
         await sleep(3000);
 
         if (audioConfig.imageUrl) {
