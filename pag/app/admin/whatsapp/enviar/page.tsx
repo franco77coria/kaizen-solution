@@ -622,14 +622,23 @@ export default function CampanasPage() {
                                                     <>
                                                         <Upload size={20} className="text-purple-400 mb-1" />
                                                         <span className="text-xs text-purple-600 font-medium">Clic para subir tu audio grabado</span>
-                                                        <span className="text-[10px] text-gray-400 mt-0.5">MP3, OGG, WAV, M4A · Máx 10 MB</span>
+                                                        <span className="text-[10px] text-gray-400 mt-0.5">Solo MP3 · Máx 10 MB</span>
                                                     </>
                                                 )}
                                                 <input
                                                     type="file"
-                                                    accept="audio/*"
+                                                    accept="audio/mpeg,.mp3"
                                                     className="hidden"
-                                                    onChange={(e) => { if (e.target.files?.[0]) handleAudioFileUpload(e.target.files[0]) }}
+                                                    onChange={(e) => {
+                                                        const f = e.target.files?.[0];
+                                                        if (f) {
+                                                            if (!f.name.toLowerCase().endsWith('.mp3') && f.type !== 'audio/mpeg') {
+                                                                alert('Solo se aceptan archivos MP3 en modo IA + Grabado (necesario para concatenar con el audio IA)');
+                                                                return;
+                                                            }
+                                                            handleAudioFileUpload(f);
+                                                        }
+                                                    }}
                                                 />
                                             </label>
                                         </div>
