@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Client } from "@upstash/qstash";
 import { verifySignatureAppRouter } from "@upstash/qstash/nextjs";
-import { generateAudioForWhatsApp, getElevenLabsConfig, logApiUsage } from "@/lib/elevenlabs";
+import { generateAudio, generateAudioForWhatsApp, getElevenLabsConfig, logApiUsage } from "@/lib/elevenlabs";
 import {
     uploadMediaToWhatsApp,
     sendWhatsAppAudio,
@@ -95,58 +95,79 @@ async function handleSequenceContinue(jobId: string): Promise<Response> {
     try {
         // 1. Generate + send audio
         // OPTIMIZATION: Cache audio by resolved text hash.
-        // If multiple contacts have the same name (e.g., 500 "Juan"),
-        // the audio is generated ONCE and reused — single voice note, no split.
+        // If multiple contacts have the same name, audio is generated ONCE and reused.
         let audioPrompt = audioConfig.prompt || "";
         for (const [varKey, col] of Object.entries(mapping)) {
             audioPrompt = audioPrompt.replace(new RegExp(`\\{${varKey}\\}`, 'g'), resolveField(col as string));
         }
 
         const crypto = await import("crypto");
-        const textHash = crypto.createHash("sha256").update(audioPrompt).digest("hex").substring(0, 32);
 
-        // Check if audio for this exact text already exists in cache
-        const cachedAudio = await prisma.audioMessageCache.findUnique({ where: { hash: textHash } });
-
-        let audioBuffer: Buffer;
-        if (cachedAudio) {
-            // Reuse cached audio — no ElevenLabs call needed!
-            audioBuffer = Buffer.from(cachedAudio.mediaUrl, 'base64');
-        } else {
-            // Generate and cache for future contacts with same text
-            const result = await withRetry(
-                () => generateAudioForWhatsApp(audioPrompt, audioConfig.voiceId),
-                3, 2000
-            );
-            audioBuffer = result.audioBuffer;
-
-            await prisma.audioMessageCache.upsert({
-                where: { hash: textHash },
-                update: { mediaUrl: audioBuffer.toString("base64") },
-                create: { hash: textHash, mediaUrl: audioBuffer.toString("base64"), expiresAt: new Date(Date.now() + 86400000) }, // 24h cache
-            });
-        }
-
-        await sendAudioToContact(config, isTwilio, job.phone, audioBuffer);
-
-        // 2a. If there's a pre-recorded audio (IA + Grabado mode), send it right after
         if (audioConfig.preRecordedAudioUrl) {
-            await sleep(1000);
-            if (isTwilio) {
-                await callTwilioAPI(config, {
-                    From: `whatsapp:${config.twilioNumber}`,
-                    To: `whatsapp:${job.phone}`,
-                    MediaUrl: audioConfig.preRecordedAudioUrl,
-                });
+            // IA + GRABADO MODE: Generate AI greeting as MP3, concatenate with pre-recorded MP3
+            // MP3 frames are self-contained, so Buffer.concat produces a valid MP3 file
+            const greetingHash = crypto.createHash("sha256").update(`mp3:${audioPrompt}`).digest("hex").substring(0, 32);
+
+            let greetingBuffer: Buffer;
+            const cachedGreeting = await prisma.audioMessageCache.findUnique({ where: { hash: greetingHash } });
+            if (cachedGreeting) {
+                greetingBuffer = Buffer.from(cachedGreeting.mediaUrl, 'base64');
             } else {
-                // For Meta: download the pre-recorded audio and send it
-                const audioRes = await fetch(audioConfig.preRecordedAudioUrl);
-                if (audioRes.ok) {
-                    const audioData = Buffer.from(await audioRes.arrayBuffer());
-                    const mediaId = await uploadMediaToWhatsApp(audioData, 'audio/ogg');
-                    await sendWhatsAppAudio(job.phone, mediaId);
-                }
+                // Generate AI greeting in MP3 format (concatenation-friendly)
+                const result = await withRetry(
+                    () => generateAudio(audioPrompt, audioConfig.voiceId, undefined, "mp3_44100_128"),
+                    3, 2000
+                );
+                greetingBuffer = result.audioBuffer;
+                await prisma.audioMessageCache.upsert({
+                    where: { hash: greetingHash },
+                    update: { mediaUrl: greetingBuffer.toString("base64") },
+                    create: { hash: greetingHash, mediaUrl: greetingBuffer.toString("base64"), expiresAt: new Date(Date.now() + 86400000) },
+                });
             }
+
+            // Download pre-recorded audio (cached after first download)
+            let preRecordedBuffer: Buffer;
+            const preRecHash = crypto.createHash("sha256").update(`prerec:${audioConfig.preRecordedAudioUrl}`).digest("hex").substring(0, 32);
+            const cachedPreRec = await prisma.audioMessageCache.findUnique({ where: { hash: preRecHash } });
+            if (cachedPreRec) {
+                preRecordedBuffer = Buffer.from(cachedPreRec.mediaUrl, 'base64');
+            } else {
+                const preRecRes = await fetch(audioConfig.preRecordedAudioUrl);
+                if (!preRecRes.ok) throw new Error("No se pudo descargar el audio pregrabado");
+                preRecordedBuffer = Buffer.from(await preRecRes.arrayBuffer());
+                await prisma.audioMessageCache.upsert({
+                    where: { hash: preRecHash },
+                    update: { mediaUrl: preRecordedBuffer.toString("base64") },
+                    create: { hash: preRecHash, mediaUrl: preRecordedBuffer.toString("base64"), expiresAt: new Date(Date.now() + 86400000) },
+                });
+            }
+
+            // Concatenate: AI greeting + pre-recorded = ONE single audio file
+            const combinedBuffer = Buffer.concat([greetingBuffer, preRecordedBuffer]);
+            await sendAudioToContact(config, isTwilio, job.phone, combinedBuffer);
+
+        } else {
+            // FULL AI MODE: Generate complete audio in OGG Opus (voice note)
+            const textHash = crypto.createHash("sha256").update(audioPrompt).digest("hex").substring(0, 32);
+            const cachedAudio = await prisma.audioMessageCache.findUnique({ where: { hash: textHash } });
+
+            let audioBuffer: Buffer;
+            if (cachedAudio) {
+                audioBuffer = Buffer.from(cachedAudio.mediaUrl, 'base64');
+            } else {
+                const result = await withRetry(
+                    () => generateAudioForWhatsApp(audioPrompt, audioConfig.voiceId),
+                    3, 2000
+                );
+                audioBuffer = result.audioBuffer;
+                await prisma.audioMessageCache.upsert({
+                    where: { hash: textHash },
+                    update: { mediaUrl: audioBuffer.toString("base64") },
+                    create: { hash: textHash, mediaUrl: audioBuffer.toString("base64"), expiresAt: new Date(Date.now() + 86400000) },
+                });
+            }
+            await sendAudioToContact(config, isTwilio, job.phone, audioBuffer);
         }
 
         // 2b. Sleep 3s then send image
