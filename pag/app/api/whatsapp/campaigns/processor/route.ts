@@ -77,6 +77,36 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
 
         if (isImage) {
             imageConfig = JSON.parse(campaign.audioConfig || "{}");
+
+            // If imageUrl is an external URL, download it and cache it in MediaCache
+            // so Twilio always fetches from our domain (avoids "Media failed to download")
+            const appUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "";
+            if (imageConfig.imageUrl && !imageConfig.imageUrl.startsWith(`${appUrl}/api/media-cache`)) {
+                try {
+                    const imgRes = await fetch(imageConfig.imageUrl);
+                    if (!imgRes.ok) throw new Error(`HTTP ${imgRes.status} al descargar imagen`);
+                    const mimeType = imgRes.headers.get("content-type") || "image/jpeg";
+                    const buffer = Buffer.from(await imgRes.arrayBuffer());
+                    const crypto = await import("crypto");
+                    const hash = crypto.createHash("sha256").update(buffer).digest("hex");
+
+                    await (prisma as any).mediaCache.upsert({
+                        where: { hash },
+                        update: {},
+                        create: { hash, mimeType, data: buffer.toString("base64") },
+                    });
+
+                    imageConfig.imageUrl = `${appUrl}/api/media-cache/${hash}`;
+
+                    // Persist so subsequent batches also use the cached URL
+                    await prisma.whatsAppCampaign.update({
+                        where: { id: campaignId },
+                        data: { audioConfig: JSON.stringify(imageConfig) },
+                    });
+                } catch (err: any) {
+                    throw new Error(`No se pudo descargar la imagen de la URL: ${err.message}`);
+                }
+            }
         }
 
         // Texto del template (usado por Twilio y para contar variables)
