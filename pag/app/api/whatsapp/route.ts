@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getWhatsAppConfig, logWhatsApp, upsertContact } from "@/lib/whatsapp"
+import { getWhatsAppConfig, logWhatsApp, upsertContact, normalizePhone } from "@/lib/whatsapp"
+import { Client } from "@upstash/qstash"
 
 // GET — Webhook verification from Meta
 export async function GET(request: NextRequest) {
@@ -55,8 +56,13 @@ export async function POST(request: NextRequest) {
                 })
 
                 // Update Campaign Jobs (Massive Sends) to track read/delivered/failed
+                // IMPORTANT: Do NOT overwrite 'awaiting_reply' or 'processing' status
+                // with delivery statuses — sequence campaigns need these states intact
                 await prisma.campaignJob.updateMany({
-                    where: { messageId: status.id },
+                    where: {
+                        messageId: status.id,
+                        status: { notIn: ['awaiting_reply', 'processing'] },
+                    },
                     data: {
                         status: status.status,
                         ...(status.status === 'failed' && status.errors?.length > 0
@@ -122,19 +128,59 @@ export async function POST(request: NextRequest) {
                 })
 
                 // Update contact
-                await upsertContact(msg.from, contactName)
+                const normalizedFrom = normalizePhone(msg.from)
+                await upsertContact(normalizedFrom, contactName)
 
                 // AUTO OPT-OUT LOGIC
                 if (msg.type === "text" && content) {
                     const txt = content.trim().toLowerCase();
                     if (txt === "stop" || txt === "baja" || txt === "cancelar") {
                         await prisma.whatsAppContact.updateMany({
-                            where: { phone: msg.from },
+                            where: { phone: normalizedFrom },
                             data: { optInStatus: false }
                         });
-                        await logWhatsApp("opt_out_received", { phone: msg.from, message: content });
-                        // Opcional: Podrías disparar un mensaje de vuelta confirmando la baja aquí
+                        await logWhatsApp("opt_out_received", { phone: normalizedFrom, message: content });
                     }
+                }
+
+                // Sequence campaign: check for awaiting_reply jobs
+                try {
+                    const fiveHoursAgo = new Date(Date.now() - 5 * 60 * 60 * 1000)
+
+                    // Expire stale awaiting_reply jobs (> 5h old)
+                    await prisma.campaignJob.updateMany({
+                        where: {
+                            phone: normalizedFrom,
+                            status: "awaiting_reply",
+                            processedAt: { lt: fiveHoursAgo },
+                        },
+                        data: { status: "expired" },
+                    })
+
+                    // Atomically claim any active awaiting_reply job
+                    const claimed = await prisma.campaignJob.updateMany({
+                        where: { phone: normalizedFrom, status: "awaiting_reply" },
+                        data: { status: "processing" },
+                    })
+
+                    if (claimed.count > 0) {
+                        const processingJob = await prisma.campaignJob.findFirst({
+                            where: { phone: normalizedFrom, status: "processing" },
+                            orderBy: { processedAt: "desc" },
+                        })
+                        if (processingJob) {
+                            const webhookUrl = process.env.UPSTASH_WEBHOOK_URL
+                            if (process.env.QSTASH_TOKEN && webhookUrl) {
+                                const qstash = new Client({ token: process.env.QSTASH_TOKEN })
+                                await qstash.publishJSON({
+                                    url: webhookUrl,
+                                    body: { action: "sequence_continue", jobId: processingJob.id },
+                                })
+                            }
+                        }
+                    }
+                } catch (seqErr: any) {
+                    console.error("Sequence check error (non-fatal):", seqErr.message)
                 }
             }
         }

@@ -53,8 +53,14 @@ export async function POST(request: NextRequest) {
         })
 
         if (jobs.length > 0) {
+            // IMPORTANT: Do NOT overwrite 'awaiting_reply' or 'processing' status
+            // with delivery statuses — sequence campaigns need these states intact
+            // so twilio-incoming can find them when the contact replies
             await prisma.campaignJob.updateMany({
-                where: { messageId: messageSid },
+                where: {
+                    messageId: messageSid,
+                    status: { notIn: ['awaiting_reply', 'processing'] },
+                },
                 data: {
                     status,
                     ...(status === "failed" ? { errorMessage: params.get("ErrorMessage") || "Fallo en entrega" } : {}),
