@@ -59,6 +59,32 @@ async function sendAudioToContact(
     }
 }
 
+
+/**
+ * Strip ID3v2 header and ID3v1 tag from an MP3 buffer, returning only raw MP3 frames.
+ * This is needed for clean MP3 concatenation — duplicate ID3 headers cause WhatsApp to reject the file.
+ */
+function stripMp3Headers(buf: Buffer): Buffer {
+    let start = 0;
+    // Skip ID3v2 header if present (starts with "ID3")
+    if (buf.length > 10 && buf[0] === 0x49 && buf[1] === 0x44 && buf[2] === 0x33) {
+        // ID3v2 size is stored in 4 bytes (synchsafe integer) at offset 6-9
+        const size = (buf[6] & 0x7f) << 21 | (buf[7] & 0x7f) << 14 | (buf[8] & 0x7f) << 7 | (buf[9] & 0x7f);
+        start = 10 + size;
+    }
+    // Find first MP3 sync frame (0xFF followed by 0xE0-0xFF)
+    while (start < buf.length - 1) {
+        if (buf[start] === 0xFF && (buf[start + 1] & 0xE0) === 0xE0) break;
+        start++;
+    }
+    let end = buf.length;
+    // Strip ID3v1 tag if present (last 128 bytes starting with "TAG")
+    if (end > 128 && buf[end - 128] === 0x54 && buf[end - 127] === 0x41 && buf[end - 126] === 0x47) {
+        end -= 128;
+    }
+    return buf.subarray(start, end);
+}
+
 async function handleSequenceContinue(jobId: string): Promise<Response> {
     const job = await prisma.campaignJob.findUnique({
         where: { id: jobId },
@@ -156,8 +182,8 @@ async function handleSequenceContinue(jobId: string): Promise<Response> {
                 });
             }
 
-            // Concatenate: AI greeting + pre-recorded = ONE single audio file
-            const combinedBuffer = Buffer.concat([greetingBuffer, preRecordedBuffer]);
+            // Concatenate: strip ID3 headers for clean MP3 concat
+            const combinedBuffer = Buffer.concat([stripMp3Headers(greetingBuffer), stripMp3Headers(preRecordedBuffer)]);
             await sendAudioToContact(config, isTwilio, job.phone, combinedBuffer, 'mp3');
 
         } else {
@@ -487,8 +513,8 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
                             });
                         }
 
-                        // Concatenate into ONE MP3
-                        finalAudioBuffer = Buffer.concat([greetingBuf, preRecBuf]);
+                        // Concatenate: strip ID3 headers for clean MP3 concat
+                        finalAudioBuffer = Buffer.concat([stripMp3Headers(greetingBuf), stripMp3Headers(preRecBuf)]);
                     } else {
                         // Full AI: generate complete audio as OGG Opus
                         const result = await withRetry(
