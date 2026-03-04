@@ -35,7 +35,7 @@ export async function POST(req: Request) {
 
         let finalListId = listId;
 
-        if (audienceMode === 'active_window' && (type === 'image' || type === 'audio')) {
+        if (audienceMode === 'active_window' && (type === 'image' || type === 'audio' || type === 'sequence')) {
             const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
             const whereClause: any = {
                 lastMessageAt: { gte: twentyFourHoursAgo },

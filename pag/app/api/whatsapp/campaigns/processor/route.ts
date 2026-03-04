@@ -18,10 +18,159 @@ const qstash = new Client({
 const THROTTLE_MS = 150;
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
+async function handleSequenceContinue(jobId: string): Promise<Response> {
+    const job = await prisma.campaignJob.findUnique({
+        where: { id: jobId },
+        include: { campaign: { include: { template: true } } }
+    });
+
+    if (!job || job.status !== "processing") {
+        return NextResponse.json({ success: true, message: "Job not in processing state, skipped" });
+    }
+
+    const campaign = (job as any).campaign;
+    const config = await getWhatsAppConfig();
+    if (!config || !config.isConfigured) {
+        await prisma.campaignJob.update({ where: { id: jobId }, data: { status: "failed", errorMessage: "WhatsApp config missing" } });
+        return NextResponse.json({ error: "WhatsApp config missing" }, { status: 500 });
+    }
+
+    const isTwilio = config.provider === "twilio";
+    const audioConfig = JSON.parse(campaign.audioConfig || "{}");
+    const mapping = JSON.parse(campaign.mapping || "{}");
+    const contact = await prisma.whatsAppContact.findUnique({ where: { phone: job.phone } });
+
+    const resolveField = (col: string): string => {
+        if (!contact) return "";
+        switch (col) {
+            case "name": return (contact as any).name || "";
+            case "phone": return (contact as any).phone || "";
+            case "tags": try { return JSON.parse((contact as any).tags || "[]").join(", "); } catch { return ""; }
+            case "source": return (contact as any).source || "";
+            case "externalId": return (contact as any).externalId || "";
+            default: return "";
+        }
+    };
+
+    try {
+        // 1. Generate + send audio
+        let audioPrompt = audioConfig.prompt || "";
+        for (const [varKey, col] of Object.entries(mapping)) {
+            audioPrompt = audioPrompt.replace(new RegExp(`\\{${varKey}\\}`, 'g'), resolveField(col as string));
+        }
+
+        const { audioBuffer } = await generateAudioForWhatsApp(audioPrompt, audioConfig.voiceId);
+
+        if (isTwilio) {
+            const crypto = await import("crypto");
+            const hash = crypto.createHash("sha256").update(audioBuffer).digest("hex").substring(0, 32);
+            await prisma.audioMessageCache.upsert({
+                where: { hash },
+                update: { mediaUrl: audioBuffer.toString("base64") },
+                create: { hash, mediaUrl: audioBuffer.toString("base64"), expiresAt: new Date(Date.now() + 3600000) },
+            });
+            const appUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "";
+            await callTwilioAPI(config, {
+                From: `whatsapp:${config.twilioNumber}`,
+                To: `whatsapp:${job.phone}`,
+                MediaUrl: `${appUrl}/api/audio-cache/${hash}.ogg`,
+            });
+        } else {
+            const mediaId = await uploadMediaToWhatsApp(audioBuffer, 'audio/ogg');
+            await sendWhatsAppAudio(job.phone, mediaId);
+        }
+
+        // 2. Sleep 3s then send image
+        await sleep(3000);
+
+        if (audioConfig.imageUrl) {
+            let imageUrl = audioConfig.imageUrl;
+            let caption = audioConfig.imageCaption || "";
+            for (const [varKey, col] of Object.entries(mapping)) {
+                caption = caption.replace(new RegExp(`\\{${varKey}\\}`, 'g'), resolveField(col as string));
+            }
+
+            if (isTwilio) {
+                const appUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "";
+                if (!imageUrl.startsWith(`${appUrl}/api/media-cache`)) {
+                    const imgRes = await fetch(imageUrl);
+                    if (imgRes.ok) {
+                        const mimeType = imgRes.headers.get("content-type") || "image/jpeg";
+                        const buffer = Buffer.from(await imgRes.arrayBuffer());
+                        const crypto = await import("crypto");
+                        const hash = crypto.createHash("sha256").update(buffer).digest("hex");
+                        await (prisma as any).mediaCache.upsert({
+                            where: { hash }, update: {},
+                            create: { hash, mimeType, data: buffer.toString("base64") },
+                        });
+                        imageUrl = `${appUrl}/api/media-cache/${hash}`;
+                    }
+                }
+                const apiBody: Record<string, string> = {
+                    From: `whatsapp:${config.twilioNumber}`,
+                    To: `whatsapp:${job.phone}`,
+                    MediaUrl: imageUrl,
+                };
+                if (caption) apiBody.Body = caption;
+                await callTwilioAPI(config, apiBody);
+            } else {
+                await sendWhatsAppImage(job.phone, imageUrl, caption);
+            }
+        }
+
+        // 3. Mark job sent + update stats
+        await prisma.campaignJob.update({
+            where: { id: jobId },
+            data: { status: "sent", processedAt: new Date() }
+        });
+
+        try {
+            await prisma.whatsAppMessage.create({
+                data: {
+                    direction: "outbound",
+                    phone: job.phone,
+                    content: `[Secuencia - ${campaign.name}]`,
+                    type: "audio",
+                    status: "sent",
+                    timestamp: new Date(),
+                }
+            });
+        } catch (_) { }
+
+        const prevStats = JSON.parse(campaign.stats || "{}");
+        prevStats.sent = (prevStats.sent || 0) + 1;
+        await prisma.whatsAppCampaign.update({
+            where: { id: campaign.id },
+            data: { stats: JSON.stringify(prevStats) }
+        });
+
+        // 4. Check if campaign is complete
+        const remaining = await prisma.campaignJob.count({
+            where: { campaignId: campaign.id, status: { in: ["pending", "awaiting_reply", "processing"] } }
+        });
+        if (remaining === 0) {
+            await prisma.whatsAppCampaign.update({ where: { id: campaign.id }, data: { status: "completed" } });
+        }
+
+        return NextResponse.json({ success: true, message: "Sequence continuation completed" });
+    } catch (err: any) {
+        await prisma.campaignJob.update({
+            where: { id: jobId },
+            data: { status: "failed", errorMessage: err.message, processedAt: new Date() }
+        });
+        return NextResponse.json({ error: err.message }, { status: 500 });
+    }
+}
+
 export const POST = verifySignatureAppRouter(async (req: Request) => {
     try {
         const body = await req.json();
-        const { campaignId, batchSize = 50 } = body;
+        const { campaignId, batchSize = 50, action, jobId } = body;
+
+        // Route sequence continuation
+        if (action === "sequence_continue" && jobId) {
+            return await handleSequenceContinue(jobId);
+        }
 
         if (!campaignId) return NextResponse.json({ error: "Missing campaignId" }, { status: 400 });
 
@@ -42,6 +191,15 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
         });
 
         if (pendingJobs.length === 0) {
+            // For sequence campaigns, check if awaiting_reply jobs remain
+            if (campaign.type === "sequence") {
+                const awaitingCount = await prisma.campaignJob.count({
+                    where: { campaignId, status: { in: ["awaiting_reply", "processing"] } }
+                });
+                if (awaitingCount > 0) {
+                    return NextResponse.json({ success: true, message: `Sequence running: ${awaitingCount} jobs awaiting reply` });
+                }
+            }
             await prisma.whatsAppCampaign.update({
                 where: { id: campaignId },
                 data: { status: "completed" }
@@ -66,6 +224,7 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
         const mapping = JSON.parse(campaign.mapping || "{}");
         const isAudio = campaign.type === 'audio';
         const isImage = campaign.type === 'image';
+        const isSequence = campaign.type === 'sequence';
         let audioConfig: any = null;
         let imageConfig: any = null;
 
@@ -322,14 +481,17 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
                     }
                 }
 
+                // Sequence campaigns: after sending template, wait for reply
+                const jobStatus = isSequence ? 'awaiting_reply' : 'sent';
                 await prisma.campaignJob.update({
                     where: { id: job.id },
-                    data: { status: 'sent', messageId: messageId || undefined, processedAt: new Date() }
+                    data: { status: jobStatus, messageId: messageId || undefined, processedAt: new Date() }
                 });
 
                 let msgContent = `[Campaña: ${campaign.name}]`;
                 if (isAudio) msgContent = `[Audio IA - ${campaign.name}]`;
                 else if (isImage) msgContent = `[Imagen - ${campaign.name}]`;
+                else if (isSequence) msgContent = `[Secuencia (template) - ${campaign.name}]`;
                 else if (campaign.template?.name) msgContent = `[Template: ${campaign.template.name}]`;
 
                 try {
@@ -354,7 +516,7 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
                             : 0.0085;
                 await logApiUsage(
                     provider,
-                    isAudio ? "send_audio" : isImage ? "send_image" : "bulk_template",
+                    isAudio ? "send_audio" : isImage ? "send_image" : isSequence ? "sequence_template" : "bulk_template",
                     1,
                     isImage ? 0 : isTwilio ? (twilioPrice || estimatedMsgCost) : estimatedMsgCost,
                     { phone: job.phone, campaignId, messageId, provider, category: templateCategory }

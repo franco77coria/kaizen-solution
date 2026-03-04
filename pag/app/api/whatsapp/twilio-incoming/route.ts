@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { logWhatsApp, upsertContact, normalizePhone } from "@/lib/whatsapp"
+import { Client } from "@upstash/qstash"
 
 // POST — Twilio sends incoming WhatsApp messages as application/x-www-form-urlencoded
 export async function POST(request: NextRequest) {
@@ -73,6 +74,46 @@ export async function POST(request: NextRequest) {
                 })
                 await logWhatsApp("opt_out_received", { phone: from, message: body })
             }
+        }
+
+        // Sequence campaign: check for awaiting_reply jobs
+        try {
+            const fiveHoursAgo = new Date(Date.now() - 5 * 60 * 60 * 1000)
+
+            // Expire stale awaiting_reply jobs (> 5h old)
+            await prisma.campaignJob.updateMany({
+                where: {
+                    phone: from,
+                    status: "awaiting_reply",
+                    processedAt: { lt: fiveHoursAgo },
+                },
+                data: { status: "expired" },
+            })
+
+            // Atomically claim any active awaiting_reply job
+            const claimed = await prisma.campaignJob.updateMany({
+                where: { phone: from, status: "awaiting_reply" },
+                data: { status: "processing" },
+            })
+
+            if (claimed.count > 0) {
+                const processingJob = await prisma.campaignJob.findFirst({
+                    where: { phone: from, status: "processing" },
+                    orderBy: { processedAt: "desc" },
+                })
+                if (processingJob) {
+                    const webhookUrl = process.env.UPSTASH_WEBHOOK_URL
+                    if (process.env.QSTASH_TOKEN && webhookUrl) {
+                        const qstash = new Client({ token: process.env.QSTASH_TOKEN })
+                        await qstash.publishJSON({
+                            url: webhookUrl,
+                            body: { action: "sequence_continue", jobId: processingJob.id },
+                        })
+                    }
+                }
+            }
+        } catch (seqErr: any) {
+            console.error("Sequence check error (non-fatal):", seqErr.message)
         }
 
         // Twilio expects empty 200 response (or TwiML) — no body = no auto-reply

@@ -74,6 +74,8 @@ export async function GET(
                 delivered: counts.delivered || 0,
                 read: counts.read || 0,
                 failed: counts.failed || 0,
+                awaiting_reply: counts.awaiting_reply || 0,
+                expired: counts.expired || 0,
             },
         })
     } catch (error: any) {

@@ -40,6 +40,8 @@ interface CampaignDetail {
         delivered: number
         read: number
         failed: number
+        awaiting_reply: number
+        expired: number
     }
 }
 
@@ -49,6 +51,9 @@ const STATUS_COLOR: Record<string, string> = {
     delivered: 'bg-green-100 text-green-700',
     read: 'bg-purple-100 text-purple-700',
     failed: 'bg-red-100 text-red-600',
+    awaiting_reply: 'bg-orange-100 text-orange-700',
+    expired: 'bg-gray-100 text-gray-400',
+    processing: 'bg-yellow-100 text-yellow-700',
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -57,6 +62,9 @@ const STATUS_LABEL: Record<string, string> = {
     delivered: 'Entregado',
     read: 'Leído',
     failed: 'Fallido',
+    awaiting_reply: 'Esperando respuesta',
+    expired: 'Vencido (5h)',
+    processing: 'Procesando',
 }
 
 const CAMPAIGN_STATUS_COLOR: Record<string, string> = {
@@ -178,7 +186,7 @@ export default function CampaignDetailPage() {
                     <p className="text-xs text-gray-400 mt-1">
                         Lista: {campaign.list?.name}
                         {campaign.template && <> · Plantilla: {campaign.template.name}</>}
-                        {' · '}{campaign.type === 'audio' ? 'Audio IA' : campaign.type === 'image' ? 'Imagen' : 'Template'}
+                        {' · '}{campaign.type === 'audio' ? 'Audio IA' : campaign.type === 'image' ? 'Imagen' : campaign.type === 'sequence' ? 'Secuencia' : 'Template'}
                     </p>
                 </div>
 
@@ -298,6 +306,10 @@ export default function CampaignDetailPage() {
                         { key: 'delivered', label: `Entregados (${counts.delivered})` },
                         { key: 'read', label: `Leídos (${counts.read})` },
                         { key: 'failed', label: `Fallidos (${counts.failed})` },
+                        ...(campaign.type === 'sequence' ? [
+                            { key: 'awaiting_reply', label: `En espera (${counts.awaiting_reply})` },
+                            { key: 'expired', label: `Vencidos (${counts.expired})` },
+                        ] : []),
                     ].map((f) => (
                         <button
                             key={f.key}

@@ -14,12 +14,12 @@ export default function CampanasPage() {
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [newCampaign, setNewCampaign] = useState({
         name: "",
-        type: "template" as "template" | "audio" | "image",
+        type: "template" as "template" | "audio" | "image" | "sequence",
         audienceMode: "list" as "list" | "active_window",
         listId: "",
         templateId: "",
         mapping: {} as Record<string, string>,
-        audioConfig: { voiceId: "", prompt: "", imageUrl: "", caption: "" },
+        audioConfig: { voiceId: "", prompt: "", imageUrl: "", imageCaption: "", caption: "" },
         scheduledFor: ""
     })
 
@@ -128,11 +128,15 @@ export default function CampanasPage() {
             if (newCampaign.type === "image" && !newCampaign.audioConfig.imageUrl) {
                 return alert("Falta la imagen (URL o archivo subido)")
             }
+            if (newCampaign.type === "sequence") {
+                if (!newCampaign.templateId) return alert("Seleccioná una plantilla para el primer mensaje")
+                if (!newCampaign.audioConfig.voiceId || !newCampaign.audioConfig.prompt) return alert("Falta configurar la voz o el texto del audio")
+            }
 
             const payload: any = { ...newCampaign }
             if (payload.type === "template") {
-                payload.audioConfig = { voiceId: "", prompt: "", imageUrl: "", caption: "" };
-            } else {
+                payload.audioConfig = { voiceId: "", prompt: "", imageUrl: "", imageCaption: "", caption: "" };
+            } else if (payload.type !== "sequence") {
                 payload.templateId = "";
             }
             if (newCampaign.audienceMode === 'active_window' && excludedContactIds.size > 0) {
@@ -148,7 +152,7 @@ export default function CampanasPage() {
                 setIsModalOpen(false)
                 setNewCampaign({
                     name: "", type: "template", audienceMode: "list", listId: "", templateId: "", mapping: {},
-                    audioConfig: { voiceId: voices[0]?.voice_id || "", prompt: "", imageUrl: "", caption: "" },
+                    audioConfig: { voiceId: voices[0]?.voice_id || "", prompt: "", imageUrl: "", imageCaption: "", caption: "" },
                     scheduledFor: ""
                 })
                 fetchData()
@@ -178,7 +182,7 @@ export default function CampanasPage() {
 
             const payload = { ...newCampaign, testPhone }
             if (payload.type === "template") {
-                payload.audioConfig = { voiceId: "", prompt: "", imageUrl: "", caption: "" };
+                payload.audioConfig = { voiceId: "", prompt: "", imageUrl: "", imageCaption: "", caption: "" };
             } else {
                 payload.templateId = "";
             }
@@ -267,6 +271,7 @@ export default function CampanasPage() {
                                         {getStatusBadge(camp.status)}
                                         {camp.type === 'audio' && <span className="text-[10px] bg-purple-50 text-purple-600 px-2 py-0.5 rounded-md border border-purple-200">Audio IA</span>}
                                         {camp.type === 'image' && <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md border border-blue-200">Imagen + Texto</span>}
+                                        {camp.type === 'sequence' && <span className="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-md border border-indigo-200">Secuencia</span>}
                                     </div>
                                     <div className="text-sm text-gray-500 flex gap-4">
                                         <span>Lista: <strong className="text-gray-700">{camp.list?.name || 'Desconocida'}</strong></span>
@@ -344,10 +349,22 @@ export default function CampanasPage() {
                                         >
                                             Audio IA
                                         </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setNewCampaign({ ...newCampaign, type: "sequence", mapping: {} })}
+                                            className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${newCampaign.type === 'sequence' ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                        >
+                                            Secuencia
+                                        </button>
                                     </div>
                                     {(newCampaign.type === 'audio' || newCampaign.type === 'image') && (
                                         <p className="text-xs text-yellow-700 mt-2 text-center bg-yellow-50 py-1.5 rounded-lg border border-yellow-200">
                                             Requiere que el cliente haya respondido en las últimas 24hs (ventana abierta).
+                                        </p>
+                                    )}
+                                    {newCampaign.type === 'sequence' && (
+                                        <p className="text-xs text-indigo-700 mt-2 text-center bg-indigo-50 py-1.5 rounded-lg border border-indigo-200">
+                                            Envía un template → espera respuesta → envía audio + imagen automáticamente. Expira en 5hs sin respuesta.
                                         </p>
                                     )}
                                 </div>
@@ -363,7 +380,7 @@ export default function CampanasPage() {
                                     />
                                 </div>
 
-                                {(newCampaign.type === 'image' || newCampaign.type === 'audio') && (
+                                {(newCampaign.type === 'image' || newCampaign.type === 'audio' || newCampaign.type === 'sequence') && (
                                     <div className="col-span-2">
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Audiencia</label>
                                         <div className="flex bg-gray-100 rounded-xl p-1 gap-1">
@@ -401,7 +418,7 @@ export default function CampanasPage() {
                                     </div>
                                 )}
 
-                                {newCampaign.audienceMode === 'active_window' && (newCampaign.type === 'image' || newCampaign.type === 'audio') && (
+                                {newCampaign.audienceMode === 'active_window' && (newCampaign.type === 'image' || newCampaign.type === 'audio' || newCampaign.type === 'sequence') && (
                                     <div className="col-span-2">
                                         <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
                                             <div className="flex items-center justify-between mb-2">
@@ -463,9 +480,11 @@ export default function CampanasPage() {
                                     </div>
                                 )}
 
-                                {newCampaign.type === 'template' && (
+                                {(newCampaign.type === 'template' || newCampaign.type === 'sequence') && (
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Plantilla</label>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            {newCampaign.type === 'sequence' ? 'Plantilla inicial (1er mensaje)' : 'Plantilla'}
+                                        </label>
                                         <select required value={newCampaign.templateId} onChange={(e) => handleTemplateSelect(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-gray-900 outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-400">
                                             <option value="">Seleccione una plantilla aprobada...</option>
                                             {templates.map(t => {
@@ -478,9 +497,11 @@ export default function CampanasPage() {
                                         )}
                                     </div>
                                 )}
-                                {newCampaign.type === 'audio' && (
+                                {(newCampaign.type === 'audio' || newCampaign.type === 'sequence') && (
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Voz (ElevenLabs)</label>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            {newCampaign.type === 'sequence' ? 'Voz para audio de respuesta (ElevenLabs)' : 'Voz (ElevenLabs)'}
+                                        </label>
                                         <select required value={newCampaign.audioConfig.voiceId} onChange={(e) => setNewCampaign({ ...newCampaign, audioConfig: { ...newCampaign.audioConfig, voiceId: e.target.value } })} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-gray-900 outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-400">
                                             {voices.length === 0 && <option value="">Sin configurar</option>}
                                             {voices.map(v => <option key={v.voice_id} value={v.voice_id}>{v.name}</option>)}
@@ -513,9 +534,12 @@ export default function CampanasPage() {
                                 </p>
                             </div>
 
-                            {newCampaign.type === 'audio' && (
+                            {(newCampaign.type === 'audio' || newCampaign.type === 'sequence') && (
                                 <div className="col-span-2">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Texto a Narrar (Podés usar variables como <code className="bg-gray-100 px-1 rounded">{'{name}'}</code>)</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        {newCampaign.type === 'sequence' ? 'Texto del audio (se envía al responder)' : 'Texto a Narrar'}
+                                        {' '}<span className="text-gray-400 font-normal">(podés usar <code className="bg-gray-100 px-1 rounded">{'{name}'}</code>)</span>
+                                    </label>
                                     <textarea
                                         required
                                         value={newCampaign.audioConfig.prompt}
@@ -527,6 +551,34 @@ export default function CampanasPage() {
                                         className="w-full bg-gray-50 border border-gray-200 rounded-lg p-4 text-gray-900 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-400 outline-none resize-none font-mono text-sm"
                                         placeholder="Hola {name}, te recordamos tu cita en Kaizen Solution para el día..."
                                     ></textarea>
+                                </div>
+                            )}
+
+                            {newCampaign.type === 'sequence' && (
+                                <div className="space-y-3 p-4 bg-indigo-50 border border-indigo-200 rounded-xl">
+                                    <p className="text-xs font-medium text-indigo-700">Imagen de seguimiento (opcional — se envía 3 segundos después del audio)</p>
+                                    <div>
+                                        <label className="block text-xs text-gray-600 mb-1">URL de imagen</label>
+                                        <input
+                                            type="url"
+                                            value={newCampaign.audioConfig.imageUrl}
+                                            onChange={(e) => setNewCampaign(prev => ({ ...prev, audioConfig: { ...prev.audioConfig, imageUrl: e.target.value } }))}
+                                            className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
+                                            placeholder="https://ejemplo.com/imagen.jpg (opcional)"
+                                        />
+                                    </div>
+                                    {newCampaign.audioConfig.imageUrl && (
+                                        <div>
+                                            <label className="block text-xs text-gray-600 mb-1">Texto de la imagen <span className="text-gray-400">(opcional)</span></label>
+                                            <input
+                                                type="text"
+                                                value={newCampaign.audioConfig.imageCaption}
+                                                onChange={(e) => setNewCampaign(prev => ({ ...prev, audioConfig: { ...prev.audioConfig, imageCaption: e.target.value } }))}
+                                                className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
+                                                placeholder="Texto que acompaña la imagen..."
+                                            />
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
@@ -665,8 +717,8 @@ export default function CampanasPage() {
                             })()}
 
                             {/* Variables mapping para Type = Audio / Image */}
-                            {(newCampaign.type === 'audio' || newCampaign.type === 'image') && (() => {
-                                const textToScan = newCampaign.type === 'audio'
+                            {(newCampaign.type === 'audio' || newCampaign.type === 'image' || newCampaign.type === 'sequence') && (() => {
+                                const textToScan = newCampaign.type === 'audio' || newCampaign.type === 'sequence'
                                     ? newCampaign.audioConfig.prompt
                                     : (newCampaign.audioConfig.caption || "")
                                 const matches = textToScan.match(/\{(\w+)\}/g)
@@ -706,8 +758,8 @@ export default function CampanasPage() {
                                 const subsCount = isWindow ? (activeWindowContacts.length - excludedContactIds.size) : (selectedListObj?._count?.subscribers || 0);
                                 if (subsCount === 0) return null;
                                 const isFreeType = newCampaign.type === 'image' || newCampaign.type === 'audio';
-                                const estMeta = isFreeType ? 0 : subsCount * 0.0773;
-                                const estEleven = newCampaign.type === 'audio' ? subsCount * 0.015 : 0;
+                                const estMeta = (isFreeType && newCampaign.type !== 'sequence') ? 0 : subsCount * 0.0773;
+                                const estEleven = (newCampaign.type === 'audio' || newCampaign.type === 'sequence') ? subsCount * 0.015 : 0;
                                 const estTotal = estMeta + estEleven;
 
                                 return (

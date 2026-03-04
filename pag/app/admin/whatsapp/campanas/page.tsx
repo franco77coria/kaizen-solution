@@ -97,7 +97,7 @@ export default function CampanasPage() {
                                                 {statusInfo.label}
                                             </span>
                                             <span className="text-xs px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-500">
-                                                {c.type === 'audio' ? 'Audio IA' : c.type === 'image' ? 'Imagen' : 'Template'}
+                                                {c.type === 'audio' ? 'Audio IA' : c.type === 'image' ? 'Imagen' : c.type === 'sequence' ? 'Secuencia' : 'Template'}
                                             </span>
                                         </div>
                                         <p className="text-xs text-gray-400 mt-0.5">
