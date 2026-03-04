@@ -36,7 +36,7 @@ async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3, baseDelayMs = 
 
 // Helper to send an audio buffer to a contact via Twilio or Meta
 async function sendAudioToContact(
-    config: any, isTwilio: boolean, phone: string, audioBuffer: Buffer
+    config: any, isTwilio: boolean, phone: string, audioBuffer: Buffer, format: 'ogg' | 'mp3' = 'ogg'
 ) {
     if (isTwilio) {
         const crypto = await import("crypto");
@@ -50,10 +50,11 @@ async function sendAudioToContact(
         await callTwilioAPI(config, {
             From: `whatsapp:${config.twilioNumber}`,
             To: `whatsapp:${phone}`,
-            MediaUrl: `${appUrl}/api/audio-cache/${hash}.ogg`,
+            MediaUrl: `${appUrl}/api/audio-cache/${hash}.${format}`,
         });
     } else {
-        const mediaId = await uploadMediaToWhatsApp(audioBuffer, 'audio/ogg');
+        const mimeType = format === 'mp3' ? 'audio/mpeg' : 'audio/ogg';
+        const mediaId = await uploadMediaToWhatsApp(audioBuffer, mimeType);
         await sendWhatsAppAudio(phone, mediaId);
     }
 }
@@ -145,7 +146,7 @@ async function handleSequenceContinue(jobId: string): Promise<Response> {
 
             // Concatenate: AI greeting + pre-recorded = ONE single audio file
             const combinedBuffer = Buffer.concat([greetingBuffer, preRecordedBuffer]);
-            await sendAudioToContact(config, isTwilio, job.phone, combinedBuffer);
+            await sendAudioToContact(config, isTwilio, job.phone, combinedBuffer, 'mp3');
 
         } else {
             // FULL AI MODE: Generate complete audio in OGG Opus (voice note)
