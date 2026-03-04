@@ -65,9 +65,9 @@ export default function MensajesPage() {
 
     const loadConversations = async () => {
         try {
-            const res = await fetch('/api/whatsapp/contacts')
+            const res = await fetch('/api/whatsapp/contacts?pageSize=500')
             const data = await res.json()
-            setConversations(data)
+            setConversations(Array.isArray(data) ? data : (data.contacts || []))
         } catch (e) {
             console.error(e)
         } finally {

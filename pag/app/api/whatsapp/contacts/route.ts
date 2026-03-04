@@ -44,7 +44,10 @@ export async function GET(request: NextRequest) {
         const phones = contacts.map(c => c.phone)
 
         if (phones.length === 0) {
-            return NextResponse.json([])
+            return NextResponse.json({
+                contacts: [],
+                pagination: { page, pageSize, total, totalPages: 0 },
+            })
         }
 
         const unreadCounts = await prisma.whatsAppMessage.groupBy({

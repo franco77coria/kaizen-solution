@@ -200,9 +200,9 @@ export default function ListasPage() {
         setAgendaSelected(new Set())
         setAgendaLoading(true)
         try {
-            const res = await fetch("/api/whatsapp/contacts")
+            const res = await fetch("/api/whatsapp/contacts?pageSize=500")
             const data = await res.json()
-            setAgendaContacts(Array.isArray(data) ? data : [])
+            setAgendaContacts(Array.isArray(data) ? data : (data.contacts || []))
         } catch (e) {
             console.error(e)
             setAgendaContacts([])
