@@ -40,17 +40,19 @@ async function sendAudioToContact(
 ) {
     if (isTwilio) {
         const crypto = await import("crypto");
+        const mimeType = format === 'mp3' ? 'audio/mpeg' : 'audio/ogg';
         const hash = crypto.createHash("sha256").update(audioBuffer).digest("hex").substring(0, 32);
-        await prisma.audioMessageCache.upsert({
+        // Use media-cache (same as images) — audio-cache causes Twilio error 63021
+        await (prisma as any).mediaCache.upsert({
             where: { hash },
-            update: { mediaUrl: audioBuffer.toString("base64") },
-            create: { hash, mediaUrl: audioBuffer.toString("base64"), expiresAt: new Date(Date.now() + 3600000) },
+            update: {},
+            create: { hash, mimeType, data: audioBuffer.toString("base64") },
         });
         const appUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "";
         await callTwilioAPI(config, {
             From: `whatsapp:${config.twilioNumber}`,
             To: `whatsapp:${phone}`,
-            MediaUrl: `${appUrl}/api/audio-cache/${hash}.${format}`,
+            MediaUrl: `${appUrl}/api/media-cache/${hash}`,
         });
     } else {
         const mimeType = format === 'mp3' ? 'audio/mpeg' : 'audio/ogg';
@@ -267,12 +269,24 @@ async function handleSequenceContinue(jobId: string): Promise<Response> {
                 data: {
                     direction: "outbound",
                     phone: job.phone,
-                    content: `[Secuencia - ${campaign.name}]`,
+                    content: `[Secuencia audio - ${campaign.name}]`,
                     type: "audio",
                     status: "sent",
                     timestamp: new Date(),
                 }
             });
+            if (audioConfig.imageUrl) {
+                await prisma.whatsAppMessage.create({
+                    data: {
+                        direction: "outbound",
+                        phone: job.phone,
+                        content: `[Secuencia imagen - ${campaign.name}]`,
+                        type: "image",
+                        status: "sent",
+                        timestamp: new Date(),
+                    }
+                });
+            }
         } catch (_) { }
 
         const prevStats = JSON.parse(campaign.stats || "{}");
@@ -532,19 +546,16 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
                             .digest("hex")
                             .substring(0, 32);
 
-                        await prisma.audioMessageCache.upsert({
+                        const mimeType = audioConfig.preRecordedAudioUrl ? 'audio/mpeg' : 'audio/ogg';
+                        // Use media-cache (same as images) — audio-cache causes Twilio error 63021
+                        await (prisma as any).mediaCache.upsert({
                             where: { hash },
-                            update: { mediaUrl: finalAudioBuffer.toString("base64") },
-                            create: {
-                                hash,
-                                mediaUrl: finalAudioBuffer.toString("base64"),
-                                expiresAt: new Date(Date.now() + 3600000),
-                            },
+                            update: {},
+                            create: { hash, mimeType, data: finalAudioBuffer.toString("base64") },
                         });
 
                         const appUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "";
-                        const ext = audioConfig.preRecordedAudioUrl ? "mp3" : "ogg";
-                        const audioUrl = `${appUrl}/api/audio-cache/${hash}.${ext}`;
+                        const audioUrl = `${appUrl}/api/media-cache/${hash}`;
 
                         const data = await callTwilioAPI(config, {
                             From: `whatsapp:${config.twilioNumber}`,

@@ -66,27 +66,23 @@ export async function POST(request: NextRequest) {
             if (!config.twilioNumber) throw new Error("Número Twilio no configurado")
 
             try {
-                // Store audio in cache as base64
                 const hash = crypto.createHash("sha256")
                     .update(audioBuffer)
                     .digest("hex")
                     .substring(0, 32)
 
-                await prisma.audioMessageCache.upsert({
-                    where: { hash },
-                    update: { mediaUrl: audioBuffer.toString("base64") },
-                    create: {
-                        hash,
-                        mediaUrl: audioBuffer.toString("base64"),
-                        expiresAt: new Date(Date.now() + 3600000), // 1 hour
-                    },
-                })
-
                 // Build public URL for the cached audio
                 const appUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || ""
                 if (!appUrl) throw new Error("NEXTAUTH_URL no está configurada. Se necesita para servir el audio a Twilio.")
 
-                const audioUrl = `${appUrl}/api/audio-cache/${hash}.ogg`
+                // Use media-cache (same as images) — audio-cache causes Twilio error 63021
+                await (prisma as any).mediaCache.upsert({
+                    where: { hash },
+                    update: {},
+                    create: { hash, mimeType: "audio/ogg", data: audioBuffer.toString("base64") },
+                })
+
+                const audioUrl = `${appUrl}/api/media-cache/${hash}`
 
                 // Send via Twilio with MediaUrl
                 const twilioResult = await callTwilioAPI(config, {
