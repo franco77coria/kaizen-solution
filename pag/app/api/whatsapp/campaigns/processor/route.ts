@@ -48,7 +48,7 @@ async function sendAudioToContact(
             update: {},
             create: { hash, mimeType, data: audioBuffer.toString("base64") },
         });
-        const appUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "";
+        const appUrl = (process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "");
         await callTwilioAPI(config, {
             From: `whatsapp:${config.twilioNumber}`,
             To: `whatsapp:${phone}`,
@@ -222,7 +222,7 @@ async function handleSequenceContinue(jobId: string): Promise<Response> {
             }
 
             if (isTwilio) {
-                const appUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "";
+                const appUrl = (process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "");
                 if (!imageUrl.startsWith(`${appUrl}/api/media-cache`)) {
                     // Download and cache image ONCE, then update campaign config
                     // so all subsequent jobs skip this download
@@ -413,7 +413,7 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
 
             // If imageUrl is an external URL, download it and cache it in MediaCache
             // so Twilio always fetches from our domain (avoids "Media failed to download")
-            const appUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "";
+            const appUrl = (process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "");
             if (imageConfig.imageUrl && !imageConfig.imageUrl.startsWith(`${appUrl}/api/media-cache`)) {
                 try {
                     const imgRes = await fetch(imageConfig.imageUrl);
@@ -554,7 +554,7 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
                             create: { hash, mimeType, data: finalAudioBuffer.toString("base64") },
                         });
 
-                        const appUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "";
+                        const appUrl = (process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "");
                         const audioUrl = `${appUrl}/api/media-cache/${hash}`;
 
                         const data = await callTwilioAPI(config, {

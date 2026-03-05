@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
                     .substring(0, 32)
 
                 // Build public URL for the cached audio
-                const appUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || ""
+                const appUrl = (process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "")
                 if (!appUrl) throw new Error("NEXTAUTH_URL no está configurada. Se necesita para servir el audio a Twilio.")
 
                 // Use media-cache (same as images) — audio-cache causes Twilio error 63021
