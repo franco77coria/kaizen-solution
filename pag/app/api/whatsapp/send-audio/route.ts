@@ -76,13 +76,14 @@ export async function POST(request: NextRequest) {
                 if (!appUrl) throw new Error("NEXTAUTH_URL no está configurada. Se necesita para servir el audio a Twilio.")
 
                 // Use media-cache (same as images) — audio-cache causes Twilio error 63021
+                // Add .ogg extension so Twilio can detect audio type before fetching (avoids 63021)
                 await (prisma as any).mediaCache.upsert({
                     where: { hash },
                     update: {},
-                    create: { hash, mimeType: "audio/ogg", data: audioBuffer.toString("base64") },
+                    create: { hash, mimeType: "audio/ogg; codecs=opus", data: audioBuffer.toString("base64") },
                 })
 
-                const audioUrl = `${appUrl}/api/media-cache/${hash}`
+                const audioUrl = `${appUrl}/api/media-cache/${hash}.ogg`
 
                 // Send via Twilio with MediaUrl
                 const twilioResult = await callTwilioAPI(config, {

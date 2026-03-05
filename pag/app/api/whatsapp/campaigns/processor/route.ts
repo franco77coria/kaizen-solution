@@ -40,7 +40,8 @@ async function sendAudioToContact(
 ) {
     if (isTwilio) {
         const crypto = await import("crypto");
-        const mimeType = format === 'mp3' ? 'audio/mpeg' : 'audio/ogg';
+        const mimeType = format === 'mp3' ? 'audio/mpeg' : 'audio/ogg; codecs=opus';
+        const ext = format === 'mp3' ? 'mp3' : 'ogg';
         const hash = crypto.createHash("sha256").update(audioBuffer).digest("hex").substring(0, 32);
         // Use media-cache (same as images) — audio-cache causes Twilio error 63021
         await (prisma as any).mediaCache.upsert({
@@ -52,7 +53,7 @@ async function sendAudioToContact(
         await callTwilioAPI(config, {
             From: `whatsapp:${config.twilioNumber}`,
             To: `whatsapp:${phone}`,
-            MediaUrl: `${appUrl}/api/media-cache/${hash}`,
+            MediaUrl: `${appUrl}/api/media-cache/${hash}.${ext}`,
         });
     } else {
         const mimeType = format === 'mp3' ? 'audio/mpeg' : 'audio/ogg';
@@ -546,7 +547,9 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
                             .digest("hex")
                             .substring(0, 32);
 
-                        const mimeType = audioConfig.preRecordedAudioUrl ? 'audio/mpeg' : 'audio/ogg';
+                        const isMp3 = !!audioConfig.preRecordedAudioUrl;
+                        const mimeType = isMp3 ? 'audio/mpeg' : 'audio/ogg; codecs=opus';
+                        const ext = isMp3 ? 'mp3' : 'ogg';
                         // Use media-cache (same as images) — audio-cache causes Twilio error 63021
                         await (prisma as any).mediaCache.upsert({
                             where: { hash },
@@ -555,7 +558,7 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
                         });
 
                         const appUrl = (process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "");
-                        const audioUrl = `${appUrl}/api/media-cache/${hash}`;
+                        const audioUrl = `${appUrl}/api/media-cache/${hash}.${ext}`;
 
                         const data = await callTwilioAPI(config, {
                             From: `whatsapp:${config.twilioNumber}`,
