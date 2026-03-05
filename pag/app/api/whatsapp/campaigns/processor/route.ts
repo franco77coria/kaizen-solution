@@ -46,7 +46,7 @@ async function sendAudioToContact(
         // Use media-cache (same as images) — audio-cache causes Twilio error 63021
         await (prisma as any).mediaCache.upsert({
             where: { hash },
-            update: {},
+            update: { mimeType },
             create: { hash, mimeType, data: audioBuffer.toString("base64") },
         });
         const appUrl = (process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "");
@@ -553,7 +553,7 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
                         // Use media-cache (same as images) — audio-cache causes Twilio error 63021
                         await (prisma as any).mediaCache.upsert({
                             where: { hash },
-                            update: {},
+                            update: { mimeType },
                             create: { hash, mimeType, data: finalAudioBuffer.toString("base64") },
                         });
 

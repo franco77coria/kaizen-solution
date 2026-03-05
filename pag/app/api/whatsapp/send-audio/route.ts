@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
                 // Add .ogg extension so Twilio can detect audio type before fetching (avoids 63021)
                 await (prisma as any).mediaCache.upsert({
                     where: { hash },
-                    update: {},
+                    update: { mimeType: "audio/ogg; codecs=opus" },
                     create: { hash, mimeType: "audio/ogg; codecs=opus", data: audioBuffer.toString("base64") },
                 })
 
