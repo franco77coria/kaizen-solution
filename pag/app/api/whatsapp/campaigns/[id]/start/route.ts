@@ -24,6 +24,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
         if (!campaign) return NextResponse.json({ error: "No encontrada" }, { status: 404 });
         if (campaign.status === 'completed') return NextResponse.json({ error: "Ya completada" }, { status: 400 });
+        if (!campaign.list) return NextResponse.json({ error: "La lista asociada fue eliminada" }, { status: 400 });
 
         const totalContacts = campaign.list._count.subscribers;
         if (totalContacts === 0) return NextResponse.json({ error: "Lista vacía" }, { status: 400 });
@@ -44,7 +45,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
             let created = 0;
             while (offset < totalContacts) {
                 const subs = await prisma.listSubscriber.findMany({
-                    where: { listId: campaign.listId },
+                    where: { listId: campaign.listId! },
                     include: { contact: true },
                     skip: offset,
                     take: JOB_CHUNK_SIZE,
