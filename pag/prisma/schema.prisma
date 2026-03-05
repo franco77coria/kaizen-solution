@@ -209,7 +209,7 @@ model WhatsAppCampaign {
   id           String    @id @default(cuid())
   name         String
   type         String    @default("template") // "template" | "audio"
-  listId       String
+  listId       String?
   templateId   String?
   status       String    @default("draft") // draft, scheduled, running, paused, completed, failed
   scheduledFor DateTime?
@@ -220,7 +220,7 @@ model WhatsAppCampaign {
   updatedAt    DateTime  @updatedAt
 
   // Relaciones
-  list         ContactList        @relation(fields: [listId], references: [id])
+  list         ContactList?       @relation(fields: [listId], references: [id], onDelete: SetNull)
   template     WhatsAppTemplate?  @relation(fields: [templateId], references: [id])
   jobs         CampaignJob[]
 

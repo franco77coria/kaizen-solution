@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import Papa from "papaparse"
-import { Upload, Users, FileSpreadsheet, CheckCircle2, AlertCircle, Plus, Edit2, Trash2, UserMinus, UserPlus, Search } from "lucide-react"
+import { Upload, Users, FileSpreadsheet, CheckCircle2, AlertCircle, Plus, Edit2, Trash2, UserMinus, UserPlus, Search, Eraser } from "lucide-react"
 
 function ContactosPageContent() {
     const [lists, setLists] = useState<any[]>([])
@@ -31,6 +31,9 @@ function ContactosPageContent() {
     const [editName, setEditName] = useState("")
     const [editPhone, setEditPhone] = useState("")
     const [editSaving, setEditSaving] = useState(false)
+
+    // Delete All
+    const [deletingAll, setDeletingAll] = useState(false)
 
     // Add Manual Contact
     const [showAddManual, setShowAddManual] = useState(false)
@@ -149,6 +152,22 @@ function ContactosPageContent() {
     // No client-side filtering — search is server-side
     const filtered = contacts
 
+    const handleDeleteAll = async () => {
+        if (!confirm(`¿Seguro que querés eliminar TODOS los contactos? Esta acción no se puede deshacer.`)) return
+        if (!confirm(`Confirmá nuevamente: se eliminarán ${pagination?.total ?? "todos los"} contactos permanentemente.`)) return
+        setDeletingAll(true)
+        try {
+            const res = await fetch("/api/whatsapp/contacts", { method: "DELETE" })
+            const data = await res.json()
+            if (res.ok) {
+                loadContacts()
+            } else {
+                alert(data.error || "Error al eliminar contactos")
+            }
+        } catch (e) { console.error(e) }
+        finally { setDeletingAll(false) }
+    }
+
     const handleDeleteContact = async (id: string) => {
         if (!confirm("¿Seguro que deseas eliminar este contacto?")) return
         try {
@@ -255,6 +274,12 @@ function ContactosPageContent() {
                             className="flex items-center gap-1.5 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm">
                             <UserPlus size={16} /> Agregar
                         </button>
+                        {!currentListId && (
+                            <button onClick={handleDeleteAll} disabled={deletingAll || !pagination?.total}
+                                className="flex items-center gap-1.5 bg-red-500 hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm">
+                                <Eraser size={16} /> {deletingAll ? "Eliminando..." : "Eliminar todos"}
+                            </button>
+                        )}
                     </div>
 
                     <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">

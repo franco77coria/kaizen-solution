@@ -108,6 +108,20 @@ export async function GET(request: NextRequest) {
     }
 }
 
+export async function DELETE() {
+    const session = await auth()
+    if (!session) {
+        return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+    }
+
+    try {
+        const { count } = await prisma.whatsAppContact.deleteMany({})
+        return NextResponse.json({ success: true, deleted: count })
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message || "Error al eliminar contactos" }, { status: 500 })
+    }
+}
+
 export async function PUT(request: NextRequest) {
     const session = await auth()
     if (!session) {
