@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { generateAudioForWhatsApp, logApiUsage } from "@/lib/elevenlabs"
+import { generateAudio, generateAudioForWhatsApp, logApiUsage } from "@/lib/elevenlabs"
 import {
     getWhatsAppConfig,
     logWhatsApp,
@@ -32,11 +32,14 @@ export async function POST(request: NextRequest) {
         const config = await getWhatsAppConfig()
         if (!config) throw new Error("WhatsApp no configurado")
 
-        // 1. Generate audio with ElevenLabs (formato OGG Opus nativo, sin ffmpeg)
+        // 1. Generate audio — MP3 for Twilio, OGG Opus for Meta
+        const isTwilio = config.provider === "twilio"
         let audioBuffer: Buffer
         let characterCount: number
         try {
-            const result = await generateAudioForWhatsApp(text, voiceId)
+            const result = isTwilio
+                ? await generateAudio(text, voiceId, undefined, "mp3_44100_128")
+                : await generateAudioForWhatsApp(text, voiceId)
             audioBuffer = result.audioBuffer
             characterCount = result.characterCount
         } catch (elError: any) {
@@ -61,8 +64,8 @@ export async function POST(request: NextRequest) {
 
         let msgId: string | null = null
 
-        if (config.provider === "twilio") {
-            // ─── Twilio path: cache audio and send via MediaUrl ───
+        if (isTwilio) {
+            // ─── Twilio path: cache MP3 and send via MediaUrl ───
             if (!config.twilioNumber) throw new Error("Número Twilio no configurado")
 
             try {
@@ -71,21 +74,17 @@ export async function POST(request: NextRequest) {
                     .digest("hex")
                     .substring(0, 32)
 
-                // Build public URL for the cached audio
                 const appUrl = (process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "")
                 if (!appUrl) throw new Error("NEXTAUTH_URL no está configurada. Se necesita para servir el audio a Twilio.")
 
-                // Use media-cache (same as images) — audio-cache causes Twilio error 63021
-                // Add .ogg extension so Twilio can detect audio type before fetching (avoids 63021)
                 await (prisma as any).mediaCache.upsert({
                     where: { hash },
-                    update: { mimeType: "audio/ogg; codecs=opus" },
-                    create: { hash, mimeType: "audio/ogg; codecs=opus", data: audioBuffer.toString("base64") },
+                    update: { mimeType: "audio/mpeg" },
+                    create: { hash, mimeType: "audio/mpeg", data: audioBuffer.toString("base64") },
                 })
 
-                const audioUrl = `${appUrl}/api/media-cache/${hash}.ogg`
+                const audioUrl = `${appUrl}/api/media-cache/${hash}.mp3`
 
-                // Send via Twilio with MediaUrl
                 const twilioResult = await callTwilioAPI(config, {
                     From: `whatsapp:${config.twilioNumber}`,
                     To: `whatsapp:${numero}`,

@@ -67,6 +67,56 @@ async function sendAudioToContact(
  * Strip ID3v2 header and ID3v1 tag from an MP3 buffer, returning only raw MP3 frames.
  * This is needed for clean MP3 concatenation — duplicate ID3 headers cause WhatsApp to reject the file.
  */
+function getMp3FrameSize(buf: Buffer, offset: number): number {
+    // Parse MPEG frame header to get frame size in bytes
+    // Header: AAAA AAAA AAAB BCCD EEEE FFGH IIJJ KLMM
+    const h = (buf[offset] << 24) | (buf[offset + 1] << 16) | (buf[offset + 2] << 8) | buf[offset + 3];
+    const mpegVersion = (h >> 19) & 0x3; // 0=MPEG2.5, 2=MPEG2, 3=MPEG1
+    const layer = (h >> 17) & 0x3;       // 1=Layer3, 2=Layer2, 3=Layer1
+    const bitrateIdx = (h >> 12) & 0xF;
+    const sampleRateIdx = (h >> 10) & 0x3;
+    const padding = (h >> 9) & 0x1;
+
+    const bitrates: Record<string, number[]> = {
+        "3-1": [0,32,40,48,56,64,80,96,112,128,160,192,224,256,320,0], // MPEG1 Layer3
+        "3-2": [0,32,48,56,64,80,96,112,128,160,192,224,256,320,384,0], // MPEG1 Layer2
+        "2-1": [0,8,16,24,32,40,48,56,64,80,96,112,128,144,160,0],  // MPEG2 Layer3
+    };
+    const sampleRates: Record<string, number[]> = {
+        "3": [44100, 48000, 32000, 0],
+        "2": [22050, 24000, 16000, 0],
+        "0": [11025, 12000, 8000, 0],
+    };
+
+    const brKey = `${mpegVersion}-${layer}`;
+    const srKey = `${mpegVersion}`;
+    const bitrate = (bitrates[brKey]?.[bitrateIdx] ?? 0) * 1000;
+    const sampleRate = sampleRates[srKey]?.[sampleRateIdx] ?? 0;
+
+    if (!bitrate || !sampleRate) return 0;
+
+    if (layer === 1) { // Layer3 or Layer2
+        return Math.floor(144 * bitrate / sampleRate) + padding;
+    }
+    return 0;
+}
+
+function isVbrHeaderFrame(buf: Buffer, offset: number): boolean {
+    // VBR/Info frame: check common offsets for "Xing", "Info", or "VBRI" tags
+    // MPEG1 Stereo: side info = 32 bytes → tag at offset+4+32 = offset+36
+    // MPEG1 Mono:   side info = 17 bytes → tag at offset+4+17 = offset+21
+    // MPEG2 Stereo: side info = 17 bytes → tag at offset+4+17 = offset+21
+    // MPEG2 Mono:   side info =  9 bytes → tag at offset+4+9  = offset+13
+    const checkOffsets = [offset + 36, offset + 21, offset + 13, offset + 9];
+    for (const o of checkOffsets) {
+        if (o + 4 <= buf.length) {
+            const tag = buf.toString("ascii", o, o + 4);
+            if (tag === "Xing" || tag === "Info" || tag === "VBRI") return true;
+        }
+    }
+    return false;
+}
+
 function stripMp3Headers(buf: Buffer): Buffer {
     let start = 0;
     // Skip ID3v2 header if present (starts with "ID3")
@@ -79,6 +129,12 @@ function stripMp3Headers(buf: Buffer): Buffer {
     while (start < buf.length - 1) {
         if (buf[start] === 0xFF && (buf[start + 1] & 0xE0) === 0xE0) break;
         start++;
+    }
+    // Skip VBR/Info header frame if present (tells decoders total stream length,
+    // which causes concatenated streams to be cut off at the first file's end)
+    if (start < buf.length - 4 && isVbrHeaderFrame(buf, start)) {
+        const frameSize = getMp3FrameSize(buf, start);
+        if (frameSize > 0) start += frameSize;
     }
     let end = buf.length;
     // Strip ID3v1 tag if present (last 128 bytes starting with "TAG")
@@ -190,8 +246,9 @@ async function handleSequenceContinue(jobId: string): Promise<Response> {
             await sendAudioToContact(config, isTwilio, job.phone, combinedBuffer, 'mp3');
 
         } else {
-            // FULL AI MODE: Generate complete audio in OGG Opus (voice note)
-            const textHash = crypto.createHash("sha256").update(audioPrompt).digest("hex").substring(0, 32);
+            // FULL AI MODE: MP3 for Twilio, OGG Opus for Meta
+            const cachePrefix = isTwilio ? "mp3:" : "";
+            const textHash = crypto.createHash("sha256").update(`${cachePrefix}${audioPrompt}`).digest("hex").substring(0, 32);
             const cachedAudio = await prisma.audioMessageCache.findUnique({ where: { hash: textHash } });
 
             let audioBuffer: Buffer;
@@ -199,7 +256,9 @@ async function handleSequenceContinue(jobId: string): Promise<Response> {
                 audioBuffer = Buffer.from(cachedAudio.mediaUrl, 'base64');
             } else {
                 const result = await withRetry(
-                    () => generateAudioForWhatsApp(audioPrompt, audioConfig.voiceId),
+                    () => isTwilio
+                        ? generateAudio(audioPrompt, audioConfig.voiceId, undefined, "mp3_44100_128")
+                        : generateAudioForWhatsApp(audioPrompt, audioConfig.voiceId),
                     3, 2000
                 );
                 audioBuffer = result.audioBuffer;
@@ -209,7 +268,7 @@ async function handleSequenceContinue(jobId: string): Promise<Response> {
                     create: { hash: textHash, mediaUrl: audioBuffer.toString("base64"), expiresAt: new Date(Date.now() + 86400000) },
                 });
             }
-            await sendAudioToContact(config, isTwilio, job.phone, audioBuffer);
+            await sendAudioToContact(config, isTwilio, job.phone, audioBuffer, isTwilio ? 'mp3' : 'ogg');
         }
 
         // 2b. Sleep 3s then send image
@@ -531,9 +590,11 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
                         // Concatenate: strip ID3 headers for clean MP3 concat
                         finalAudioBuffer = Buffer.concat([stripMp3Headers(greetingBuf), stripMp3Headers(preRecBuf)]);
                     } else {
-                        // Full AI: generate complete audio as OGG Opus
+                        // Full AI: MP3 for Twilio, OGG Opus for Meta
                         const result = await withRetry(
-                            () => generateAudioForWhatsApp(prompt, audioConfig.voiceId),
+                            () => isTwilio
+                                ? generateAudio(prompt, audioConfig.voiceId, undefined, "mp3_44100_128")
+                                : generateAudioForWhatsApp(prompt, audioConfig.voiceId),
                             3, 2000
                         );
                         finalAudioBuffer = result.audioBuffer;
@@ -547,9 +608,9 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
                             .digest("hex")
                             .substring(0, 32);
 
-                        const isMp3 = !!audioConfig.preRecordedAudioUrl;
-                        const mimeType = isMp3 ? 'audio/mpeg' : 'audio/ogg; codecs=opus';
-                        const ext = isMp3 ? 'mp3' : 'ogg';
+                        // Always MP3 for Twilio (both Full AI and IA+Grabado paths generate MP3)
+                        const mimeType = 'audio/mpeg';
+                        const ext = 'mp3';
                         // Use media-cache (same as images) — audio-cache causes Twilio error 63021
                         await (prisma as any).mediaCache.upsert({
                             where: { hash },
