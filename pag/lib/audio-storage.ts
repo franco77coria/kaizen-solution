@@ -167,7 +167,10 @@ export async function prewarmAudioBatch(
     })
 
     for (const cached of existing) {
-        results.set(cached.hash, cached.mediaUrl)
+        // Ignorar entradas con URL corrupta (datos binarios en vez de URL HTTP)
+        if (cached.mediaUrl?.startsWith("http")) {
+            results.set(cached.hash, cached.mediaUrl)
+        }
     }
 
     const uncached = hashes.filter(h => !results.has(h))

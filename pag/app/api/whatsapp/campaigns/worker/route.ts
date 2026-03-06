@@ -161,15 +161,30 @@ async function processBatchWithSender(
     const isTwilio = config.provider === "twilio"
     const appUrl = (process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "")
 
-    // Obtener batch de jobs pendientes
-    const pendingJobs = await prisma.campaignJob.findMany({
-        where: { campaignId, status: "pending" },
-        take: batchSize,
-    })
+    // Claim jobs atómicamente usando SKIP LOCKED para evitar race conditions
+    // entre múltiples senders corriendo en paralelo.
+    const claimedRows = await prisma.$queryRaw<{ id: string }[]>`
+        UPDATE "CampaignJob"
+        SET status = 'processing'
+        WHERE id IN (
+            SELECT id FROM "CampaignJob"
+            WHERE "campaignId" = ${campaignId} AND status = 'pending'
+            ORDER BY "createdAt" ASC
+            LIMIT ${batchSize}
+            FOR UPDATE SKIP LOCKED
+        )
+        RETURNING id
+    `
 
-    if (pendingJobs.length === 0) {
-        return NextResponse.json({ success: true, message: "No pending jobs" })
+    if (claimedRows.length === 0) {
+        return NextResponse.json({ success: true, message: "No pending jobs to claim" })
     }
+
+    const claimedIds = claimedRows.map(r => r.id)
+    const pendingJobs = await prisma.campaignJob.findMany({
+        where: { id: { in: claimedIds } },
+        orderBy: { createdAt: "asc" },
+    })
 
     // Resolver contactos
     const phones = pendingJobs.map(j => j.phone)
@@ -194,7 +209,16 @@ async function processBatchWithSender(
     const handler = getHandler(campaign.type)
 
     // Pre-procesamiento del batch
-    await handler.prepareBatch(ctx, pendingJobs, contactMap)
+    // Si prepareBatch falla, resetear los jobs a "pending" para que QStash pueda reintentar
+    try {
+        await handler.prepareBatch(ctx, pendingJobs, contactMap)
+    } catch (prepareErr: any) {
+        await prisma.campaignJob.updateMany({
+            where: { id: { in: claimedIds }, status: "processing" },
+            data: { status: "pending" },
+        })
+        throw prepareErr
+    }
 
     // Rate limiter adaptativo para este sender
     const rateLimiter = new AdaptiveRateLimiter(sender.maxMps)
@@ -314,10 +338,10 @@ async function processBatchWithSender(
 
     if (remainingPending > 0) {
         const webhookUrl = getWorkerUrl()
-        // Re-distribuir entre senders (puede haber cambiado disponibilidad)
+        // Continuar con el mismo sender y batchSize fijo para evitar degradación
         await qstash.publishJSON({
             url: webhookUrl,
-            body: { campaignId, batchSize },
+            body: { campaignId, senderId, batchSize: 50 },
         })
     } else {
         // Verificar si la campaña está completa
@@ -350,7 +374,7 @@ async function processFallbackBatch(campaign: any, config: any, batchSize: numbe
     const webhookUrl = process.env.UPSTASH_WEBHOOK_URL || getWorkerUrl()
 
     await qstash.publishJSON({
-        url: process.env.UPSTASH_WEBHOOK_URL!, // Usar el processor legacy
+        url: webhookUrl,
         body: {
             action: "process_batch",
             campaignId: campaign.id,
