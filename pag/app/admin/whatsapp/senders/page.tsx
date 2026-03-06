@@ -18,6 +18,7 @@ import {
     Shield,
     ToggleLeft,
     ToggleRight,
+    FileText,
 } from 'lucide-react'
 
 interface Sender {
@@ -52,6 +53,7 @@ export default function SendersPage() {
     const [testing, setTesting] = useState<string | null>(null)
     const [toast, setToast] = useState<{ msg: string; type: 'ok' | 'err' } | null>(null)
     const [deletingId, setDeletingId] = useState<string | null>(null)
+    const [syncingTemplates, setSyncingTemplates] = useState<string | null>(null)
 
     // Form state
     const [form, setForm] = useState({
@@ -168,6 +170,23 @@ export default function SendersPage() {
             showToast('Error de conexión', 'err')
         } finally {
             setDeletingId(null)
+        }
+    }
+
+    const handleSyncTemplates = async (sender: Sender) => {
+        setSyncingTemplates(sender.id)
+        try {
+            const res = await fetch(`/api/whatsapp/templates/sync?senderId=${sender.id}`, { method: 'POST' })
+            const data = await res.json()
+            if (res.ok && data.success) {
+                showToast(data.message || `Plantillas sincronizadas para ${sender.name}`)
+            } else {
+                showToast(data.error || 'Error sincronizando plantillas', 'err')
+            }
+        } catch {
+            showToast('Error de conexión', 'err')
+        } finally {
+            setSyncingTemplates(null)
         }
     }
 
@@ -523,6 +542,16 @@ export default function SendersPage() {
 
                                         {/* Right: Actions */}
                                         <div className="flex items-center gap-1.5 shrink-0">
+                                            {/* Sync templates */}
+                                            <button
+                                                onClick={() => handleSyncTemplates(sender)}
+                                                disabled={syncingTemplates === sender.id}
+                                                className="p-2 rounded-lg text-blue-500 hover:bg-blue-50 transition-colors disabled:opacity-50"
+                                                title="Sincronizar plantillas"
+                                            >
+                                                <FileText size={16} className={syncingTemplates === sender.id ? 'animate-pulse' : ''} />
+                                            </button>
+
                                             {/* Re-enable if unhealthy */}
                                             {!sender.isHealthy && (
                                                 <button
