@@ -8,6 +8,8 @@ import {
     upsertContact,
 } from "@/lib/whatsapp"
 import { logApiUsage } from "@/lib/elevenlabs"
+import { callTwilioWithSender } from "@/lib/sender-pool"
+import { decrypt } from "@/lib/whatsapp"
 
 export async function POST(request: NextRequest) {
     const session = await auth()
@@ -17,7 +19,7 @@ export async function POST(request: NextRequest) {
 
     try {
         const body = await request.json()
-        const { tipo, numero, template, idioma, mensaje, components: templateComponents } = body
+        const { tipo, numero, template, idioma, mensaje, components: templateComponents, senderId } = body
 
         if (!numero) {
             return NextResponse.json({ error: "Número requerido" }, { status: 400 })
@@ -26,19 +28,97 @@ export async function POST(request: NextRequest) {
         let result: any
         let content: string
 
-        if (tipo === "template") {
-            if (!template) {
-                return NextResponse.json({ error: "Template requerido" }, { status: 400 })
+        // If a specific senderId is provided and it's not 'global', use that sender
+        if (senderId && senderId !== 'global') {
+            const sender = await prisma.twilioSender.findUnique({ where: { id: senderId } })
+            if (!sender) {
+                return NextResponse.json({ error: "Sender no encontrado" }, { status: 404 })
             }
-            const validComponents = Array.isArray(templateComponents) && templateComponents.length > 0 ? templateComponents : undefined
-            result = await sendWhatsAppTemplate(numero, template, idioma || "en_US", validComponents)
-            content = `[Template: ${template}]`
+
+            const senderConfig = {
+                id: sender.id,
+                name: sender.name,
+                accountSid: decrypt(sender.accountSid),
+                authToken: decrypt(sender.authToken),
+                phoneNumber: sender.phoneNumber,
+                messagingServiceSid: sender.messagingServiceSid || undefined,
+                trustLevel: sender.trustLevel,
+                maxMps: sender.maxMps,
+                sentToday: sender.sentToday,
+                delayBetweenMs: Math.ceil(1000 / sender.maxMps),
+            }
+
+            if (tipo === "template") {
+                if (!template) {
+                    return NextResponse.json({ error: "Template requerido" }, { status: 400 })
+                }
+                // Lookup template for ContentSid
+                const dbTemplate = await prisma.whatsAppTemplate.findFirst({
+                    where: { name: template },
+                    select: { wabaId: true, bodyText: true },
+                })
+
+                const apiBody: Record<string, string> = {
+                    To: `whatsapp:${numero}`,
+                }
+
+                if (dbTemplate?.wabaId?.startsWith("HX")) {
+                    apiBody.ContentSid = dbTemplate.wabaId
+                    const bodyComp = (templateComponents || []).find((c: any) => c.type === "body")
+                    if (bodyComp?.parameters?.length) {
+                        const vars: Record<string, string> = {}
+                        bodyComp.parameters.forEach((p: any, i: number) => { vars[String(i + 1)] = p.text || "" })
+                        apiBody.ContentVariables = JSON.stringify(vars)
+                    }
+                } else {
+                    let text = dbTemplate?.bodyText || template
+                    const bodyComp = (templateComponents || []).find((c: any) => c.type === "body")
+                    if (bodyComp?.parameters?.length) {
+                        bodyComp.parameters.forEach((p: any, i: number) => {
+                            text = text.replace(`{{${i + 1}}}`, p.text || "")
+                        })
+                    }
+                    apiBody.Body = text
+                }
+
+                result = await callTwilioWithSender(senderConfig, apiBody)
+                content = `[Template: ${template}]`
+            } else {
+                if (!mensaje) {
+                    return NextResponse.json({ error: "Mensaje requerido" }, { status: 400 })
+                }
+                result = await callTwilioWithSender(senderConfig, {
+                    To: `whatsapp:${numero}`,
+                    Body: mensaje,
+                })
+                content = mensaje
+            }
+
+            // Update sender stats
+            await prisma.twilioSender.update({
+                where: { id: senderId },
+                data: {
+                    sentToday: { increment: 1 },
+                    totalSent: { increment: 1 },
+                    lastUsedAt: new Date(),
+                },
+            })
         } else {
-            if (!mensaje) {
-                return NextResponse.json({ error: "Mensaje requerido" }, { status: 400 })
+            // Use global config (existing behavior)
+            if (tipo === "template") {
+                if (!template) {
+                    return NextResponse.json({ error: "Template requerido" }, { status: 400 })
+                }
+                const validComponents = Array.isArray(templateComponents) && templateComponents.length > 0 ? templateComponents : undefined
+                result = await sendWhatsAppTemplate(numero, template, idioma || "en_US", validComponents)
+                content = `[Template: ${template}]`
+            } else {
+                if (!mensaje) {
+                    return NextResponse.json({ error: "Mensaje requerido" }, { status: 400 })
+                }
+                result = await sendWhatsAppText(numero, mensaje)
+                content = mensaje
             }
-            result = await sendWhatsAppText(numero, mensaje)
-            content = mensaje
         }
 
         const isTwilioResult = !!(result?.sid && !result?.messages)

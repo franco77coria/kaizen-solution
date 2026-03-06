@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
+import { useSender } from '../sender-context'
 
 interface Message {
     id: string
@@ -52,6 +53,7 @@ export default function MensajesPage() {
 
     const chatEndRef = useRef<HTMLDivElement>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
+    const { activeSender } = useSender()
 
     useEffect(() => {
         loadConversations(1, false)
@@ -170,7 +172,8 @@ export default function MensajesPage() {
                     body: JSON.stringify({
                         numero: selectedPhone,
                         text: replyText,
-                        voiceId: selectedVoice
+                        voiceId: selectedVoice,
+                        senderId: activeSender?.mode === 'sender' ? activeSender.id : undefined,
                     }),
                 })
             } else if (selectedFile) {
@@ -191,6 +194,7 @@ export default function MensajesPage() {
                         tipo: 'texto',
                         numero: selectedPhone,
                         mensaje: replyText,
+                        senderId: activeSender?.mode === 'sender' ? activeSender.id : undefined,
                     }),
                 })
             }
@@ -254,7 +258,8 @@ export default function MensajesPage() {
                     numero: selectedPhone,
                     template: selectedTemplate.name,
                     idioma: selectedTemplate.language,
-                    components: apiComponents
+                    components: apiComponents,
+                    senderId: activeSender?.mode === 'sender' ? activeSender.id : undefined,
                 }),
             })
 
@@ -324,58 +329,58 @@ export default function MensajesPage() {
                         </div>
                     ) : (
                         <>
-                        {filtered.map((c) => {
-                            const unread = c.unreadCount || 0
-                            return (
+                            {filtered.map((c) => {
+                                const unread = c.unreadCount || 0
+                                return (
+                                    <button
+                                        key={c.phone}
+                                        onClick={() => setSelectedPhone(c.phone)}
+                                        className={`w-full text-left px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors ${selectedPhone === c.phone ? 'bg-green-50 border-l-2 border-l-green-500' : ''}`}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="relative flex-shrink-0">
+                                                <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500">
+                                                    {getInitials(c.name || c.phone)}
+                                                </div>
+                                                {unread > 0 && (
+                                                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center bg-green-500 text-white text-[10px] font-bold rounded-full px-1">
+                                                        {unread > 99 ? '99+' : unread}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center justify-between">
+                                                    <p className={`text-sm truncate ${unread > 0 ? 'font-bold text-gray-900' : 'font-medium text-gray-900'}`}>
+                                                        {c.name || formatPhone(c.phone)}
+                                                    </p>
+                                                    <span className={`text-[10px] flex-shrink-0 ml-2 ${unread > 0 ? 'text-green-600 font-semibold' : 'text-gray-400'}`}>
+                                                        {formatTime(c.lastMessageAt)}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center justify-between mt-0.5">
+                                                    <p className={`text-[12px] truncate pr-2 ${unread > 0 ? 'text-gray-700 font-medium' : 'text-gray-400'}`}>
+                                                        {c.lastMessageDirection === 'outbound' && (
+                                                            <span className="text-gray-400 mr-0.5">Tu: </span>
+                                                        )}
+                                                        {c.lastMessage || `${c.totalMessages} mensaje${c.totalMessages !== 1 ? 's' : ''}`}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </button>
+                                )
+                            })}
+                            {hasMoreConvs && !search && (
                                 <button
-                                    key={c.phone}
-                                    onClick={() => setSelectedPhone(c.phone)}
-                                    className={`w-full text-left px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors ${selectedPhone === c.phone ? 'bg-green-50 border-l-2 border-l-green-500' : ''}`}
+                                    onClick={() => loadConversations(convPage + 1, true)}
+                                    disabled={loadingMoreConvs}
+                                    className="w-full py-3 text-xs text-gray-500 hover:text-green-600 hover:bg-green-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                                 >
-                                    <div className="flex items-center gap-3">
-                                        <div className="relative flex-shrink-0">
-                                            <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500">
-                                                {getInitials(c.name || c.phone)}
-                                            </div>
-                                            {unread > 0 && (
-                                                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center bg-green-500 text-white text-[10px] font-bold rounded-full px-1">
-                                                    {unread > 99 ? '99+' : unread}
-                                                </span>
-                                            )}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center justify-between">
-                                                <p className={`text-sm truncate ${unread > 0 ? 'font-bold text-gray-900' : 'font-medium text-gray-900'}`}>
-                                                    {c.name || formatPhone(c.phone)}
-                                                </p>
-                                                <span className={`text-[10px] flex-shrink-0 ml-2 ${unread > 0 ? 'text-green-600 font-semibold' : 'text-gray-400'}`}>
-                                                    {formatTime(c.lastMessageAt)}
-                                                </span>
-                                            </div>
-                                            <div className="flex items-center justify-between mt-0.5">
-                                                <p className={`text-[12px] truncate pr-2 ${unread > 0 ? 'text-gray-700 font-medium' : 'text-gray-400'}`}>
-                                                    {c.lastMessageDirection === 'outbound' && (
-                                                        <span className="text-gray-400 mr-0.5">Tu: </span>
-                                                    )}
-                                                    {c.lastMessage || `${c.totalMessages} mensaje${c.totalMessages !== 1 ? 's' : ''}`}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    {loadingMoreConvs ? (
+                                        <span className="w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
+                                    ) : 'Cargar más conversaciones'}
                                 </button>
-                            )
-                        })}
-                        {hasMoreConvs && !search && (
-                            <button
-                                onClick={() => loadConversations(convPage + 1, true)}
-                                disabled={loadingMoreConvs}
-                                className="w-full py-3 text-xs text-gray-500 hover:text-green-600 hover:bg-green-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                            >
-                                {loadingMoreConvs ? (
-                                    <span className="w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
-                                ) : 'Cargar más conversaciones'}
-                            </button>
-                        )}
+                            )}
                         </>
                     )}
                 </div>
@@ -406,13 +411,20 @@ export default function MensajesPage() {
                                     <p className="text-[11px] text-gray-400">+{selectedPhone}</p>
                                 </div>
                             </div>
-                            <button
-                                onClick={() => setIsTemplateModalOpen(true)}
-                                className="text-xs font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-md transition-colors border border-amber-200"
-                                title="Enviar mensaje oficial pre-aprobado (Regla 24h)"
-                            >
-                                Enviar Plantilla Oficial
-                            </button>
+                            <div className="flex items-center gap-3">
+                                {activeSender && activeSender.phoneNumber && (
+                                    <span className="text-[10px] bg-green-50 text-green-700 px-2 py-1 rounded-full font-medium border border-green-100">
+                                        Enviando con {activeSender.phoneNumber}
+                                    </span>
+                                )}
+                                <button
+                                    onClick={() => setIsTemplateModalOpen(true)}
+                                    className="text-xs font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-md transition-colors border border-amber-200"
+                                    title="Enviar mensaje oficial pre-aprobado (Regla 24h)"
+                                >
+                                    Enviar Plantilla Oficial
+                                </button>
+                            </div>
                         </div>
 
                         {/* Messages */}

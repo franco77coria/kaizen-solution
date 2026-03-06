@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { SenderProvider, useSender } from './sender-context'
 import {
     LayoutDashboard,
     MessageCircle,
@@ -20,6 +21,7 @@ import {
     Menu,
     X,
     Phone,
+    ChevronDown,
     type LucideIcon
 } from 'lucide-react'
 
@@ -55,6 +57,10 @@ function WhatsAppSidebar() {
     const isAdmin = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN'
     const navItems = isAdmin ? [...publicNavItems, ...adminOnlyNavItems] : publicNavItems
 
+    // Sender dropdown
+    const { activeSender, senders, setActiveSenderId, loading: sendersLoading } = useSender()
+    const [senderDropdownOpen, setSenderDropdownOpen] = useState(false)
+
     // Close mobile menu on route change
     useEffect(() => {
         setMobileOpen(false)
@@ -81,6 +87,59 @@ function WhatsAppSidebar() {
                     <X size={20} />
                 </button>
             </div>
+
+            {/* Sender Selector */}
+            {!sendersLoading && senders.length > 1 && (
+                <div className="px-4 py-3 border-b border-gray-100">
+                    <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider mb-1.5 px-1">Número activo</p>
+                    <div className="relative">
+                        <button
+                            onClick={() => setSenderDropdownOpen(!senderDropdownOpen)}
+                            className="w-full flex items-center justify-between gap-2 px-3 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl transition-colors text-left"
+                        >
+                            <div className="flex items-center gap-2 min-w-0">
+                                <div className={`w-2 h-2 rounded-full shrink-0 ${activeSender?.isHealthy ? 'bg-green-500' : 'bg-red-400'}`} />
+                                <div className="min-w-0">
+                                    <p className="text-xs font-semibold text-gray-800 truncate">{activeSender?.name || 'Seleccionar'}</p>
+                                    {activeSender?.phoneNumber && (
+                                        <p className="text-[10px] text-gray-400 font-mono truncate">{activeSender.phoneNumber}</p>
+                                    )}
+                                </div>
+                            </div>
+                            <ChevronDown size={14} className={`text-gray-400 shrink-0 transition-transform ${senderDropdownOpen ? 'rotate-180' : ''}`} />
+                        </button>
+
+                        {senderDropdownOpen && (
+                            <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+                                {senders.map(s => (
+                                    <button
+                                        key={s.id}
+                                        onClick={() => {
+                                            setActiveSenderId(s.id)
+                                            setSenderDropdownOpen(false)
+                                        }}
+                                        className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-left hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0 ${activeSender?.id === s.id ? 'bg-green-50' : ''
+                                            }`}
+                                    >
+                                        <div className={`w-2 h-2 rounded-full shrink-0 ${s.isHealthy ? 'bg-green-500' : 'bg-red-400'
+                                            }`} />
+                                        <div className="min-w-0 flex-1">
+                                            <p className={`text-xs font-medium truncate ${activeSender?.id === s.id ? 'text-green-700' : 'text-gray-700'
+                                                }`}>{s.name}</p>
+                                            {s.phoneNumber && (
+                                                <p className="text-[10px] text-gray-400 font-mono truncate">{s.phoneNumber}</p>
+                                            )}
+                                        </div>
+                                        {activeSender?.id === s.id && (
+                                            <span className="text-green-500 text-xs">✓</span>
+                                        )}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* Nav */}
             <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
@@ -217,12 +276,14 @@ export default function WhatsAppLayout({
 }) {
     return (
         <AuthGuard>
-            <div className="flex min-h-screen bg-gray-50">
-                <WhatsAppSidebar />
-                <main className="flex-1 overflow-auto pt-14 lg:pt-0">
-                    {children}
-                </main>
-            </div>
+            <SenderProvider>
+                <div className="flex min-h-screen bg-gray-50">
+                    <WhatsAppSidebar />
+                    <main className="flex-1 overflow-auto pt-14 lg:pt-0">
+                        {children}
+                    </main>
+                </div>
+            </SenderProvider>
         </AuthGuard>
     )
 }
