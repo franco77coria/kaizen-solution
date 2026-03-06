@@ -8,6 +8,7 @@
 
 import { CampaignHandler, CampaignContext, JobResult, resolveContactField } from "./index"
 import { SenderConfig, callTwilioWithSender } from "@/lib/sender-pool"
+import { prisma } from "@/lib/prisma"
 
 const handler: CampaignHandler = {
     async prepareBatch(_ctx, _jobs, _contactMap) {
@@ -38,8 +39,29 @@ async function sendTwilioSequenceTemplate(
     sender: SenderConfig
 ): Promise<JobResult> {
     const { campaign, mapping } = ctx
-    const templateWabaId = campaign.template?.wabaId
     const sortedEntries = Object.entries(mapping).sort(([a], [b]) => Number(a) - Number(b))
+
+    // Look up the ContentSid (HX...) for this specific sender's account.
+    // Each Twilio account has its own ContentSids.
+    let templateWabaId = campaign.template?.wabaId
+    const templateName = campaign.template?.name
+    const templateLanguage = campaign.template?.language
+
+    if (templateName && templateLanguage && sender.phoneNumber) {
+        const senderTemplate = await prisma.whatsAppTemplate.findUnique({
+            where: {
+                name_language_senderPhone: {
+                    name: templateName,
+                    language: templateLanguage,
+                    senderPhone: sender.phoneNumber,
+                },
+            },
+            select: { wabaId: true },
+        })
+        if (senderTemplate?.wabaId) {
+            templateWabaId = senderTemplate.wabaId
+        }
+    }
 
     if (templateWabaId?.startsWith("HX")) {
         const vars: Record<string, string> = {}
