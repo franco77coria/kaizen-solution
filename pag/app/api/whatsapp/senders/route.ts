@@ -38,7 +38,7 @@ export async function POST(req: Request) {
         const body = await req.json()
         const {
             name, accountSid, authToken, phoneNumber,
-            messagingServiceSid, trustLevel, maxMps, dailyLimit,
+            messagingServiceSid, trustLevel, maxMps,
         } = body
 
         if (!name || !accountSid || !authToken || !phoneNumber) {
@@ -66,7 +66,6 @@ export async function POST(req: Request) {
             messagingServiceSid,
             trustLevel,
             maxMps,
-            dailyLimit,
         })
 
         return NextResponse.json({

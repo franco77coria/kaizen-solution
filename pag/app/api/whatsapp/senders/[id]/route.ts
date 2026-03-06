@@ -28,7 +28,6 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
                 messagingServiceSid: true,
                 trustLevel: true,
                 maxMps: true,
-                dailyLimit: true,
                 sentToday: true,
                 isActive: true,
                 isHealthy: true,
@@ -68,7 +67,6 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         if (body.messagingServiceSid !== undefined) updateData.messagingServiceSid = body.messagingServiceSid || null
         if (body.trustLevel !== undefined) updateData.trustLevel = body.trustLevel
         if (body.maxMps !== undefined) updateData.maxMps = body.maxMps
-        if (body.dailyLimit !== undefined) updateData.dailyLimit = body.dailyLimit
         if (body.isActive !== undefined) updateData.isActive = body.isActive
 
         // Re-habilitar sender (reset health)

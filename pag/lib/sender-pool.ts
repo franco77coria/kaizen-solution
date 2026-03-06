@@ -23,7 +23,6 @@ export interface SenderConfig {
     messagingServiceSid?: string
     trustLevel: string
     maxMps: number
-    dailyLimit: number
     sentToday: number
     delayBetweenMs: number // Calculado: ceil(1000 / maxMps)
 }
@@ -66,21 +65,18 @@ export class SenderPool {
             orderBy: { createdAt: "asc" },
         })
 
-        this.senders = dbSenders
-            .filter(s => s.sentToday < s.dailyLimit)
-            .map(s => ({
-                id: s.id,
-                name: s.name,
-                accountSid: decrypt(s.accountSid),
-                authToken: decrypt(s.authToken),
-                phoneNumber: s.phoneNumber,
-                messagingServiceSid: s.messagingServiceSid || undefined,
-                trustLevel: s.trustLevel,
-                maxMps: s.maxMps,
-                dailyLimit: s.dailyLimit,
-                sentToday: s.sentToday,
-                delayBetweenMs: Math.ceil(1000 / s.maxMps),
-            }))
+        this.senders = dbSenders.map(s => ({
+            id: s.id,
+            name: s.name,
+            accountSid: decrypt(s.accountSid),
+            authToken: decrypt(s.authToken),
+            phoneNumber: s.phoneNumber,
+            messagingServiceSid: s.messagingServiceSid || undefined,
+            trustLevel: s.trustLevel,
+            maxMps: s.maxMps,
+            sentToday: s.sentToday,
+            delayBetweenMs: Math.ceil(1000 / s.maxMps),
+        }))
 
         this.currentIndex = 0
         this.initialized = true
@@ -98,18 +94,10 @@ export class SenderPool {
     getNextSender(): SenderConfig | null {
         if (!this.initialized || this.senders.length === 0) return null
 
-        const startIndex = this.currentIndex
-        do {
-            const sender = this.senders[this.currentIndex]
-            this.currentIndex = (this.currentIndex + 1) % this.senders.length
-
-            if (sender.sentToday < sender.dailyLimit) {
-                sender.sentToday++
-                return sender
-            }
-        } while (this.currentIndex !== startIndex)
-
-        return null // Todos agotados
+        const sender = this.senders[this.currentIndex]
+        this.currentIndex = (this.currentIndex + 1) % this.senders.length
+        sender.sentToday++
+        return sender
     }
 
     /**
@@ -158,26 +146,12 @@ export class SenderPool {
     distribute(totalJobs: number): SenderDistribution[] {
         if (this.senders.length === 0) return []
 
-        const totalCapacity = this.senders.reduce(
-            (sum, s) => sum + Math.max(0, s.dailyLimit - s.sentToday),
-            0
-        )
-
-        if (totalCapacity === 0) return []
-
         const distribution: SenderDistribution[] = []
+        const perSender = Math.ceil(totalJobs / this.senders.length)
         let assigned = 0
 
         for (const sender of this.senders) {
-            const available = Math.max(0, sender.dailyLimit - sender.sentToday)
-            if (available === 0) continue
-
-            const share = Math.min(
-                Math.ceil((available / totalCapacity) * totalJobs),
-                available,
-                totalJobs - assigned
-            )
-
+            const share = Math.min(perSender, totalJobs - assigned)
             if (share > 0) {
                 distribution.push({
                     senderId: sender.id,
@@ -186,7 +160,33 @@ export class SenderPool {
                 })
                 assigned += share
             }
+            if (assigned >= totalJobs) break
+        }
 
+        return distribution
+    }
+
+    /**
+     * Distribuye N jobs solo entre los sender IDs especificados.
+     */
+    distributeForIds(senderIds: string[], totalJobs: number): SenderDistribution[] {
+        const filtered = this.senders.filter(s => senderIds.includes(s.id))
+        if (filtered.length === 0) return []
+
+        const distribution: SenderDistribution[] = []
+        const perSender = Math.ceil(totalJobs / filtered.length)
+        let assigned = 0
+
+        for (const sender of filtered) {
+            const share = Math.min(perSender, totalJobs - assigned)
+            if (share > 0) {
+                distribution.push({
+                    senderId: sender.id,
+                    jobCount: share,
+                    delayMs: sender.delayBetweenMs,
+                })
+                assigned += share
+            }
             if (assigned >= totalJobs) break
         }
 
@@ -199,16 +199,6 @@ export class SenderPool {
      */
     getCombinedMps(): number {
         return this.senders.reduce((sum, s) => sum + s.maxMps, 0)
-    }
-
-    /**
-     * Capacidad total restante para hoy.
-     */
-    getRemainingCapacity(): number {
-        return this.senders.reduce(
-            (sum, s) => sum + Math.max(0, s.dailyLimit - s.sentToday),
-            0
-        )
     }
 
     getSenders(): SenderConfig[] { return this.senders }
@@ -301,7 +291,6 @@ export async function createSender(data: {
     messagingServiceSid?: string
     trustLevel?: string
     maxMps?: number
-    dailyLimit?: number
 }) {
     return prisma.twilioSender.create({
         data: {
@@ -312,7 +301,6 @@ export async function createSender(data: {
             messagingServiceSid: data.messagingServiceSid || null,
             trustLevel: data.trustLevel || "standard",
             maxMps: data.maxMps || 1.0,
-            dailyLimit: data.dailyLimit || 1000,
         },
     })
 }
@@ -343,7 +331,6 @@ export async function getAllSenders() {
             messagingServiceSid: true,
             trustLevel: true,
             maxMps: true,
-            dailyLimit: true,
             sentToday: true,
             isActive: true,
             isHealthy: true,

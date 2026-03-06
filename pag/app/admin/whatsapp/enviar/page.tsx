@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { SendHorizonal, Plus, PlayCircle, PauseCircle, Trash2, Clock, ImageIcon, Zap, Upload, ExternalLink } from "lucide-react"
+import { SendHorizonal, Plus, PlayCircle, PauseCircle, Trash2, Clock, ImageIcon, Zap, Upload, ExternalLink, Phone } from "lucide-react"
 
 export default function CampanasPage() {
     const [campaigns, setCampaigns] = useState<any[]>([])
     const [lists, setLists] = useState<any[]>([])
     const [templates, setTemplates] = useState<any[]>([])
     const [voices, setVoices] = useState<any[]>([])
+    const [senders, setSenders] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
 
     const [isModalOpen, setIsModalOpen] = useState(false)
@@ -20,7 +21,9 @@ export default function CampanasPage() {
         templateId: "",
         mapping: {} as Record<string, string>,
         audioConfig: { voiceId: "", prompt: "", imageUrl: "", imageCaption: "", caption: "", preRecordedAudioUrl: "" } as any,
-        scheduledFor: ""
+        scheduledFor: "",
+        senderMode: "all" as "all" | "default" | "specific",
+        senderIds: [] as string[],
     })
 
     const [selectedTemplate, setSelectedTemplate] = useState<any>(null)
@@ -40,15 +43,16 @@ export default function CampanasPage() {
     const fetchData = async () => {
         setLoading(true)
         try {
-            const [campRes, listRes, tempRes, voiceRes] = await Promise.all([
+            const [campRes, listRes, tempRes, voiceRes, senderRes] = await Promise.all([
                 fetch("/api/whatsapp/campaigns"),
                 fetch("/api/whatsapp/lists"),
                 fetch("/api/whatsapp/templates/sync"),
-                fetch("/api/elevenlabs/voices")
+                fetch("/api/elevenlabs/voices"),
+                fetch("/api/whatsapp/senders"),
             ])
 
-            const [campData, listData, tempData, voiceData] = await Promise.all([
-                campRes.json(), listRes.json(), tempRes.json(), voiceRes.json()
+            const [campData, listData, tempData, voiceData, senderData] = await Promise.all([
+                campRes.json(), listRes.json(), tempRes.json(), voiceRes.json(), senderRes.ok ? senderRes.json() : [],
             ])
 
             setCampaigns(Array.isArray(campData) ? campData : [])
@@ -58,6 +62,7 @@ export default function CampanasPage() {
                 setVoices(voiceData.voices)
                 setNewCampaign(prev => ({ ...prev, audioConfig: { ...prev.audioConfig, voiceId: voiceData.voices[0].voice_id } }))
             }
+            setSenders(Array.isArray(senderData) ? senderData.filter((s: any) => s.isActive) : [])
         } catch (e) {
             console.error(e)
         } finally {
@@ -155,6 +160,12 @@ export default function CampanasPage() {
             }
 
             const payload: any = { ...newCampaign }
+            // Add sender config
+            if (newCampaign.senderMode === 'specific' && newCampaign.senderIds.length > 0) {
+                payload.senderIds = newCampaign.senderIds
+            } else if (newCampaign.senderMode === 'default') {
+                payload.senderIds = []
+            }
             if (payload.type === "template") {
                 payload.audioConfig = { voiceId: "", prompt: "", imageUrl: "", imageCaption: "", caption: "" };
             } else if (payload.type !== "sequence") {
@@ -174,7 +185,7 @@ export default function CampanasPage() {
                 setNewCampaign({
                     name: "", type: "template", audienceMode: "list", listId: "", templateId: "", mapping: {},
                     audioConfig: { voiceId: voices[0]?.voice_id || "", prompt: "", imageUrl: "", imageCaption: "", caption: "" },
-                    scheduledFor: ""
+                    scheduledFor: "", senderMode: "all", senderIds: [],
                 })
                 fetchData()
             } else {
@@ -554,6 +565,90 @@ export default function CampanasPage() {
                                     }
                                 </p>
                             </div>
+
+                            {/* Sender selector */}
+                            {senders.length > 0 && (
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1.5">
+                                        <Phone size={14} />
+                                        Enviar con
+                                    </label>
+                                    <div className="flex bg-gray-100 rounded-xl p-1 gap-1 mb-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setNewCampaign({ ...newCampaign, senderMode: "all", senderIds: [] })}
+                                            className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${newCampaign.senderMode === 'all' ? 'bg-white text-green-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                        >
+                                            📡 Todos los senders
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setNewCampaign({ ...newCampaign, senderMode: "default", senderIds: [] })}
+                                            className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${newCampaign.senderMode === 'default' ? 'bg-white text-gray-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                        >
+                                            ⚙️ Config. global
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setNewCampaign({ ...newCampaign, senderMode: "specific", senderIds: [] })}
+                                            className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${newCampaign.senderMode === 'specific' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                        >
+                                            🎯 Elegir
+                                        </button>
+                                    </div>
+                                    {newCampaign.senderMode === 'all' && (
+                                        <p className="text-[11px] text-gray-400">
+                                            Se distribuirán los envíos entre los {senders.length} sender{senders.length !== 1 ? 's' : ''} activos automáticamente.
+                                        </p>
+                                    )}
+                                    {newCampaign.senderMode === 'default' && (
+                                        <p className="text-[11px] text-gray-400">
+                                            Se usará la configuración global de Twilio (sin multi-sender).
+                                        </p>
+                                    )}
+                                    {newCampaign.senderMode === 'specific' && (
+                                        <div className="space-y-1.5 mt-2">
+                                            {senders.map((s: any) => (
+                                                <label
+                                                    key={s.id}
+                                                    className={`flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition-colors border ${newCampaign.senderIds.includes(s.id)
+                                                            ? 'bg-green-50 border-green-200'
+                                                            : 'bg-white border-gray-200 hover:border-gray-300'
+                                                        }`}
+                                                >
+                                                    <div className="flex items-center gap-2.5">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={newCampaign.senderIds.includes(s.id)}
+                                                            onChange={() => {
+                                                                const ids = newCampaign.senderIds.includes(s.id)
+                                                                    ? newCampaign.senderIds.filter((id: string) => id !== s.id)
+                                                                    : [...newCampaign.senderIds, s.id]
+                                                                setNewCampaign({ ...newCampaign, senderIds: ids })
+                                                            }}
+                                                            className="accent-green-600"
+                                                        />
+                                                        <div>
+                                                            <span className="text-sm font-medium text-gray-800">{s.name}</span>
+                                                            <span className="text-xs text-gray-400 ml-2 font-mono">{s.phoneNumber}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${s.isHealthy ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
+                                                            }`}>
+                                                            {s.isHealthy ? '● Saludable' : '✕ Error'}
+                                                        </span>
+                                                        <span className="text-[10px] text-gray-400">{s.maxMps} MPS</span>
+                                                    </div>
+                                                </label>
+                                            ))}
+                                            {newCampaign.senderIds.length === 0 && (
+                                                <p className="text-xs text-amber-600 mt-1">Seleccioná al menos un sender para enviar.</p>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
 
                             {(newCampaign.type === 'audio' || newCampaign.type === 'sequence') && (
                                 <div className="col-span-2 space-y-3">

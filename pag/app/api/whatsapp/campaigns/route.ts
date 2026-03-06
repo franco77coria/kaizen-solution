@@ -30,7 +30,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "No autorizado" }, { status: 401 })
         }
         const body = await req.json();
-        const { name, type, listId, templateId, mapping, audioConfig, audienceMode, excludedContactIds } = body;
+        const { name, type, listId, templateId, mapping, audioConfig, audienceMode, excludedContactIds, senderMode, senderIds } = body;
         const excluded: string[] = Array.isArray(excludedContactIds) ? excludedContactIds : [];
 
         let finalListId = listId;
@@ -84,6 +84,8 @@ export async function POST(req: Request) {
                 templateId: templateId || null,
                 mapping: JSON.stringify(mapping || {}),
                 audioConfig: audioConfig ? JSON.stringify(audioConfig) : null,
+                senderMode: senderMode || "all",
+                senderIds: JSON.stringify(Array.isArray(senderIds) ? senderIds : []),
                 status: "draft",
                 stats: JSON.stringify({ total: 0, sent: 0, delivered: 0, read: 0, failed: 0 })
             },

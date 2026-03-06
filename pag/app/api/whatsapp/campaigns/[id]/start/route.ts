@@ -83,13 +83,46 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         const workerUrl = `${appUrl}/api/whatsapp/campaigns/worker`;
         const legacyUrl = process.env.UPSTASH_WEBHOOK_URL;
 
-        // Verificar si hay multi-senders configurados
+        // Determinar modo de sender según la campaña
+        const campaignSenderMode = campaign.senderMode || "all";
+        const campaignSenderIds: string[] = JSON.parse(campaign.senderIds || "[]");
+
+        if (campaignSenderMode === "default") {
+            // Usar config global (processor legacy), sin multi-sender
+            const targetUrl = legacyUrl || workerUrl;
+            await qstash.publishJSON({
+                url: targetUrl,
+                body: {
+                    action: "process_batch",
+                    campaignId: campaign.id,
+                    batchSize: 50
+                },
+            });
+            return NextResponse.json({ success: true, totalJobs: totalContacts, mode: "default-config" });
+        }
+
+        // Multi-sender: inicializar pool
         const senderPool = new SenderPool();
         await senderPool.initialize();
 
         if (senderPool.isReady()) {
-            // Multi-sender: distribuir entre senders
-            const distribution = senderPool.distribute(Math.min(totalContacts, 50));
+            // Filtrar senders si es modo "specific"
+            let distribution;
+            if (campaignSenderMode === "specific" && campaignSenderIds.length > 0) {
+                distribution = senderPool.distributeForIds(campaignSenderIds, Math.min(totalContacts, 50));
+            } else {
+                distribution = senderPool.distribute(Math.min(totalContacts, 50));
+            }
+
+            if (distribution.length === 0) {
+                // Fallback a legacy si no hay senders disponibles
+                const targetUrl = legacyUrl || workerUrl;
+                await qstash.publishJSON({
+                    url: targetUrl,
+                    body: { action: "process_batch", campaignId: campaign.id, batchSize: 50 },
+                });
+                return NextResponse.json({ success: true, totalJobs: totalContacts, mode: "fallback-no-senders" });
+            }
 
             for (const { senderId, jobCount } of distribution) {
                 await qstash.publishJSON({
@@ -105,14 +138,15 @@ export async function POST(req: Request, { params }: { params: { id: string } })
             return NextResponse.json({
                 success: true,
                 totalJobs: totalContacts,
-                senders: senderPool.getCount(),
+                mode: campaignSenderMode,
+                senders: distribution.length,
                 distribution: distribution.map(d => ({
                     senderId: d.senderId,
                     jobs: d.jobCount,
                 })),
             });
         } else {
-            // Sin multi-sender: usar worker con pool automático o legacy
+            // Sin multi-sender configurado
             const targetUrl = legacyUrl || workerUrl;
             await qstash.publishJSON({
                 url: targetUrl,

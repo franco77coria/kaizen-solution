@@ -216,6 +216,8 @@ model WhatsAppCampaign {
   stats        String    @default("{}") // JSON: { total: 0, sent: 0, delivered: 0, read: 0, failed: 0 }
   mapping      String    @default("{}") // JSON: mapeo de variables ej. { "1": "name", "2": "custom_field" }
   audioConfig  String?   @db.Text // JSON: metadata para campañas tipo "audio"
+  senderMode   String    @default("all") // "all" | "default" | "specific"
+  senderIds    String    @default("[]") // JSON array de sender IDs específicos
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
@@ -271,7 +273,6 @@ model TwilioSender {
   // Trust & Rate Limiting
   trustLevel          String   @default("standard") // "new" | "standard" | "high"
   maxMps              Float    @default(1.0) // Messages Per Second permitidos
-  dailyLimit          Int      @default(1000)
   sentToday           Int      @default(0)
   dailyResetAt        DateTime @default(now()) // Fecha del último reset del contador diario
 

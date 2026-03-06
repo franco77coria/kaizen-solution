@@ -27,7 +27,6 @@ interface Sender {
     messagingServiceSid: string | null
     trustLevel: string
     maxMps: number
-    dailyLimit: number
     sentToday: number
     isActive: boolean
     isHealthy: boolean
@@ -63,7 +62,6 @@ export default function SendersPage() {
         messagingServiceSid: '',
         trustLevel: 'standard' as TrustLevel,
         maxMps: 1,
-        dailyLimit: 1000,
     })
 
     const showToast = (msg: string, type: 'ok' | 'err' = 'ok') => {
@@ -108,7 +106,7 @@ export default function SendersPage() {
                 setShowForm(false)
                 setForm({
                     name: '', accountSid: '', authToken: '', phoneNumber: '',
-                    messagingServiceSid: '', trustLevel: 'standard', maxMps: 1, dailyLimit: 1000,
+                    messagingServiceSid: '', trustLevel: 'standard', maxMps: 1,
                 })
                 loadSenders()
             } else {
@@ -191,7 +189,6 @@ export default function SendersPage() {
 
     // Stats
     const totalMps = senders.filter(s => s.isActive && s.isHealthy).reduce((sum, s) => sum + s.maxMps, 0)
-    const totalCapacity = senders.filter(s => s.isActive && s.isHealthy).reduce((sum, s) => sum + s.dailyLimit, 0)
     const totalSentToday = senders.reduce((sum, s) => sum + s.sentToday, 0)
     const activeSenders = senders.filter(s => s.isActive && s.isHealthy).length
     const unhealthySenders = senders.filter(s => !s.isHealthy).length
@@ -276,8 +273,8 @@ export default function SendersPage() {
                                 <Shield size={20} className="text-amber-600" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold text-gray-900">{totalCapacity.toLocaleString()}</p>
-                                <p className="text-xs text-gray-400">Capacidad diaria</p>
+                                <p className="text-2xl font-bold text-gray-900">{totalSentToday > 0 ? totalSentToday.toLocaleString() : '∞'}</p>
+                                <p className="text-xs text-gray-400">Sin límite diario</p>
                             </div>
                         </div>
                     </CardContent>
@@ -391,20 +388,6 @@ export default function SendersPage() {
                                 </select>
                             </div>
 
-                            {/* Daily Limit */}
-                            <div>
-                                <label className="block text-xs font-medium text-gray-600 mb-1.5">Límite Diario</label>
-                                <input
-                                    type="number"
-                                    value={form.dailyLimit}
-                                    onChange={(e) => setForm({ ...form, dailyLimit: parseInt(e.target.value) || 1000 })}
-                                    className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-400"
-                                />
-                                <p className="text-[11px] text-gray-400 mt-1">
-                                    Máximo de mensajes por día para este sender
-                                </p>
-                            </div>
-
                             {/* Max MPS */}
                             <div>
                                 <label className="block text-xs font-medium text-gray-600 mb-1.5">MPS (Mensajes/segundo)</label>
@@ -469,7 +452,6 @@ export default function SendersPage() {
                 <div className="space-y-3">
                     {senders.map((sender) => {
                         const trust = TRUST_LABELS[sender.trustLevel as TrustLevel] || TRUST_LABELS.standard
-                        const capacityUsed = sender.dailyLimit > 0 ? (sender.sentToday / sender.dailyLimit) * 100 : 0
                         const isDisabled = !sender.isActive || !sender.isHealthy
 
                         return (
@@ -480,8 +462,8 @@ export default function SendersPage() {
                                         <div className="flex items-start gap-4 flex-1 min-w-0">
                                             {/* Status indicator */}
                                             <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${!sender.isHealthy ? 'bg-red-50' :
-                                                    !sender.isActive ? 'bg-gray-100' :
-                                                        'bg-green-50'
+                                                !sender.isActive ? 'bg-gray-100' :
+                                                    'bg-green-50'
                                                 }`}>
                                                 {!sender.isHealthy ? (
                                                     <XCircle size={22} className="text-red-500" />
@@ -510,19 +492,10 @@ export default function SendersPage() {
                                                     </div>
                                                 )}
 
-                                                {/* Progress bar */}
+                                                {/* Sent today */}
                                                 <div className="flex items-center gap-3">
-                                                    <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                                                        <div
-                                                            className={`h-full rounded-full transition-all ${capacityUsed > 90 ? 'bg-red-500' :
-                                                                    capacityUsed > 60 ? 'bg-amber-500' :
-                                                                        'bg-green-500'
-                                                                }`}
-                                                            style={{ width: `${Math.min(capacityUsed, 100)}%` }}
-                                                        />
-                                                    </div>
-                                                    <span className="text-[11px] text-gray-400 whitespace-nowrap">
-                                                        {sender.sentToday.toLocaleString()} / {sender.dailyLimit.toLocaleString()} hoy
+                                                    <span className="text-[11px] text-gray-400">
+                                                        {sender.sentToday.toLocaleString()} enviados hoy · Sin límite
                                                     </span>
                                                 </div>
 
@@ -565,8 +538,8 @@ export default function SendersPage() {
                                             <button
                                                 onClick={() => handleToggle(sender)}
                                                 className={`p-2 rounded-lg transition-colors ${sender.isActive
-                                                        ? 'text-green-600 hover:bg-green-50'
-                                                        : 'text-gray-400 hover:bg-gray-100'
+                                                    ? 'text-green-600 hover:bg-green-50'
+                                                    : 'text-gray-400 hover:bg-gray-100'
                                                     }`}
                                                 title={sender.isActive ? 'Desactivar' : 'Activar'}
                                             >
@@ -604,9 +577,9 @@ export default function SendersPage() {
                                 </p>
                             </div>
                             <div className="bg-white rounded-xl p-4 border border-gray-100">
-                                <p className="text-xs text-gray-400 mb-1">Capacidad restante hoy</p>
+                                <p className="text-xs text-gray-400 mb-1">Total enviados hoy</p>
                                 <p className="text-lg font-bold text-gray-900">
-                                    {(totalCapacity - totalSentToday).toLocaleString()} mensajes
+                                    {totalSentToday.toLocaleString()} mensajes
                                 </p>
                             </div>
                             <div className="bg-white rounded-xl p-4 border border-gray-100">
