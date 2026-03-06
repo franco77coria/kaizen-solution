@@ -11,6 +11,8 @@ import {
 } from "@/lib/whatsapp"
 import { prisma } from "@/lib/prisma"
 import crypto from "crypto"
+import { callTwilioWithSender } from "@/lib/sender-pool"
+import { decrypt } from "@/lib/whatsapp"
 
 export async function POST(request: NextRequest) {
     const session = await auth()
@@ -20,7 +22,7 @@ export async function POST(request: NextRequest) {
 
     try {
         const body = await request.json()
-        const { numero, text, voiceId } = body
+        const { numero, text, voiceId, senderId } = body
 
         if (!numero) {
             return NextResponse.json({ error: "Número requerido" }, { status: 400 })
@@ -66,7 +68,8 @@ export async function POST(request: NextRequest) {
 
         if (isTwilio) {
             // ─── Twilio path: cache MP3 and send via MediaUrl ───
-            if (!config.twilioNumber) throw new Error("Número Twilio no configurado")
+            const twilioNumber = config.twilioNumber
+            if (!twilioNumber && !senderId) throw new Error("Número Twilio no configurado")
 
             try {
                 const hash = crypto.createHash("sha256")
@@ -85,11 +88,47 @@ export async function POST(request: NextRequest) {
 
                 const audioUrl = `${appUrl}/api/media-cache/${hash}.mp3`
 
-                const twilioResult = await callTwilioAPI(config, {
-                    From: `whatsapp:${config.twilioNumber}`,
-                    To: `whatsapp:${numero}`,
-                    MediaUrl: audioUrl,
-                })
+                let twilioResult: any
+
+                if (senderId && senderId !== 'global') {
+                    // Use specific sender
+                    const sender = await prisma.twilioSender.findUnique({ where: { id: senderId } })
+                    if (!sender) throw new Error("Sender no encontrado")
+
+                    const senderConfig = {
+                        id: sender.id,
+                        name: sender.name,
+                        accountSid: decrypt(sender.accountSid),
+                        authToken: decrypt(sender.authToken),
+                        phoneNumber: sender.phoneNumber,
+                        messagingServiceSid: sender.messagingServiceSid || undefined,
+                        trustLevel: sender.trustLevel,
+                        maxMps: sender.maxMps,
+                        sentToday: sender.sentToday,
+                        delayBetweenMs: Math.ceil(1000 / sender.maxMps),
+                    }
+
+                    twilioResult = await callTwilioWithSender(senderConfig, {
+                        To: `whatsapp:${numero}`,
+                        MediaUrl: audioUrl,
+                    })
+
+                    await prisma.twilioSender.update({
+                        where: { id: senderId },
+                        data: {
+                            sentToday: { increment: 1 },
+                            totalSent: { increment: 1 },
+                            lastUsedAt: new Date(),
+                        },
+                    })
+                } else {
+                    // Use global config
+                    twilioResult = await callTwilioAPI(config, {
+                        From: `whatsapp:${twilioNumber}`,
+                        To: `whatsapp:${numero}`,
+                        MediaUrl: audioUrl,
+                    })
+                }
 
                 msgId = twilioResult?.sid || null
             } catch (twilioError: any) {

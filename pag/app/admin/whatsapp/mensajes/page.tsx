@@ -181,6 +181,7 @@ export default function MensajesPage() {
                 formData.append("numero", selectedPhone)
                 formData.append("file", selectedFile)
                 if (replyText) formData.append("text", replyText)
+                if (activeSender?.mode === 'sender') formData.append("senderId", activeSender.id)
 
                 res = await fetch('/api/whatsapp/send-media', {
                     method: 'POST',

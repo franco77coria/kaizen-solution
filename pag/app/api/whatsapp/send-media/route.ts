@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { uploadMediaToWhatsApp, getWhatsAppConfig, callTwilioAPI } from "@/lib/whatsapp";
+import { uploadMediaToWhatsApp, getWhatsAppConfig, callTwilioAPI, decrypt } from "@/lib/whatsapp";
 import { auth } from "@/lib/auth";
 import crypto from "crypto";
+import { callTwilioWithSender } from "@/lib/sender-pool";
 
 export async function POST(req: Request) {
     try {
@@ -13,6 +14,7 @@ export async function POST(req: Request) {
         const numero = formData.get("numero") as string;
         const text = formData.get("text") as string;
         const file = formData.get("file") as File;
+        const senderId = formData.get("senderId") as string | null;
 
         if (!numero || !file) {
             return NextResponse.json({ error: "Faltan parámetros (numero, file)" }, { status: 400 });
@@ -53,7 +55,6 @@ export async function POST(req: Request) {
             const mediaUrl = `${baseUrl}/api/media-cache/${hash}`;
 
             const twilioBody: Record<string, string> = {
-                From: `whatsapp:${config.twilioNumber}`,
                 To: `whatsapp:${numero}`,
                 MediaUrl: mediaUrl,
             };
@@ -61,7 +62,38 @@ export async function POST(req: Request) {
                 twilioBody.Body = text;
             }
 
-            const twilioRes = await callTwilioAPI(config, twilioBody);
+            let twilioRes: any;
+            if (senderId && senderId !== 'global') {
+                const sender = await prisma.twilioSender.findUnique({ where: { id: senderId } });
+                if (!sender) throw new Error("Sender no encontrado");
+
+                const senderConfig = {
+                    id: sender.id,
+                    name: sender.name,
+                    accountSid: decrypt(sender.accountSid),
+                    authToken: decrypt(sender.authToken),
+                    phoneNumber: sender.phoneNumber,
+                    messagingServiceSid: sender.messagingServiceSid || undefined,
+                    trustLevel: sender.trustLevel,
+                    maxMps: sender.maxMps,
+                    sentToday: sender.sentToday,
+                    delayBetweenMs: Math.ceil(1000 / sender.maxMps),
+                };
+
+                twilioRes = await callTwilioWithSender(senderConfig, twilioBody);
+
+                await prisma.twilioSender.update({
+                    where: { id: senderId },
+                    data: {
+                        sentToday: { increment: 1 },
+                        totalSent: { increment: 1 },
+                        lastUsedAt: new Date(),
+                    },
+                });
+            } else {
+                twilioBody.From = `whatsapp:${config.twilioNumber}`;
+                twilioRes = await callTwilioAPI(config, twilioBody);
+            }
             messageId = twilioRes?.sid;
 
         } else {
