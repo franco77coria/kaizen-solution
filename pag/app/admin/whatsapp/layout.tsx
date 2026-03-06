@@ -19,6 +19,7 @@ import {
     ArrowLeft,
     Menu,
     X,
+    Phone,
     type LucideIcon
 } from 'lucide-react'
 
@@ -40,6 +41,7 @@ const publicNavItems: NavItem[] = [
 const adminOnlyNavItems: NavItem[] = [
     { href: '/admin/whatsapp/config', label: 'Configuración', icon: Settings },
     { href: '/admin/whatsapp/config-elevenlabs', label: 'Audio IA', icon: Mic },
+    { href: '/admin/whatsapp/senders', label: 'Senders', icon: Phone },
     { href: '/admin/whatsapp/uso-api', label: 'Uso API', icon: BarChart3 },
 ]
 
@@ -185,7 +187,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
         if (status === 'authenticated' && session?.user) {
             const userRole = (session.user as any)?.role || 'VIEWER'
             const isAdmin = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN'
-            const restrictedPaths = ['/admin/whatsapp/config', '/admin/whatsapp/config-elevenlabs', '/admin/whatsapp/uso-api']
+            const restrictedPaths = ['/admin/whatsapp/config', '/admin/whatsapp/config-elevenlabs', '/admin/whatsapp/uso-api', '/admin/whatsapp/senders']
             const isRestricted = restrictedPaths.some(p => pathname.startsWith(p))
             if (!isAdmin && isRestricted) {
                 router.push('/admin/whatsapp')
@@ -214,13 +216,13 @@ export default function WhatsAppLayout({
     children: React.ReactNode
 }) {
     return (
-            <AuthGuard>
-                <div className="flex min-h-screen bg-gray-50">
-                    <WhatsAppSidebar />
-                    <main className="flex-1 overflow-auto pt-14 lg:pt-0">
-                        {children}
-                    </main>
-                </div>
-            </AuthGuard>
+        <AuthGuard>
+            <div className="flex min-h-screen bg-gray-50">
+                <WhatsAppSidebar />
+                <main className="flex-1 overflow-auto pt-14 lg:pt-0">
+                    {children}
+                </main>
+            </div>
+        </AuthGuard>
     )
 }

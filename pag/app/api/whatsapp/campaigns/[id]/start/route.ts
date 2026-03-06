@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { Client } from "@upstash/qstash";
+import { SenderPool } from "@/lib/sender-pool";
 
 const qstash = new Client({
     token: process.env.QSTASH_TOKEN || "NO_TOKEN",
@@ -72,26 +73,62 @@ export async function POST(req: Request, { params }: { params: { id: string } })
             });
         }
 
-        const webhookUrl = process.env.UPSTASH_WEBHOOK_URL;
-
-        if (!process.env.QSTASH_TOKEN || !webhookUrl) {
+        if (!process.env.QSTASH_TOKEN) {
             console.warn("QStash no configurado. Jobs creados en DB pero no encolados.");
             return NextResponse.json({ success: true, message: "Modo Local: Jobs en DB listos pero QStash inactivo." });
         }
 
-        await qstash.publishJSON({
-            url: webhookUrl,
-            body: {
-                action: "process_batch",
-                campaignId: campaign.id,
-                batchSize: 50
-            },
-        });
+        // Intentar usar el nuevo worker distribuido
+        const appUrl = (process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "");
+        const workerUrl = `${appUrl}/api/whatsapp/campaigns/worker`;
+        const legacyUrl = process.env.UPSTASH_WEBHOOK_URL;
 
-        return NextResponse.json({ success: true, totalJobs: totalContacts });
+        // Verificar si hay multi-senders configurados
+        const senderPool = new SenderPool();
+        await senderPool.initialize();
+
+        if (senderPool.isReady()) {
+            // Multi-sender: distribuir entre senders
+            const distribution = senderPool.distribute(Math.min(totalContacts, 50));
+
+            for (const { senderId, jobCount } of distribution) {
+                await qstash.publishJSON({
+                    url: workerUrl,
+                    body: {
+                        campaignId: campaign.id,
+                        senderId,
+                        batchSize: jobCount,
+                    },
+                });
+            }
+
+            return NextResponse.json({
+                success: true,
+                totalJobs: totalContacts,
+                senders: senderPool.getCount(),
+                distribution: distribution.map(d => ({
+                    senderId: d.senderId,
+                    jobs: d.jobCount,
+                })),
+            });
+        } else {
+            // Sin multi-sender: usar worker con pool automático o legacy
+            const targetUrl = legacyUrl || workerUrl;
+            await qstash.publishJSON({
+                url: targetUrl,
+                body: {
+                    action: "process_batch",
+                    campaignId: campaign.id,
+                    batchSize: 50
+                },
+            });
+
+            return NextResponse.json({ success: true, totalJobs: totalContacts, mode: "single-sender" });
+        }
 
     } catch (error: any) {
         console.error("Error starting campaign:", error);
         return NextResponse.json({ error: error.message || "Failed to start" }, { status: 500 });
     }
 }
+

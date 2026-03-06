@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Testigos Electorales PL - Login</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#D32F2F", // A strong red for the Liberal Party
+                        "primary-dark": "#B71C1C",
+                        "background-light": "#F8FAFC",
+                        "background-dark": "#0F172A",
+                        "card-light": "#FFFFFF",
+                        "card-dark": "#1E293B",
+                        "text-main-light": "#0F172A",
+                        "text-main-dark": "#F8FAFC",
+                        "text-muted-light": "#64748B",
+                        "text-muted-dark": "#94A3B8",
+                        "border-light": "#E2E8F0",
+                        "border-dark": "#334155",
+                    },
+                    fontFamily: {
+                        display: ["Inter", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.75rem",
+                        'xl': "1rem",
+                        '2xl': "1.5rem",
+                    },
+                },
+            },
+        };
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .gradient-button {
+            background: linear-gradient(135deg, #EF4444 0%, #B91C1C 100%);
+        }
+        .glow-effect {
+            box-shadow: 0 4px 14px 0 rgba(220, 38, 38, 0.39);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-text-main-light dark:text-text-main-dark min-h-screen flex flex-col items-center justify-center p-6">
+<div class="w-full max-w-sm flex flex-col items-center space-y-8 animate-fade-in-up">
+<div class="flex flex-col items-center text-center space-y-4">
+<div class="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center glow-effect shadow-lg mb-2">
+<span class="text-white text-3xl font-bold font-display">L</span>
+</div>
+<div>
+<h1 class="text-2xl font-bold tracking-tight text-text-main-light dark:text-text-main-dark">
+                    Testigos Electorales
+                </h1>
+<p class="text-sm font-medium text-text-muted-light dark:text-text-muted-dark mt-1 uppercase tracking-wider">
+                    Partido Liberal — Cundinamarca 2026
+                </p>
+</div>
+</div>
+<div class="w-full bg-card-light dark:bg-card-dark rounded-2xl shadow-xl border border-border-light dark:border-border-dark p-6 space-y-6">
+<form class="space-y-5">
+<div class="space-y-2">
+<label class="block text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider ml-1" for="cedula">
+                        Documento de Identidad
+                    </label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-icons text-text-muted-light dark:text-text-muted-dark">fingerprint</span>
+</div>
+<input autocomplete="off" class="block w-full pl-10 pr-4 py-3 border border-border-light dark:border-border-dark rounded-xl bg-background-light dark:bg-background-dark text-text-main-light dark:text-text-main-dark focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm transition-colors duration-200 placeholder-text-muted-light dark:placeholder-text-muted-dark" id="cedula" name="cedula" placeholder="Ingrese su número de cédula" type="tel"/>
+</div>
+</div>
+<button class="w-full gradient-button text-white rounded-xl py-3.5 px-4 font-bold text-sm tracking-wide flex items-center justify-center space-x-2 hover:opacity-90 transition-opacity duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary dark:focus:ring-offset-background-dark shadow-md" type="button">
+<span>Ingresar al Sistema</span>
+<span class="material-icons text-sm">arrow_forward</span>
+</button>
+</form>
+</div>
+<div class="text-xs text-text-muted-light dark:text-text-muted-dark font-medium uppercase tracking-widest text-center mt-auto pb-4">
+            Cundinamarca 2026
+        </div>
+</div>
+
+</body></html>

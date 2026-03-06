@@ -233,18 +233,22 @@ model CampaignJob {
   campaignId   String
   phone        String
   messageId    String?  @unique // Se llena cuando Meta nos da el ID
-  status       String   @default("pending") // pending, sent, delivered, read, failed
+  status       String   @default("pending") // pending, sent, delivered, read, failed, expired
   errorMessage String?  @db.Text
+  senderId     String?  // ID del TwilioSender que envió este mensaje
+  cost         Float    @default(0) // Costo real del envío
   processedAt  DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   // Relaciones
   campaign     WhatsAppCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  sender       TwilioSender?    @relation(fields: [senderId], references: [id], onDelete: SetNull)
 
   @@index([campaignId])
   @@index([phone])
   @@index([status])
+  @@index([senderId])
 }
 
 model WhatsAppLog {
@@ -252,6 +256,39 @@ model WhatsAppLog {
   type      String
   payload   String   @db.Text
   createdAt DateTime @default(now())
+}
+
+// ─── Multi-Sender (Twilio) ───
+
+model TwilioSender {
+  id                  String   @id @default(cuid())
+  name                String   // "Sender Principal", "Sender 2", etc.
+  accountSid          String   @db.Text  // Encrypted
+  authToken           String   @db.Text  // Encrypted
+  phoneNumber         String   // e.g. "+15077636379"
+  messagingServiceSid String?  // Si usa Messaging Service de Twilio
+
+  // Trust & Rate Limiting
+  trustLevel          String   @default("standard") // "new" | "standard" | "high"
+  maxMps              Float    @default(1.0) // Messages Per Second permitidos
+  dailyLimit          Int      @default(1000)
+  sentToday           Int      @default(0)
+  dailyResetAt        DateTime @default(now()) // Fecha del último reset del contador diario
+
+  // Estado
+  isActive            Boolean  @default(true)
+  isHealthy           Boolean  @default(true) // false si está baneado/suspendido
+  lastError           String?  @db.Text
+  lastUsedAt          DateTime?
+  totalSent           Int      @default(0) // Contador histórico total
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // Relaciones
+  campaignJobs        CampaignJob[]
+
+  @@index([isActive, isHealthy])
 }
 
 // ─── ElevenLabs Integration ───
@@ -272,10 +309,12 @@ model ElevenLabsConfig {
 model AudioMessageCache {
   id        String   @id @default(cuid())
   hash      String   @unique // Hash sha256 de (texto + voiceId)
-  mediaUrl  String   @db.Text // URL pública donde está guardado temporalmente
+  mediaUrl  String   @db.Text // URL pública de Supabase Storage (ya NO base64)
   mediaId   String?  // ID que devuelve WhatsApp al subirlo (opcional, dura 30 días)
+  format    String   @default("mp3") // "mp3" | "ogg"
+  sizeBytes Int      @default(0)
   createdAt DateTime @default(now())
-  expiresAt DateTime? // Si usamos un storage que expira
+  expiresAt DateTime? // TTL para limpieza automática
 }
 
 model MediaCache {
@@ -290,7 +329,7 @@ model MediaCache {
 
 model ApiUsageLog {
   id        String   @id @default(cuid())
-  service   String   // "whatsapp" | "elevenlabs"
+  service   String   // "whatsapp" | "elevenlabs" | "twilio"
   operation String   // "send_template", "send_text", "send_audio", "tts_generate", "bulk_template"
   cost      Float    @default(0)
   units     Int      @default(0) // chars for ElevenLabs, messages for WA
