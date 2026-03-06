@@ -10,6 +10,7 @@ import {
     getWhatsAppConfig,
     callTwilioAPI,
 } from "@/lib/whatsapp";
+import { SenderPool, SenderConfig, callTwilioWithSender } from "@/lib/sender-pool";
 
 const qstash = new Client({
     token: process.env.QSTASH_TOKEN || "NO_TOKEN",
@@ -36,7 +37,8 @@ async function withRetry<T>(fn: () => Promise<T>, maxRetries = 2, baseDelayMs = 
 
 // Helper to send an audio buffer to a contact via Twilio or Meta
 async function sendAudioToContact(
-    config: any, isTwilio: boolean, phone: string, audioBuffer: Buffer, format: 'ogg' | 'mp3' = 'ogg'
+    config: any, isTwilio: boolean, phone: string, audioBuffer: Buffer, format: 'ogg' | 'mp3' = 'ogg',
+    sender?: SenderConfig | null
 ) {
     if (isTwilio) {
         const crypto = await import("crypto");
@@ -50,11 +52,18 @@ async function sendAudioToContact(
             create: { hash, mimeType, data: audioBuffer.toString("base64") },
         });
         const appUrl = (process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "");
-        await callTwilioAPI(config, {
-            From: `whatsapp:${config.twilioNumber}`,
-            To: `whatsapp:${phone}`,
-            MediaUrl: `${appUrl}/api/media-cache/${hash}.${ext}`,
-        });
+        if (sender) {
+            await callTwilioWithSender(sender, {
+                To: `whatsapp:${phone}`,
+                MediaUrl: `${appUrl}/api/media-cache/${hash}.${ext}`,
+            });
+        } else {
+            await callTwilioAPI(config, {
+                From: `whatsapp:${config.twilioNumber}`,
+                To: `whatsapp:${phone}`,
+                MediaUrl: `${appUrl}/api/media-cache/${hash}.${ext}`,
+            });
+        }
     } else {
         const mimeType = format === 'mp3' ? 'audio/mpeg' : 'audio/ogg';
         const mediaId = await uploadMediaToWhatsApp(audioBuffer, mimeType);
@@ -156,6 +165,15 @@ async function handleSequenceContinue(jobId: string): Promise<Response> {
 
     const campaign = (job as any).campaign;
     const config = await getWhatsAppConfig();
+
+    // Cargar el sender original que envió el template inicial.
+    // Así el audio y la imagen de la secuencia salen del mismo número.
+    let sender: SenderConfig | null = null;
+    if ((job as any).senderId) {
+        const pool = new SenderPool();
+        await pool.initialize();
+        sender = pool.getSenderById((job as any).senderId);
+    }
     if (!config || !config.isConfigured) {
         await prisma.campaignJob.update({ where: { id: jobId }, data: { status: "failed", errorMessage: "WhatsApp config missing" } });
         return NextResponse.json({ error: "WhatsApp config missing" }, { status: 500 });
@@ -243,7 +261,7 @@ async function handleSequenceContinue(jobId: string): Promise<Response> {
 
             // Concatenate: strip ID3 headers for clean MP3 concat
             const combinedBuffer = Buffer.concat([stripMp3Headers(greetingBuffer), stripMp3Headers(preRecordedBuffer)]);
-            await sendAudioToContact(config, isTwilio, job.phone, combinedBuffer, 'mp3');
+            await sendAudioToContact(config, isTwilio, job.phone, combinedBuffer, 'mp3', sender);
 
         } else {
             // FULL AI MODE: MP3 for Twilio, OGG Opus for Meta
@@ -268,7 +286,7 @@ async function handleSequenceContinue(jobId: string): Promise<Response> {
                     create: { hash: textHash, mediaUrl: audioBuffer.toString("base64"), expiresAt: new Date(Date.now() + 86400000) },
                 });
             }
-            await sendAudioToContact(config, isTwilio, job.phone, audioBuffer, isTwilio ? 'mp3' : 'ogg');
+            await sendAudioToContact(config, isTwilio, job.phone, audioBuffer, isTwilio ? 'mp3' : 'ogg', sender);
         }
 
         // 2b. Sleep 3s then send image
@@ -307,12 +325,15 @@ async function handleSequenceContinue(jobId: string): Promise<Response> {
                     }
                 }
                 const apiBody: Record<string, string> = {
-                    From: `whatsapp:${config.twilioNumber}`,
                     To: `whatsapp:${job.phone}`,
                     MediaUrl: imageUrl,
                 };
                 if (caption) apiBody.Body = caption;
-                await callTwilioAPI(config, apiBody);
+                if (sender) {
+                    await callTwilioWithSender(sender, apiBody);
+                } else {
+                    await callTwilioAPI(config, { From: `whatsapp:${config.twilioNumber}`, ...apiBody });
+                }
             } else {
                 await sendWhatsAppImage(job.phone, imageUrl, caption);
             }
