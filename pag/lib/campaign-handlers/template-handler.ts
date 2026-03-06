@@ -6,6 +6,7 @@
 
 import { CampaignHandler, CampaignContext, JobResult, resolveContactField } from "./index"
 import { SenderConfig, callTwilioWithSender } from "@/lib/sender-pool"
+import { prisma } from "@/lib/prisma"
 
 const handler: CampaignHandler = {
     async prepareBatch(_ctx, _jobs, _contactMap) {
@@ -36,8 +37,30 @@ async function sendTwilioTemplate(
     sender: SenderConfig
 ): Promise<JobResult> {
     const { campaign, mapping } = ctx
-    const templateWabaId = campaign.template?.wabaId
     const sortedEntries = Object.entries(mapping).sort(([a], [b]) => Number(a) - Number(b))
+
+    // Look up the ContentSid (HX...) for this specific sender's account.
+    // Each Twilio account has its own ContentSids, so we must use the one
+    // that belongs to the sender currently processing this job.
+    let templateWabaId = campaign.template?.wabaId
+    const templateName = campaign.template?.name
+    const templateLanguage = campaign.template?.language
+
+    if (templateName && templateLanguage && sender.phoneNumber) {
+        const senderTemplate = await prisma.whatsAppTemplate.findUnique({
+            where: {
+                name_language_senderPhone: {
+                    name: templateName,
+                    language: templateLanguage,
+                    senderPhone: sender.phoneNumber,
+                },
+            },
+            select: { wabaId: true },
+        })
+        if (senderTemplate?.wabaId) {
+            templateWabaId = senderTemplate.wabaId
+        }
+    }
 
     if (templateWabaId?.startsWith("HX")) {
         // ContentSid — funciona fuera de la ventana de 24h
@@ -61,7 +84,10 @@ async function sendTwilioTemplate(
             cost: Math.abs(parseFloat(data.price || "0")),
         }
     } else {
-        // Fallback: texto plano con sustitución de variables
+        // Fallback: texto plano con sustitución de variables.
+        // WARNING: esto fallará con 63016 si el contacto está fuera de la ventana de 24h.
+        // Para evitarlo, sincroniza los templates desde la cuenta Twilio de cada sender.
+        console.warn(`[TemplateHandler] Sender ${sender.phoneNumber} no tiene ContentSid (HX...) para template "${templateName}". Enviando texto plano — puede fallar con 63016.`)
         const parsedComponents = campaign.template?.components
             ? JSON.parse(campaign.template.components) : []
         const templateBodyText = parsedComponents.find((c: any) => c.type === "BODY")?.text || ""
