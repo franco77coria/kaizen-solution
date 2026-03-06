@@ -17,6 +17,8 @@ export async function GET(request: NextRequest) {
         const page = Math.max(1, parseInt(searchParams.get("page") || "1"))
         const pageSize = Math.min(200, Math.max(1, parseInt(searchParams.get("pageSize") || "50")))
 
+        const hasMessages = searchParams.get("hasMessages") === "true"
+
         const whereClause: any = {}
         if (listId) {
             whereClause.listSubscriptions = {
@@ -29,12 +31,15 @@ export async function GET(request: NextRequest) {
                 { name: { contains: search, mode: "insensitive" } },
             ]
         }
+        if (hasMessages) {
+            whereClause.lastMessageAt = { not: null }
+        }
 
         const [total, contacts] = await Promise.all([
             prisma.whatsAppContact.count({ where: whereClause }),
             prisma.whatsAppContact.findMany({
                 where: whereClause,
-                orderBy: { lastMessageAt: "desc" },
+                orderBy: [{ lastMessageAt: { sort: "desc", nulls: "last" } }],
                 skip: (page - 1) * pageSize,
                 take: pageSize,
             }),

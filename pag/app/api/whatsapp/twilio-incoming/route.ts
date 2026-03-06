@@ -28,15 +28,16 @@ export async function POST(request: NextRequest) {
 
         if (numMedia > 0) {
             const mediaType = params.get("MediaContentType0") || ""
+            const mediaUrl = params.get("MediaUrl0") || ""
             if (mediaType.startsWith("image/")) {
                 type = "image"
-                content = "[Imagen]" + (body ? ": " + body : "")
+                content = (mediaUrl ? `[Imagen:${mediaUrl}]` : "[Imagen]") + (body ? ": " + body : "")
             } else if (mediaType.startsWith("audio/") || mediaType.startsWith("video/ogg")) {
                 type = "audio"
-                content = "[Audio]"
+                content = mediaUrl ? `[Audio:${mediaUrl}]` : "[Audio]"
             } else if (mediaType.startsWith("video/")) {
                 type = "video"
-                content = "[Video]"
+                content = mediaUrl ? `[Video:${mediaUrl}]` : "[Video]"
             } else {
                 type = "document"
                 content = "[Documento]"

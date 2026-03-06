@@ -38,6 +38,10 @@ export default function MensajesPage() {
     const [voices, setVoices] = useState<{ voice_id: string, name: string }[]>([])
     const [selectedVoice, setSelectedVoice] = useState<string>('')
     const [selectedFile, setSelectedFile] = useState<File | null>(null)
+    const [convPage, setConvPage] = useState(1)
+    const [hasMoreConvs, setHasMoreConvs] = useState(false)
+    const [loadingMoreConvs, setLoadingMoreConvs] = useState(false)
+
     const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false)
     const [newChatPhone, setNewChatPhone] = useState('')
 
@@ -50,7 +54,7 @@ export default function MensajesPage() {
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     useEffect(() => {
-        loadConversations()
+        loadConversations(1, false)
         loadVoices()
         loadTemplates()
     }, [])
@@ -63,15 +67,33 @@ export default function MensajesPage() {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }, [messages])
 
-    const loadConversations = async () => {
+    const CONV_PAGE_SIZE = 30
+
+    const loadConversations = async (page = 1, append = false) => {
+        if (page === 1 && !append) setLoading(true)
+        else setLoadingMoreConvs(true)
         try {
-            const res = await fetch('/api/whatsapp/contacts?pageSize=500')
+            const params = new URLSearchParams({
+                pageSize: String(CONV_PAGE_SIZE),
+                page: String(page),
+                hasMessages: 'true',
+            })
+            const res = await fetch(`/api/whatsapp/contacts?${params}`)
             const data = await res.json()
-            setConversations(Array.isArray(data) ? data : (data.contacts || []))
+            const contacts = Array.isArray(data) ? data : (data.contacts || [])
+            const pagination = data.pagination || null
+            if (append) {
+                setConversations(prev => [...prev, ...contacts])
+            } else {
+                setConversations(contacts)
+            }
+            setHasMoreConvs(pagination ? page < pagination.totalPages : false)
+            setConvPage(page)
         } catch (e) {
             console.error(e)
         } finally {
             setLoading(false)
+            setLoadingMoreConvs(false)
         }
     }
 
@@ -301,7 +323,8 @@ export default function MensajesPage() {
                             {search ? 'Sin resultados' : 'No hay conversaciones'}
                         </div>
                     ) : (
-                        filtered.map((c) => {
+                        <>
+                        {filtered.map((c) => {
                             const unread = c.unreadCount || 0
                             return (
                                 <button
@@ -341,7 +364,19 @@ export default function MensajesPage() {
                                     </div>
                                 </button>
                             )
-                        })
+                        })}
+                        {hasMoreConvs && !search && (
+                            <button
+                                onClick={() => loadConversations(convPage + 1, true)}
+                                disabled={loadingMoreConvs}
+                                className="w-full py-3 text-xs text-gray-500 hover:text-green-600 hover:bg-green-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                            >
+                                {loadingMoreConvs ? (
+                                    <span className="w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
+                                ) : 'Cargar más conversaciones'}
+                            </button>
+                        )}
+                        </>
                     )}
                 </div>
             </div>
@@ -643,43 +678,73 @@ function MessageContent({ msg }: { msg: Message }) {
     }
 
     if (type === 'image') {
-        const caption = content.replace(/^\[(?:Imagen|Archivo:[^\]]*)\]:?\s*/, '').trim()
+        // Extract URL from "[Imagen:URL]: caption" format (inbound Twilio media)
+        const urlMatch = content.match(/^\[Imagen:(https?:\/\/[^\]]+)\]/)
+        const mediaUrl = urlMatch ? urlMatch[1] : null
+        const caption = content.replace(/^\[(?:Imagen(?::[^\]]*)?|Archivo:[^\]]*)\]:?\s*/, '').trim()
+        const proxyUrl = mediaUrl ? `/api/whatsapp/media-proxy?url=${encodeURIComponent(mediaUrl)}` : null
         return (
-            <div className="flex items-start gap-2">
-                <span className="text-base flex-shrink-0 mt-0.5">🖼️</span>
-                <div>
-                    <span className="inline-block text-[10px] font-bold uppercase tracking-wide text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded">
-                        Imagen
-                    </span>
-                    {caption && <p className="text-sm text-gray-600 mt-1">{caption}</p>}
-                </div>
+            <div className="space-y-1">
+                {proxyUrl ? (
+                    <img
+                        src={proxyUrl}
+                        alt="Imagen"
+                        className="rounded-lg max-w-[240px] max-h-[240px] object-cover cursor-pointer"
+                        onClick={() => window.open(proxyUrl, '_blank')}
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                    />
+                ) : (
+                    <div className="flex items-center gap-2">
+                        <span className="text-base">🖼️</span>
+                        <span className="inline-block text-[10px] font-bold uppercase tracking-wide text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded">Imagen</span>
+                    </div>
+                )}
+                {caption && <p className="text-sm text-gray-600">{caption}</p>}
             </div>
         )
     }
 
     if (type === 'audio') {
-        // Extract text from "[Audio IA: "text..."]" or just "[Audio]"
+        // Extract URL from "[Audio:URL]" (inbound Twilio) or text from "[Audio IA: "text..."]" (outbound)
+        const urlMatch = content.match(/^\[Audio:(https?:\/\/[^\]]+)\]/)
+        const mediaUrl = urlMatch ? urlMatch[1] : null
         const audioText = content.match(/\[Audio IA:\s*"(.+?)"\]/)?.[1]
+        const proxyUrl = mediaUrl ? `/api/whatsapp/media-proxy?url=${encodeURIComponent(mediaUrl)}` : null
         return (
-            <div className="flex items-start gap-2">
-                <span className="text-base flex-shrink-0 mt-0.5">🎵</span>
-                <div>
-                    <span className="inline-block text-[10px] font-bold uppercase tracking-wide text-purple-700 bg-purple-100 px-1.5 py-0.5 rounded">
-                        {audioText ? 'Audio IA' : 'Audio'}
-                    </span>
-                    {audioText && <p className="text-sm text-gray-600 mt-1 italic">&quot;{audioText}&quot;</p>}
-                </div>
+            <div className="space-y-1">
+                {proxyUrl ? (
+                    <audio controls className="max-w-[240px]" style={{ height: '36px' }}>
+                        <source src={proxyUrl} />
+                    </audio>
+                ) : (
+                    <div className="flex items-center gap-2">
+                        <span className="text-base">🎵</span>
+                        <span className="inline-block text-[10px] font-bold uppercase tracking-wide text-purple-700 bg-purple-100 px-1.5 py-0.5 rounded">
+                            {audioText ? 'Audio IA' : 'Audio'}
+                        </span>
+                    </div>
+                )}
+                {audioText && <p className="text-sm text-gray-600 italic">&quot;{audioText}&quot;</p>}
             </div>
         )
     }
 
     if (type === 'video') {
+        const urlMatch = content.match(/^\[Video:(https?:\/\/[^\]]+)\]/)
+        const mediaUrl = urlMatch ? urlMatch[1] : null
+        const proxyUrl = mediaUrl ? `/api/whatsapp/media-proxy?url=${encodeURIComponent(mediaUrl)}` : null
         return (
-            <div className="flex items-center gap-2">
-                <span className="text-base">🎬</span>
-                <span className="inline-block text-[10px] font-bold uppercase tracking-wide text-rose-700 bg-rose-100 px-1.5 py-0.5 rounded">
-                    Video
-                </span>
+            <div className="space-y-1">
+                {proxyUrl ? (
+                    <video controls className="rounded-lg max-w-[240px]">
+                        <source src={proxyUrl} />
+                    </video>
+                ) : (
+                    <div className="flex items-center gap-2">
+                        <span className="text-base">🎬</span>
+                        <span className="inline-block text-[10px] font-bold uppercase tracking-wide text-rose-700 bg-rose-100 px-1.5 py-0.5 rounded">Video</span>
+                    </div>
+                )}
             </div>
         )
     }
