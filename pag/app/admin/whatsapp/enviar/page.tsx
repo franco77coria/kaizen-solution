@@ -57,7 +57,16 @@ export default function CampanasPage() {
 
             setCampaigns(Array.isArray(campData) ? campData : [])
             setLists(Array.isArray(listData) ? listData : [])
-            setTemplates(Array.isArray(tempData) ? tempData.filter((t: any) => t.status === 'APPROVED') : [])
+            // Deduplicate by name+language — multiple rows exist (one per sender) but UI only needs unique names
+            const approved = Array.isArray(tempData) ? tempData.filter((t: any) => t.status === 'APPROVED') : []
+            const seen = new Set<string>()
+            const unique = approved.filter((t: any) => {
+                const key = `${t.name}__${t.language}`
+                if (seen.has(key)) return false
+                seen.add(key)
+                return true
+            })
+            setTemplates(unique)
             if (voiceData?.success && voiceData?.voices?.length > 0) {
                 setVoices(voiceData.voices)
                 setNewCampaign(prev => ({ ...prev, audioConfig: { ...prev.audioConfig, voiceId: voiceData.voices[0].voice_id } }))
