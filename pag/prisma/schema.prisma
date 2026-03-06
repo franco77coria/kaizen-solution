@@ -188,7 +188,7 @@ model ListSubscriber {
 
 model WhatsAppTemplate {
   id          String   @id @default(cuid())
-  wabaId      String   // ID del template en Meta
+  wabaId      String   // ID del template en Meta o ContentSid en Twilio (HX...)
   name        String
   language    String
   status      String   // APPROVED, PENDING, REJECTED
@@ -196,13 +196,14 @@ model WhatsAppTemplate {
   bodyText    String   @db.Text
   components  String   @db.Text // JSON con toda la estructura (header, body, buttons)
   variables   String   @default("[]") // JSON array de los nombres de variables mapeables
+  senderPhone String   @default("") // Número del sender asociado (vacío = config global)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   // Relaciones
   campaigns WhatsAppCampaign[]
 
-  @@unique([name, language])
+  @@unique([name, language, senderPhone])
 }
 
 model WhatsAppCampaign {
