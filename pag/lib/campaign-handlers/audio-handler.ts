@@ -170,11 +170,30 @@ async function buildHybridAudio(prompt: string, audioConfig: any, isTwilio: bool
     const cached = await prisma.audioMessageCache.findUnique({ where: { hash: greetingHash } })
 
     let greetingBuffer: Buffer
-    if (cached?.mediaUrl) {
-        // Descargar del Storage
-        const res = await fetch(cached.mediaUrl)
-        greetingBuffer = Buffer.from(await res.arrayBuffer())
+    if (cached?.mediaUrl && cached.mediaUrl.startsWith("http")) {
+        try {
+            const res = await fetch(cached.mediaUrl)
+            if (res.ok) {
+                greetingBuffer = Buffer.from(await res.arrayBuffer())
+            } else {
+                const result = await withRetry(
+                    () => generateAudio(prompt, audioConfig.voiceId, undefined, "mp3_44100_128"),
+                    2, 500
+                )
+                greetingBuffer = result.audioBuffer
+            }
+        } catch {
+            await prisma.audioMessageCache.delete({ where: { hash: greetingHash } })
+            const result = await withRetry(
+                () => generateAudio(prompt, audioConfig.voiceId, undefined, "mp3_44100_128"),
+                2, 500
+            )
+            greetingBuffer = result.audioBuffer
+        }
     } else {
+        if (cached?.mediaUrl) {
+            await prisma.audioMessageCache.delete({ where: { hash: greetingHash } })
+        }
         // Generar en el momento (fallback si el pre-warm falló)
         const result = await withRetry(
             () => generateAudio(prompt, audioConfig.voiceId, undefined, "mp3_44100_128"),
@@ -195,9 +214,17 @@ async function buildFullAIAudio(prompt: string, audioConfig: any, isTwilio: bool
     const textHash = crypto.createHash("sha256").update(`${cachePrefix}${prompt}`).digest("hex").substring(0, 32)
     const cached = await prisma.audioMessageCache.findUnique({ where: { hash: textHash } })
 
-    if (cached?.mediaUrl) {
-        const res = await fetch(cached.mediaUrl)
-        return Buffer.from(await res.arrayBuffer())
+    if (cached?.mediaUrl && cached.mediaUrl.startsWith("http")) {
+        try {
+            const res = await fetch(cached.mediaUrl)
+            if (res.ok) return Buffer.from(await res.arrayBuffer())
+        } catch {
+            // URL inválida o caída, regenerar
+            await prisma.audioMessageCache.delete({ where: { hash: textHash } })
+        }
+    } else if (cached?.mediaUrl) {
+        // mediaUrl contiene datos binarios en vez de URL (cache corrupto), limpiar
+        await prisma.audioMessageCache.delete({ where: { hash: textHash } })
     }
 
     // Fallback: generar
