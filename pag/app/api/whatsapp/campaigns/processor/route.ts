@@ -751,7 +751,26 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
                     }
 
                 } else if (isTwilio) {
-                    const templateWabaId = campaign.template?.wabaId;
+                    // Look up the ContentSid for the global config number specifically.
+                    // campaign.template?.wabaId may belong to a different sender's account
+                    // after per-sender syncs, causing 63016 if used with global credentials.
+                    let templateWabaId = campaign.template?.wabaId;
+                    const templateName = campaign.template?.name;
+                    const templateLanguage = campaign.template?.language;
+                    if (templateName && templateLanguage && config.twilioNumber) {
+                        const senderTemplate = await prisma.whatsAppTemplate.findUnique({
+                            where: {
+                                name_language_senderPhone: {
+                                    name: templateName,
+                                    language: templateLanguage,
+                                    senderPhone: config.twilioNumber,
+                                },
+                            },
+                            select: { wabaId: true },
+                        });
+                        if (senderTemplate?.wabaId) templateWabaId = senderTemplate.wabaId;
+                    }
+
                     const sortedEntries = Object.entries(mapping).sort(([a], [b]) => Number(a) - Number(b));
 
                     if (templateWabaId?.startsWith("HX")) {
