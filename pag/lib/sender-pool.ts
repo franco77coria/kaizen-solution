@@ -322,22 +322,32 @@ export async function testSenderConnection(accountSid: string, authToken: string
 }
 
 export async function getAllSenders() {
-    return prisma.twilioSender.findMany({
-        orderBy: { createdAt: "asc" },
-        select: {
-            id: true,
-            name: true,
-            phoneNumber: true,
-            messagingServiceSid: true,
-            trustLevel: true,
-            maxMps: true,
-            sentToday: true,
-            isActive: true,
-            isHealthy: true,
-            lastError: true,
-            lastUsedAt: true,
-            totalSent: true,
-            createdAt: true,
-        },
-    })
+    const [senders, templateCounts] = await Promise.all([
+        prisma.twilioSender.findMany({
+            orderBy: { createdAt: "asc" },
+            select: {
+                id: true,
+                name: true,
+                phoneNumber: true,
+                messagingServiceSid: true,
+                trustLevel: true,
+                maxMps: true,
+                sentToday: true,
+                isActive: true,
+                isHealthy: true,
+                lastError: true,
+                lastUsedAt: true,
+                totalSent: true,
+                createdAt: true,
+            },
+        }),
+        prisma.whatsAppTemplate.groupBy({
+            by: ["senderPhone"],
+            where: { status: "APPROVED" },
+            _count: { id: true },
+        }),
+    ])
+
+    const countMap = new Map(templateCounts.map(r => [r.senderPhone, r._count.id]))
+    return senders.map(s => ({ ...s, templateCount: countMap.get(s.phoneNumber) ?? 0 }))
 }

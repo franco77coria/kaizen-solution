@@ -35,6 +35,7 @@ interface Sender {
     lastUsedAt: string | null
     totalSent: number
     createdAt: string
+    templateCount: number
 }
 
 type TrustLevel = 'new' | 'standard' | 'high'
@@ -511,10 +512,14 @@ export default function SendersPage() {
                                                     </div>
                                                 )}
 
-                                                {/* Sent today */}
+                                                {/* Sent today + template count */}
                                                 <div className="flex items-center gap-3">
                                                     <span className="text-[11px] text-gray-400">
                                                         {sender.sentToday.toLocaleString()} enviados hoy · Sin límite
+                                                    </span>
+                                                    <span className={`text-[11px] font-medium flex items-center gap-1 ${sender.templateCount === 0 ? 'text-red-500' : 'text-blue-500'}`}>
+                                                        <FileText size={11} />
+                                                        {sender.templateCount === 0 ? 'Sin plantillas sincronizadas' : `${sender.templateCount} plantillas`}
                                                     </span>
                                                 </div>
 
