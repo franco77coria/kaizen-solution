@@ -19,7 +19,7 @@ const THROTTLE_MS = 150;
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
 // Retry helper with exponential backoff (for ElevenLabs rate limits at scale)
-async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3, baseDelayMs = 2000): Promise<T> {
+async function withRetry<T>(fn: () => Promise<T>, maxRetries = 2, baseDelayMs = 500): Promise<T> {
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
         try {
             return await fn();
@@ -202,7 +202,7 @@ async function handleSequenceContinue(jobId: string): Promise<Response> {
                 // Generate AI greeting in MP3 format (concatenation-friendly)
                 const result = await withRetry(
                     () => generateAudio(audioPrompt, audioConfig.voiceId, undefined, "mp3_44100_128"),
-                    3, 2000
+                    2, 500
                 );
                 greetingBuffer = result.audioBuffer;
                 await prisma.audioMessageCache.upsert({
@@ -259,7 +259,7 @@ async function handleSequenceContinue(jobId: string): Promise<Response> {
                     () => isTwilio
                         ? generateAudio(audioPrompt, audioConfig.voiceId, undefined, "mp3_44100_128")
                         : generateAudioForWhatsApp(audioPrompt, audioConfig.voiceId),
-                    3, 2000
+                    2, 500
                 );
                 audioBuffer = result.audioBuffer;
                 await prisma.audioMessageCache.upsert({
@@ -520,6 +520,58 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
             }
         };
 
+        // Pre-warm: for audio campaigns, generate all unique prompts in parallel before the send loop
+        // This eliminates per-message ElevenLabs latency and reduces rate-limit exposure
+        if (isAudio) {
+            const crypto = await import("crypto");
+            const promptMap = new Map<string, string>(); // hash → prompt
+
+            for (const job of pendingJobs) {
+                const contact = contactMap.get(job.phone) || null;
+                let prompt = audioConfig.prompt || "";
+                for (const [varKey, col] of Object.entries(mapping)) {
+                    prompt = prompt.replace(new RegExp(`\\{${varKey}\\}`, 'g'), resolveContactField(contact, col as string));
+                }
+                // IA+Grabado always uses mp3:, Full AI uses mp3: for Twilio, "" for Meta
+                const prefix = audioConfig.preRecordedAudioUrl ? "mp3:" : (isTwilio ? "mp3:" : "");
+                const hash = crypto.createHash("sha256").update(`${prefix}${prompt}`).digest("hex").substring(0, 32);
+                if (!promptMap.has(hash)) promptMap.set(hash, prompt);
+            }
+
+            const existing = await prisma.audioMessageCache.findMany({
+                where: { hash: { in: Array.from(promptMap.keys()) } },
+                select: { hash: true },
+            });
+            const cachedSet = new Set(existing.map(e => e.hash));
+            const uncached = Array.from(promptMap.entries()).filter(([h]) => !cachedSet.has(h));
+
+            if (uncached.length > 0) {
+                console.log(`[AudioPrewarm] Generating ${uncached.length} unique audio(s) in parallel...`);
+                const PREWARM_CONCURRENCY = 5;
+                for (let pi = 0; pi < uncached.length; pi += PREWARM_CONCURRENCY) {
+                    const chunk = uncached.slice(pi, pi + PREWARM_CONCURRENCY);
+                    await Promise.allSettled(chunk.map(async ([hash, prompt]) => {
+                        try {
+                            const useMp3 = audioConfig.preRecordedAudioUrl || isTwilio;
+                            const result = await withRetry(
+                                () => useMp3
+                                    ? generateAudio(prompt, audioConfig.voiceId, undefined, "mp3_44100_128")
+                                    : generateAudioForWhatsApp(prompt, audioConfig.voiceId),
+                                2, 500
+                            );
+                            await prisma.audioMessageCache.upsert({
+                                where: { hash },
+                                update: { mediaUrl: result.audioBuffer.toString("base64") },
+                                create: { hash, mediaUrl: result.audioBuffer.toString("base64"), expiresAt: new Date(Date.now() + 86400000) },
+                            });
+                        } catch (e: any) {
+                            console.warn(`[AudioPrewarm] Failed for hash ${hash}: ${e.message}`);
+                        }
+                    }));
+                }
+            }
+        }
+
         for (let i = 0; i < pendingJobs.length; i++) {
             const job = pendingJobs[i];
             const contact = contactMap.get(job.phone) || null;
@@ -550,7 +602,7 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
                         } else {
                             const result = await withRetry(
                                 () => generateAudio(prompt, audioConfig.voiceId, undefined, "mp3_44100_128"),
-                                3, 2000
+                                2, 500
                             );
                             greetingBuf = result.audioBuffer;
                             await prisma.audioMessageCache.upsert({
@@ -591,13 +643,26 @@ export const POST = verifySignatureAppRouter(async (req: Request) => {
                         finalAudioBuffer = Buffer.concat([stripMp3Headers(greetingBuf), stripMp3Headers(preRecBuf)]);
                     } else {
                         // Full AI: MP3 for Twilio, OGG Opus for Meta
-                        const result = await withRetry(
-                            () => isTwilio
-                                ? generateAudio(prompt, audioConfig.voiceId, undefined, "mp3_44100_128")
-                                : generateAudioForWhatsApp(prompt, audioConfig.voiceId),
-                            3, 2000
-                        );
-                        finalAudioBuffer = result.audioBuffer;
+                        const crypto = await import("crypto");
+                        const cachePrefix = isTwilio ? "mp3:" : "";
+                        const textHash = crypto.createHash("sha256").update(`${cachePrefix}${prompt}`).digest("hex").substring(0, 32);
+                        const cachedAudio = await prisma.audioMessageCache.findUnique({ where: { hash: textHash } });
+                        if (cachedAudio) {
+                            finalAudioBuffer = Buffer.from(cachedAudio.mediaUrl, 'base64');
+                        } else {
+                            const result = await withRetry(
+                                () => isTwilio
+                                    ? generateAudio(prompt, audioConfig.voiceId, undefined, "mp3_44100_128")
+                                    : generateAudioForWhatsApp(prompt, audioConfig.voiceId),
+                                2, 500
+                            );
+                            finalAudioBuffer = result.audioBuffer;
+                            await prisma.audioMessageCache.upsert({
+                                where: { hash: textHash },
+                                update: { mediaUrl: finalAudioBuffer.toString("base64") },
+                                create: { hash: textHash, mediaUrl: finalAudioBuffer.toString("base64"), expiresAt: new Date(Date.now() + 86400000) },
+                            });
+                        }
                     }
 
                     // Send the audio
