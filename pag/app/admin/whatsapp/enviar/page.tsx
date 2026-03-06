@@ -859,8 +859,8 @@ export default function CampanasPage() {
                                 </div>
                             )}
 
-                            {/* Variables mapping para Type = Template */}
-                            {newCampaign.type === 'template' && selectedTemplate && (() => {
+                            {/* Variables mapping para Type = Template o Sequence */}
+                            {(newCampaign.type === 'template' || newCampaign.type === 'sequence') && selectedTemplate && (() => {
                                 const detectedVars: string[] = []
                                 try {
                                     const comps = selectedTemplate.components ? (typeof selectedTemplate.components === 'string' ? JSON.parse(selectedTemplate.components) : selectedTemplate.components) : []
