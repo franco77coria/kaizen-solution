@@ -397,14 +397,14 @@ export default function SendersPage() {
                                     value={form.trustLevel}
                                     onChange={(e) => {
                                         const tl = e.target.value as TrustLevel
-                                        const mpsMap: Record<TrustLevel, number> = { new: 1, standard: 10, high: 80 }
+                                        const mpsMap: Record<TrustLevel, number> = { new: 1, standard: 10, high: 50 }
                                         setForm({ ...form, trustLevel: tl, maxMps: mpsMap[tl] })
                                     }}
                                     className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-400"
                                 >
                                     <option value="new">🔵 Nuevo (1 MPS) — Número recién registrado</option>
                                     <option value="standard">🟢 Estándar (10 MPS) — Días/semanas de uso</option>
-                                    <option value="high">⚡ Alto (80 MPS) — Cuenta establecida</option>
+                                    <option value="high">⚡ Alto (50 MPS) — Cuenta establecida</option>
                                 </select>
                             </div>
 

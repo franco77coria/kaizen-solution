@@ -204,7 +204,7 @@ export function getDelayForTrustLevel(trustLevel: string): number {
     switch (trustLevel) {
         case "new": return 1000      // 1 MPS
         case "standard": return 100  // 10 MPS
-        case "high": return 13       // ~80 MPS
+        case "high": return 20       // ~50 MPS
         default: return 200          // Conservador
     }
 }

@@ -16,7 +16,7 @@ const qstash = new Client({
     token: process.env.QSTASH_TOKEN || "NO_TOKEN",
 });
 
-const THROTTLE_MS = 150;
+const THROTTLE_MS = 20; // ~50 MPS (1000ms / 50 = 20ms por mensaje)
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
 // Retry helper with exponential backoff (for ElevenLabs rate limits at scale)

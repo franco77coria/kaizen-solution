@@ -25,6 +25,8 @@ const qstash = new Client({
     token: process.env.QSTASH_TOKEN || "NO_TOKEN",
 })
 
+const MAX_MPS_CAP = 50 // Límite global de mensajes por segundo
+
 // ─── Worker Entry Point ───
 
 export const POST = verifySignatureAppRouter(async (req: Request) => {
@@ -220,8 +222,8 @@ async function processBatchWithSender(
         throw prepareErr
     }
 
-    // Rate limiter adaptativo para este sender
-    const rateLimiter = new AdaptiveRateLimiter(sender.maxMps)
+    // Rate limiter adaptativo para este sender (con cap global de MAX_MPS_CAP)
+    const rateLimiter = new AdaptiveRateLimiter(Math.min(sender.maxMps, MAX_MPS_CAP))
 
     let successCount = 0
     let failCount = 0
