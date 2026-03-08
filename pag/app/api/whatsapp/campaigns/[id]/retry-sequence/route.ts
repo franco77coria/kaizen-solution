@@ -53,9 +53,11 @@ export async function POST(
     })
 
     // Encolar sequence_continue para cada job via QStash
-    const webhookUrl = process.env.UPSTASH_WEBHOOK_URL
-    if (!webhookUrl) {
-        return NextResponse.json({ error: "UPSTASH_WEBHOOK_URL no configurado" }, { status: 500 })
+    // Mismo fallback que usa el worker: UPSTASH_WEBHOOK_URL o la URL del worker
+    const appUrl = (process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "")
+    const webhookUrl = process.env.UPSTASH_WEBHOOK_URL || `${appUrl}/api/whatsapp/campaigns/worker`
+    if (!webhookUrl || webhookUrl === "/api/whatsapp/campaigns/worker") {
+        return NextResponse.json({ error: "No se pudo determinar la URL del webhook" }, { status: 500 })
     }
 
     let queued = 0
