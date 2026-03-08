@@ -94,6 +94,7 @@ export default function CampaignDetailPage() {
     const [page, setPage] = useState(1)
     const [actioning, setActioning] = useState(false)
     const [deleting, setDeleting] = useState(false)
+    const [retrying, setRetrying] = useState(false)
 
     const load = useCallback(async (silent = false) => {
         if (!silent) setLoading(true)
@@ -140,6 +141,25 @@ export default function CampaignDetailPage() {
         await fetch(`/api/whatsapp/campaigns/${id}/${action}`, { method: 'POST' })
         await load()
         setActioning(false)
+    }
+
+    const handleRetrySequence = async () => {
+        if (!confirm('¿Reintentar el envío de audio/imagen para todos los jobs fallidos?')) return
+        setRetrying(true)
+        try {
+            const res = await fetch(`/api/whatsapp/campaigns/${id}/retry-sequence`, { method: 'POST' })
+            const json = await res.json()
+            if (res.ok) {
+                alert(json.message || `${json.retried} jobs encolados`)
+                await load()
+            } else {
+                alert(json.error || 'Error al reintentar')
+            }
+        } catch {
+            alert('Error al reintentar')
+        } finally {
+            setRetrying(false)
+        }
     }
 
     if (loading) {
@@ -191,7 +211,16 @@ export default function CampaignDetailPage() {
                 </div>
 
                 {/* Action buttons */}
-                <div className="flex gap-2 shrink-0">
+                <div className="flex gap-2 shrink-0 flex-wrap">
+                    {campaign.type === 'sequence' && counts.failed > 0 && (
+                        <button
+                            onClick={handleRetrySequence}
+                            disabled={retrying}
+                            className="px-4 py-2 text-sm font-medium text-orange-700 bg-orange-50 rounded-xl hover:bg-orange-100 disabled:opacity-50 transition-colors"
+                        >
+                            {retrying ? 'Encolando...' : `Reintentar audio fallido (${counts.failed})`}
+                        </button>
+                    )}
                     {campaign.status === 'draft' && (
                         <button
                             onClick={() => handleAction('start')}
