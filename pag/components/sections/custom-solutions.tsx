@@ -3,13 +3,16 @@
 import { useEffect, useRef } from 'react'
 
 import { motion } from 'framer-motion'
-import { ShoppingCart, Calendar, Package, Zap, TrendingUp, LucideIcon, Briefcase } from 'lucide-react'
+import { ShoppingCart, Calendar, Package, Zap, TrendingUp, LucideIcon, Briefcase, Smartphone, Globe, LayoutDashboard } from 'lucide-react'
 
 const iconMap: Record<string, LucideIcon> = {
     'ERP/CRM': Package,
     'Agendamiento': Calendar,
     'E-commerce': ShoppingCart,
     'Automatización': Zap,
+    'App Móvil': Smartphone,
+    'Desarrollo Web': Globe,
+    'Dashboard': LayoutDashboard,
     'General': Briefcase
 }
 
@@ -30,39 +33,57 @@ interface CustomSolutionsProps {
 const defaultSolutions = [
     {
         id: '1',
-        title: 'Sistemas de Gestión Integral (ERP/CRM)',
-        description: 'Gestión de ventas, control de stock, órdenes de venta, producción personalizada y gestión de clientes.',
-        category: 'ERP/CRM',
-        tags: '["Ventas", "Stock", "CRM", "Producción"]',
-        clientName: 'Lubricentro',
-        results: '40% reducción en tiempo administrativo',
+        title: 'Aplicaciones Móviles Nativas',
+        description: 'Apps iOS y Android a medida con experiencia de usuario premium. Desde MVPs hasta plataformas de escala con integraciones de pago, notificaciones push y backend propio.',
+        category: 'App Móvil',
+        tags: '["iOS", "Android", "React Native", "UX Premium"]',
+        clientName: null,
+        results: '3x más retención vs apps genéricas',
     },
     {
         id: '2',
-        title: 'Sistemas de Reservación y Agendamiento',
-        description: 'Citas y turnos en tiempo real con agenda automatizada, respuestas inteligentes y formularios avanzados.',
-        category: 'Agendamiento',
-        tags: '["Reservas", "Turnos", "Automatización"]',
-        clientName: 'Sistema de Turnos',
-        results: '70% reducción en llamadas',
+        title: 'Plataformas Web Full-Stack',
+        description: 'Sitios y sistemas web de alto rendimiento: landing pages, portales corporativos, SaaS y marketplaces. SEO técnico, velocidad de carga optimizada y diseño que convierte.',
+        category: 'Desarrollo Web',
+        tags: '["Next.js", "SEO", "Performance", "CMS"]',
+        clientName: null,
+        results: '90+ Lighthouse score garantizado',
     },
     {
         id: '3',
-        title: 'Comercio Electrónico y E-commerce',
-        description: 'Páginas de venta con seguimiento de inventario automatizado y panel de administración.',
-        category: 'E-commerce',
-        tags: '["Tienda Online", "Inventario", "Pagos"]',
-        clientName: 'E-commerce Personalizado',
-        results: '150% aumento en ventas online',
+        title: 'Dashboards y Paneles de Control',
+        description: 'Visualización de datos en tiempo real, KPIs ejecutivos, reportes interactivos y business intelligence. Conectamos tus fuentes de datos y los convertimos en decisiones.',
+        category: 'Dashboard',
+        tags: '["BI", "Tiempo Real", "KPIs", "Analytics"]',
+        clientName: null,
+        results: '+60% velocidad de decisión',
     },
     {
         id: '4',
+        title: 'Sistemas ERP/CRM a Medida',
+        description: 'Gestión integral de ventas, stock, producción y clientes. Sin licencias costosas: software 100% propio que crece con tu empresa y se adapta a tus procesos.',
+        category: 'ERP/CRM',
+        tags: '["Ventas", "Inventario", "CRM", "Producción"]',
+        clientName: null,
+        results: '40% reducción en tiempo administrativo',
+    },
+    {
+        id: '5',
+        title: 'E-commerce y Tiendas Online',
+        description: 'Plataformas de venta online con gestión de inventario automatizada, múltiples medios de pago, panel de administración y estrategia de conversión integrada.',
+        category: 'E-commerce',
+        tags: '["Tienda Online", "Pagos", "Inventario", "Conversión"]',
+        clientName: null,
+        results: '150% aumento en ventas online',
+    },
+    {
+        id: '6',
         title: 'Automatización de Procesos',
-        description: 'Reducción de tareas repetitivas, optimización de tiempo y flujos automáticos personalizados.',
+        description: 'Eliminamos tareas repetitivas con flujos automáticos, bots e integraciones entre sistemas. Desde notificaciones hasta pipelines de datos complejos sin intervención humana.',
         category: 'Automatización',
-        tags: '["Bots", "Workflows", "Eficiencia"]',
-        clientName: 'Automatización Colaborativa',
-        results: '80% ahorro de tiempo',
+        tags: '["Bots", "Workflows", "Integraciones", "Eficiencia"]',
+        clientName: null,
+        results: '80% ahorro de tiempo operativo',
     },
 ]
 
