@@ -104,73 +104,107 @@ export default function PublicSectorSection() {
         const initGSAP = async () => {
             const { gsap, ScrollTrigger } = await import('@/lib/gsap-init')
 
-            ctx = gsap.context(() => {
-                // Header reveal con blur
-                if (headerRef.current) {
-                    gsap.from(headerRef.current.children, {
-                        opacity: 0,
-                        y: 50,
-                        filter: 'blur(10px)',
-                        stagger: 0.15,
-                        duration: 1,
-                        ease: 'power4.out',
-                        scrollTrigger: {
-                            trigger: headerRef.current,
-                            start: 'top 80%',
-                            toggleActions: 'play none none none',
-                        },
-                    })
-                }
+            const mm = gsap.matchMedia()
 
-                // Cards: cada una entra desde abajo con stagger
-                cardRefs.current.forEach((card, i) => {
-                    if (!card) return
-                    gsap.from(card, {
-                        opacity: 0,
-                        y: 80,
-                        scale: 0.95,
-                        duration: 0.9,
-                        ease: 'power4.out',
-                        scrollTrigger: {
-                            trigger: card,
-                            start: 'top 88%',
-                            toggleActions: 'play none none none',
-                        },
-                        delay: i * 0.12,
-                    })
-                })
+            mm.add(
+                {
+                    isDesktop: '(min-width: 768px)',
+                    isMobile: '(max-width: 767px)',
+                    reduceMotion: '(prefers-reduced-motion: reduce)',
+                },
+                (context) => {
+                    const { isDesktop, reduceMotion } = context.conditions!
+                    const dur = reduceMotion ? 0 : undefined
 
-                // Línea divisoria: width 0 → 100%
-                if (lineRef.current) {
-                    gsap.from(lineRef.current, {
-                        scaleX: 0,
-                        transformOrigin: 'left center',
-                        duration: 1.2,
-                        ease: 'power3.out',
-                        scrollTrigger: {
-                            trigger: lineRef.current,
-                            start: 'top 85%',
-                            toggleActions: 'play none none none',
-                        },
-                    })
-                }
+                    // Header reveal con blur
+                    if (headerRef.current) {
+                        gsap.from(headerRef.current.children, {
+                            opacity: 0,
+                            y: isDesktop ? 50 : 24,
+                            filter: reduceMotion ? 'none' : 'blur(10px)',
+                            stagger: 0.15,
+                            duration: dur ?? 1,
+                            ease: 'power4.out',
+                            scrollTrigger: {
+                                trigger: headerRef.current,
+                                start: 'top 80%',
+                                toggleActions: 'play none none none',
+                            },
+                        })
+                    }
 
-                // Impact items
-                if (impactRef.current) {
-                    gsap.from(impactRef.current.children, {
-                        opacity: 0,
-                        y: 30,
-                        stagger: 0.15,
-                        duration: 0.8,
-                        ease: 'power3.out',
-                        scrollTrigger: {
-                            trigger: impactRef.current,
-                            start: 'top 85%',
-                            toggleActions: 'play none none none',
-                        },
+                    // Cards: cada una entra desde abajo con stagger
+                    cardRefs.current.forEach((card, i) => {
+                        if (!card) return
+                        gsap.from(card, {
+                            opacity: 0,
+                            y: isDesktop ? 80 : 40,
+                            scale: reduceMotion ? 1 : 0.95,
+                            duration: dur ?? 0.9,
+                            ease: 'power4.out',
+                            scrollTrigger: {
+                                trigger: card,
+                                start: 'top 88%',
+                                toggleActions: 'play none none none',
+                            },
+                            delay: i * 0.12,
+                        })
+
+                        // Animate features inside each card
+                        if (!reduceMotion) {
+                            const features = card.querySelectorAll('li')
+                            gsap.from(features, {
+                                opacity: 0,
+                                x: -12,
+                                stagger: 0.06,
+                                duration: 0.4,
+                                ease: 'power2.out',
+                                scrollTrigger: {
+                                    trigger: card,
+                                    start: 'top 80%',
+                                    toggleActions: 'play none none none',
+                                },
+                                delay: 0.4 + i * 0.12,
+                            })
+                        }
                     })
+
+                    // Línea divisoria: width 0 → 100%
+                    if (lineRef.current && !reduceMotion) {
+                        gsap.from(lineRef.current, {
+                            scaleX: 0,
+                            transformOrigin: 'left center',
+                            duration: 1.2,
+                            ease: 'power3.out',
+                            scrollTrigger: {
+                                trigger: lineRef.current,
+                                start: 'top 85%',
+                                toggleActions: 'play none none none',
+                            },
+                        })
+                    }
+
+                    // Impact items
+                    if (impactRef.current) {
+                        gsap.from(impactRef.current.children, {
+                            opacity: 0,
+                            y: isDesktop ? 30 : 16,
+                            stagger: 0.15,
+                            duration: dur ?? 0.8,
+                            ease: 'power3.out',
+                            scrollTrigger: {
+                                trigger: impactRef.current,
+                                start: 'top 85%',
+                                toggleActions: 'play none none none',
+                            },
+                        })
+                    }
+
+                    return () => {}
                 }
-            })
+            )
+
+            ctx = { revert: () => mm.revert() }
         }
 
         initGSAP()
@@ -178,7 +212,7 @@ export default function PublicSectorSection() {
     }, [])
 
     return (
-        <section ref={sectionRef} id="sector-publico" className="bg-[#0a0f1e] text-white">
+        <section ref={sectionRef} id="sector-publico" className="bg-[#0a0f1e] text-white relative">
             {/* Grid pattern */}
             <div
                 className="absolute inset-0 opacity-[0.02] pointer-events-none"
@@ -208,7 +242,7 @@ export default function PublicSectorSection() {
                 </div>
 
                 {/* Cards grid */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-20">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-20">
                     {products.map((product, index) => {
                         const { Icon } = product
                         return (

@@ -1,8 +1,6 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-
-import { motion } from 'framer-motion'
 import { ShoppingCart, Calendar, Package, Zap, TrendingUp, LucideIcon, Briefcase, Smartphone, Globe, LayoutDashboard } from 'lucide-react'
 
 const iconMap: Record<string, LucideIcon> = {
@@ -89,28 +87,112 @@ const defaultSolutions = [
 
 export default function CustomSolutions({ projects = defaultSolutions }: CustomSolutionsProps) {
     const sectionRef = useRef<HTMLElement>(null)
-    const labelRef = useRef<HTMLSpanElement>(null)
+    const headerRef = useRef<HTMLDivElement>(null)
+    const gridRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
         let ctx: { revert: () => void } | null = null
 
         const initGSAP = async () => {
             const { gsap, ScrollTrigger } = await import('@/lib/gsap-init')
-            ctx = gsap.context(() => {
-                if (labelRef.current) {
-                    gsap.from(labelRef.current, {
-                        x: -30,
-                        opacity: 0,
-                        duration: 0.7,
-                        ease: 'power3.out',
-                        scrollTrigger: {
-                            trigger: sectionRef.current,
-                            start: 'top 80%',
-                            toggleActions: 'play none none none',
-                        },
-                    })
+
+            const mm = gsap.matchMedia()
+
+            mm.add(
+                {
+                    isDesktop: '(min-width: 768px)',
+                    isMobile: '(max-width: 767px)',
+                    reduceMotion: '(prefers-reduced-motion: reduce)',
+                },
+                (context) => {
+                    const { isDesktop, reduceMotion } = context.conditions!
+                    const dur = reduceMotion ? 0 : undefined
+
+                    // ── Header ──
+                    if (headerRef.current) {
+                        gsap.from(headerRef.current.children, {
+                            opacity: 0,
+                            y: isDesktop ? 40 : 20,
+                            filter: reduceMotion ? 'none' : 'blur(8px)',
+                            stagger: 0.1,
+                            duration: dur ?? 0.8,
+                            ease: 'power4.out',
+                            scrollTrigger: {
+                                trigger: headerRef.current,
+                                start: 'top 82%',
+                                toggleActions: 'play none none none',
+                            },
+                        })
+                    }
+
+                    // ── Cards: alternating left/right slide with 3D ──
+                    if (gridRef.current) {
+                        const cards = gridRef.current.querySelectorAll('.solution-card')
+
+                        cards.forEach((card, i) => {
+                            // Alternate: even from left, odd from right
+                            const fromX = isDesktop ? ((i % 2 === 0) ? -60 : 60) : 0
+                            const fromY = isDesktop ? 30 : 40
+
+                            gsap.from(card, {
+                                opacity: 0,
+                                x: reduceMotion ? 0 : fromX,
+                                y: fromY,
+                                rotateY: reduceMotion ? 0 : (isDesktop ? (i % 2 === 0 ? -8 : 8) : 0),
+                                scale: reduceMotion ? 1 : 0.92,
+                                duration: dur ?? 0.9,
+                                ease: 'power4.out',
+                                scrollTrigger: {
+                                    trigger: card,
+                                    start: 'top 88%',
+                                    toggleActions: 'play none none none',
+                                },
+                            })
+
+                            // ── Tags stagger inside each card ──
+                            if (!reduceMotion) {
+                                const tags = card.querySelectorAll('.solution-tag')
+                                if (tags.length) {
+                                    gsap.from(tags, {
+                                        opacity: 0,
+                                        scale: 0.6,
+                                        stagger: 0.05,
+                                        duration: 0.3,
+                                        ease: 'back.out(2)',
+                                        scrollTrigger: {
+                                            trigger: card,
+                                            start: 'top 80%',
+                                            toggleActions: 'play none none none',
+                                        },
+                                        delay: 0.5,
+                                    })
+                                }
+
+                                // ── Result counter: slide up with clip ──
+                                const result = card.querySelector('.solution-result')
+                                if (result) {
+                                    gsap.from(result, {
+                                        opacity: 0,
+                                        y: 20,
+                                        duration: 0.5,
+                                        ease: 'power2.out',
+                                        scrollTrigger: {
+                                            trigger: card,
+                                            start: 'top 75%',
+                                            toggleActions: 'play none none none',
+                                        },
+                                        delay: 0.6,
+                                    })
+                                }
+                            }
+                        })
+                    }
+
+                    return () => {}
                 }
-            })
+            )
+
+            ctx = { revert: () => mm.revert() }
         }
 
         initGSAP()
@@ -118,17 +200,11 @@ export default function CustomSolutions({ projects = defaultSolutions }: CustomS
     }, [])
 
     return (
-        <section ref={sectionRef} id="soluciones" className="py-28 bg-gray-50/50">
+        <section ref={sectionRef} id="soluciones" className="py-28 bg-gray-50/50" style={{ perspective: '1200px' }}>
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Section Header */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6 }}
-                    className="text-center mb-20"
-                >
-                    <span ref={labelRef} className="text-sm font-medium tracking-widest uppercase text-daylight-sky mb-4 block">
+                <div ref={headerRef} className="text-center mb-20">
+                    <span className="text-sm font-medium tracking-widest uppercase text-daylight-sky mb-4 block">
                         Soluciones
                     </span>
                     <h2 className="text-3xl md:text-5xl font-heading font-bold text-egyptian mb-5">
@@ -137,22 +213,18 @@ export default function CustomSolutions({ projects = defaultSolutions }: CustomS
                     <p className="text-lg text-slate max-w-2xl mx-auto font-light">
                         Sistemas robustos adaptados a las necesidades específicas de tu negocio
                     </p>
-                </motion.div>
+                </div>
 
                 {/* Solutions Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {projects.map((project, index) => {
+                <div ref={gridRef} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {projects.map((project) => {
                         const Icon = iconMap[project.category] || Briefcase
                         const tagsList = JSON.parse(project.tags) as string[]
 
                         return (
-                            <motion.div
+                            <div
                                 key={project.id}
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ duration: 0.6, delay: index * 0.1 }}
-                                className="group"
+                                className="solution-card group"
                             >
                                 <div className="h-full p-8 rounded-2xl border border-gray-100 bg-white hover:border-daylight-sky/30 hover:shadow-xl hover:shadow-daylight-sky/5 transition-all duration-500">
                                     <div className="flex items-start justify-between mb-5">
@@ -174,7 +246,7 @@ export default function CustomSolutions({ projects = defaultSolutions }: CustomS
                                     {/* Tags */}
                                     <div className="flex flex-wrap gap-2 mb-5">
                                         {tagsList.map((tag) => (
-                                            <span key={tag} className="text-xs text-outer-space bg-gray-50 border border-gray-100 px-2.5 py-1 rounded-full">
+                                            <span key={tag} className="solution-tag text-xs text-outer-space bg-gray-50 border border-gray-100 px-2.5 py-1 rounded-full">
                                                 {tag}
                                             </span>
                                         ))}
@@ -182,13 +254,13 @@ export default function CustomSolutions({ projects = defaultSolutions }: CustomS
 
                                     {/* Results */}
                                     {project.results && (
-                                        <div className="flex items-center gap-2 pt-5 border-t border-gray-100">
+                                        <div className="solution-result flex items-center gap-2 pt-5 border-t border-gray-100">
                                             <TrendingUp className="text-tiffany flex-shrink-0" size={16} />
                                             <span className="text-sm font-semibold text-egyptian">{project.results}</span>
                                         </div>
                                     )}
                                 </div>
-                            </motion.div>
+                            </div>
                         )
                     })}
                 </div>

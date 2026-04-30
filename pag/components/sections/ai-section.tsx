@@ -1,8 +1,6 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-
-import { motion } from 'framer-motion'
 import {
     Brain, Bot, Workflow, Sparkles, LucideIcon,
     MessageSquare, Mic2, Braces, BarChart2, Vote,
@@ -95,6 +93,9 @@ export default function AISection() {
     const phoneRef = useRef<HTMLDivElement>(null)
     const messageRefs = useRef<(HTMLDivElement | null)[]>([])
     const waSectionRef = useRef<HTMLDivElement>(null)
+    const aiHeaderRef = useRef<HTMLDivElement>(null)
+    const aiGridRef = useRef<HTMLDivElement>(null)
+    const waHeaderRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
         let ctx: { revert: () => void } | null = null
@@ -102,57 +103,128 @@ export default function AISection() {
         const initGSAP = async () => {
             const { gsap, ScrollTrigger } = await import('@/lib/gsap-init')
 
-            ctx = gsap.context(() => {
-                // Phone mockup: slide up + leve rotación
-                if (phoneRef.current) {
-                    gsap.from(phoneRef.current, {
-                        y: 70,
-                        opacity: 0,
-                        rotation: 3,
-                        duration: 0.9,
-                        ease: 'power3.out',
-                        scrollTrigger: {
-                            trigger: phoneRef.current,
-                            start: 'top 80%',
-                            toggleActions: 'play none none none',
-                        },
-                    })
-                }
+            const mm = gsap.matchMedia()
 
-                // Mensajes del mockup: entran uno a uno
-                messageRefs.current.forEach((msg, i) => {
-                    if (!msg) return
-                    gsap.from(msg, {
-                        x: 24,
-                        opacity: 0,
-                        duration: 0.5,
-                        ease: 'power2.out',
-                        scrollTrigger: {
-                            trigger: phoneRef.current,
-                            start: 'top 70%',
-                            toggleActions: 'play none none none',
-                        },
-                        delay: 0.5 + i * 0.3,
-                    })
-                })
+            mm.add(
+                {
+                    isDesktop: '(min-width: 768px)',
+                    isMobile: '(max-width: 767px)',
+                    reduceMotion: '(prefers-reduced-motion: reduce)',
+                },
+                (context) => {
+                    const { isDesktop, reduceMotion } = context.conditions!
+                    const dur = reduceMotion ? 0 : undefined
 
-                // Features list del bloque WhatsApp
-                if (waSectionRef.current) {
-                    const items = waSectionRef.current.querySelectorAll('.wa-feature-item')
-                    gsap.from(items, {
-                        opacity: 0,
-                        x: -20,
-                        stagger: 0.1,
-                        duration: 0.6,
-                        ease: 'power2.out',
-                        scrollTrigger: {
-                            trigger: waSectionRef.current,
-                            start: 'top 75%',
-                            toggleActions: 'play none none none',
-                        },
-                    })
+                    // ── AI section header ──
+                    if (aiHeaderRef.current) {
+                        gsap.from(aiHeaderRef.current.children, {
+                            opacity: 0,
+                            y: isDesktop ? 40 : 20,
+                            filter: reduceMotion ? 'none' : 'blur(8px)',
+                            stagger: 0.12,
+                            duration: dur ?? 0.8,
+                            ease: 'power4.out',
+                            scrollTrigger: {
+                                trigger: aiHeaderRef.current,
+                                start: 'top 82%',
+                                toggleActions: 'play none none none',
+                            },
+                        })
+                    }
+
+                    // ── AI feature cards: batch stagger ──
+                    if (aiGridRef.current) {
+                        const cards = aiGridRef.current.querySelectorAll('.ai-feature-card')
+                        ScrollTrigger.batch(cards, {
+                            onEnter: (batch) => {
+                                gsap.from(batch, {
+                                    opacity: 0,
+                                    y: isDesktop ? 50 : 24,
+                                    scale: reduceMotion ? 1 : 0.9,
+                                    duration: dur ?? 0.7,
+                                    stagger: 0.1,
+                                    ease: 'back.out(1.3)',
+                                    overwrite: true,
+                                })
+                            },
+                            start: 'top 88%',
+                        })
+                    }
+
+                    // ── WhatsApp header ──
+                    if (waHeaderRef.current) {
+                        gsap.from(waHeaderRef.current.children, {
+                            opacity: 0,
+                            y: isDesktop ? 40 : 20,
+                            filter: reduceMotion ? 'none' : 'blur(8px)',
+                            stagger: 0.12,
+                            duration: dur ?? 0.8,
+                            ease: 'power4.out',
+                            scrollTrigger: {
+                                trigger: waHeaderRef.current,
+                                start: 'top 82%',
+                                toggleActions: 'play none none none',
+                            },
+                        })
+                    }
+
+                    // Phone mockup: slide up + leve rotación
+                    if (phoneRef.current) {
+                        gsap.from(phoneRef.current, {
+                            y: isDesktop ? 70 : 40,
+                            opacity: 0,
+                            rotation: reduceMotion ? 0 : 3,
+                            duration: dur ?? 0.9,
+                            ease: 'power3.out',
+                            scrollTrigger: {
+                                trigger: phoneRef.current,
+                                start: 'top 80%',
+                                toggleActions: 'play none none none',
+                            },
+                        })
+                    }
+
+                    // Mensajes del mockup: entran uno a uno
+                    if (!reduceMotion) {
+                        messageRefs.current.forEach((msg, i) => {
+                            if (!msg) return
+                            gsap.from(msg, {
+                                x: 24,
+                                opacity: 0,
+                                duration: 0.5,
+                                ease: 'power2.out',
+                                scrollTrigger: {
+                                    trigger: phoneRef.current,
+                                    start: 'top 70%',
+                                    toggleActions: 'play none none none',
+                                },
+                                delay: 0.5 + i * 0.3,
+                            })
+                        })
+                    }
+
+                    // Features list del bloque WhatsApp
+                    if (waSectionRef.current) {
+                        const items = waSectionRef.current.querySelectorAll('.wa-feature-item')
+                        gsap.from(items, {
+                            opacity: 0,
+                            x: isDesktop ? -20 : -12,
+                            stagger: 0.1,
+                            duration: dur ?? 0.6,
+                            ease: 'power2.out',
+                            scrollTrigger: {
+                                trigger: waSectionRef.current,
+                                start: 'top 75%',
+                                toggleActions: 'play none none none',
+                            },
+                        })
+                    }
+
+                    return () => {}
                 }
-            })
+            )
+
+            ctx = { revert: () => mm.revert() }
         }
 
         initGSAP()
@@ -187,11 +259,8 @@ export default function AISection() {
             <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-28">
 
                 {/* ── Bloque 1: Features de IA ── */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6 }}
+                <div
+                    ref={aiHeaderRef}
                     className="text-center mb-16"
                 >
                     <span className="inline-block text-sm font-medium tracking-widest uppercase text-daylight-sky/80 border border-daylight-sky/20 rounded-full px-5 py-2 mb-6">
@@ -204,19 +273,15 @@ export default function AISection() {
                     <p className="text-lg text-white/50 max-w-2xl mx-auto font-light">
                         Soluciones de inteligencia artificial que transforman datos en decisiones estratégicas
                     </p>
-                </motion.div>
+                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
-                    {aiFeatures.map((feature, index) => {
+                <div ref={aiGridRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
+                    {aiFeatures.map((feature) => {
                         const Icon = feature.icon
                         return (
-                            <motion.div
+                            <div
                                 key={feature.title}
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ duration: 0.6, delay: index * 0.1 }}
-                                className="group"
+                                className="ai-feature-card group"
                             >
                                 <div className="h-full p-6 rounded-2xl border border-white/5 bg-white/[0.03] hover:bg-white/[0.06] hover:border-daylight-sky/20 transition-all duration-500">
                                     <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-daylight-sky/20 to-tiffany/10 flex items-center justify-center mb-5 group-hover:scale-105 transition-transform duration-300">
@@ -225,16 +290,12 @@ export default function AISection() {
                                     <h3 className="text-base font-semibold mb-2">{feature.title}</h3>
                                     <p className="text-sm text-white/50 leading-relaxed">{feature.description}</p>
                                 </div>
-                            </motion.div>
+                            </div>
                         )
                     })}
                 </div>
 
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6, delay: 0.4 }}
+                <div
                     className="text-center mb-28"
                 >
                     <button
@@ -243,18 +304,15 @@ export default function AISection() {
                     >
                         Consultar Soluciones de IA
                     </button>
-                </motion.div>
+                </div>
 
                 {/* ── Divisor ── */}
                 <div className="border-t border-white/8 mb-24" />
 
                 {/* ── Bloque 2: WhatsApp CRM + ElevenLabs ── */}
                 <div ref={waSectionRef}>
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.6 }}
+                    <div
+                        ref={waHeaderRef}
                         className="text-center mb-16"
                     >
                         <span className="inline-block text-sm font-medium tracking-widest uppercase text-tiffany/80 border border-tiffany/20 rounded-full px-5 py-2 mb-6">
@@ -270,7 +328,7 @@ export default function AISection() {
                             Una plataforma ya construida y en producción. Campañas masivas de WhatsApp con mensajes
                             de voz personalizados por cada contacto, usando ElevenLabs.
                         </p>
-                    </motion.div>
+                    </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
                         {/* Features list */}

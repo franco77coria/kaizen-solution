@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useEffect, useRef } from 'react'
 import { Mail, MapPin, Linkedin, Instagram, Facebook, Twitter, MessageCircle } from 'lucide-react'
 import KaizenLogo from '@/components/ui/kaizen-logo'
 
@@ -24,6 +25,102 @@ export default function Footer({
     twitterUrl = null
 }: FooterProps) {
     const currentYear = new Date().getFullYear()
+    const footerRef = useRef<HTMLElement>(null)
+    const logoRef = useRef<HTMLDivElement>(null)
+    const colsRef = useRef<HTMLDivElement>(null)
+    const dividerRef = useRef<HTMLDivElement>(null)
+    const bottomRef = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+        let ctx: { revert: () => void } | null = null
+
+        const initGSAP = async () => {
+            const { gsap, ScrollTrigger } = await import('@/lib/gsap-init')
+
+            const mm = gsap.matchMedia()
+
+            mm.add(
+                {
+                    isDesktop: '(min-width: 768px)',
+                    isMobile: '(max-width: 767px)',
+                    reduceMotion: '(prefers-reduced-motion: reduce)',
+                },
+                (context) => {
+                    const { isDesktop, reduceMotion } = context.conditions!
+                    const dur = reduceMotion ? 0 : undefined
+
+                    // ── Logo block: fade up ──
+                    if (logoRef.current) {
+                        gsap.from(logoRef.current, {
+                            opacity: 0,
+                            y: isDesktop ? 40 : 20,
+                            duration: dur ?? 0.8,
+                            ease: 'power4.out',
+                            scrollTrigger: {
+                                trigger: footerRef.current,
+                                start: 'top 90%',
+                                toggleActions: 'play none none none',
+                            },
+                        })
+                    }
+
+                    // ── Columns: stagger from below ──
+                    if (colsRef.current && !reduceMotion) {
+                        const columns = colsRef.current.querySelectorAll('.footer-col')
+                        gsap.from(columns, {
+                            opacity: 0,
+                            y: 30,
+                            stagger: 0.15,
+                            duration: 0.7,
+                            ease: 'power3.out',
+                            scrollTrigger: {
+                                trigger: colsRef.current,
+                                start: 'top 90%',
+                                toggleActions: 'play none none none',
+                            },
+                            delay: 0.2,
+                        })
+                    }
+
+                    // ── Divider line: scale from center ──
+                    if (dividerRef.current && !reduceMotion) {
+                        gsap.from(dividerRef.current, {
+                            scaleX: 0,
+                            duration: 1,
+                            ease: 'power3.inOut',
+                            scrollTrigger: {
+                                trigger: dividerRef.current,
+                                start: 'top 95%',
+                                toggleActions: 'play none none none',
+                            },
+                        })
+                    }
+
+                    // ── Bottom bar: fade in ──
+                    if (bottomRef.current && !reduceMotion) {
+                        gsap.from(bottomRef.current, {
+                            opacity: 0,
+                            y: 10,
+                            duration: 0.5,
+                            ease: 'power2.out',
+                            scrollTrigger: {
+                                trigger: bottomRef.current,
+                                start: 'top 95%',
+                                toggleActions: 'play none none none',
+                            },
+                        })
+                    }
+
+                    return () => {}
+                }
+            )
+
+            ctx = { revert: () => mm.revert() }
+        }
+
+        initGSAP()
+        return () => { ctx?.revert() }
+    }, [])
 
     const socialLinks = [
         { url: linkedinUrl, icon: Linkedin, label: 'LinkedIn', hoverClass: 'hover:bg-blue-600' },
@@ -33,11 +130,11 @@ export default function Footer({
     ].filter(s => s.url)
 
     return (
-        <footer className="bg-[#0a0f1e] text-white">
+        <footer ref={footerRef} className="bg-[#0a0f1e] text-white">
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-12">
+                <div ref={colsRef} className="grid grid-cols-1 md:grid-cols-12 gap-12">
                     {/* Company Info */}
-                    <div className="md:col-span-5">
+                    <div ref={logoRef} className="footer-col md:col-span-5">
                         <Link href="/" className="flex items-center gap-3 mb-5">
                             <KaizenLogo className="h-10 w-10" />
                             <div>
@@ -63,7 +160,7 @@ export default function Footer({
                                             href={social.url!}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className={`flex items-center justify-center h-9 w-9 rounded-lg bg-white/5 ${social.hoverClass} transition-all duration-300`}
+                                            className={`flex items-center justify-center h-9 w-9 rounded-lg bg-white/5 ${social.hoverClass} transition-all duration-300 hover:scale-110`}
                                             aria-label={social.label}
                                         >
                                             <Icon size={16} className="text-white/50 hover:text-white" />
@@ -75,7 +172,7 @@ export default function Footer({
                     </div>
 
                     {/* Quick Links */}
-                    <div className="md:col-span-3">
+                    <div className="footer-col md:col-span-3">
                         <h4 className="text-xs font-semibold mb-5 text-white/30 uppercase tracking-widest">Navegación</h4>
                         <ul className="space-y-3">
                             {[
@@ -86,7 +183,7 @@ export default function Footer({
                                 { href: '#contacto', label: 'Contacto' },
                             ].map((link) => (
                                 <li key={link.href}>
-                                    <Link href={link.href} className="text-sm text-white/40 hover:text-daylight-sky transition-colors">
+                                    <Link href={link.href} className="text-sm text-white/40 hover:text-daylight-sky transition-colors hover:translate-x-1 inline-block">
                                         {link.label}
                                     </Link>
                                 </li>
@@ -95,7 +192,7 @@ export default function Footer({
                     </div>
 
                     {/* Contact */}
-                    <div className="md:col-span-4">
+                    <div className="footer-col md:col-span-4">
                         <h4 className="text-xs font-semibold mb-5 text-white/30 uppercase tracking-widest">Contacto</h4>
                         <ul className="space-y-4">
                             <li className="flex items-start gap-3">
@@ -127,7 +224,8 @@ export default function Footer({
                 </div>
 
                 {/* Bottom Bar */}
-                <div className="border-t border-white/5 mt-12 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+                <div ref={dividerRef} className="border-t border-white/5 mt-12 origin-center" />
+                <div ref={bottomRef} className="pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
                     <p className="text-xs text-white/25">
                         © {currentYear} {companyName}. Todos los derechos reservados.
                     </p>

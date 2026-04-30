@@ -118,92 +118,109 @@ export default function AIVisionSection() {
         const initGSAP = async () => {
             const { gsap, ScrollTrigger } = await import('@/lib/gsap-init')
 
-            ctx = gsap.context(() => {
-                // Scan line: baja de arriba a abajo en loop
-                if (scanLineRef.current) {
-                    gsap.fromTo(
-                        scanLineRef.current,
-                        { top: '0%', opacity: 0.8 },
-                        {
-                            top: '100%',
-                            opacity: 0,
-                            duration: 2.8,
-                            repeat: -1,
-                            ease: 'none',
-                            repeatDelay: 0.5,
-                        }
-                    )
-                }
+            const mm = gsap.matchMedia()
 
-                // Heading: text scramble al entrar al viewport
-                if (headingRef.current) {
-                    const target = headingRef.current
-                    const finalText = target.textContent || ''
-                    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#!'
+            mm.add(
+                {
+                    isDesktop: '(min-width: 768px)',
+                    isMobile: '(max-width: 767px)',
+                    reduceMotion: '(prefers-reduced-motion: reduce)',
+                },
+                (context) => {
+                    const { isDesktop, reduceMotion } = context.conditions!
+                    const dur = reduceMotion ? 0 : undefined
 
-                    ScrollTrigger.create({
-                        trigger: target,
-                        start: 'top 80%',
-                        once: true,
-                        onEnter: () => {
-                            const obj = { p: 0 }
-                            gsap.to(obj, {
-                                p: 1,
-                                duration: 1.4,
-                                ease: 'power3.out',
-                                onUpdate() {
-                                    const progress = obj.p
-                                    target.textContent = finalText
-                                        .split('')
-                                        .map((char, i) => {
-                                            if (char === ' ') return ' '
-                                            if (i < Math.floor(progress * finalText.length)) return char
-                                            return chars[Math.floor(Math.random() * chars.length)]
-                                        })
-                                        .join('')
-                                },
-                                onComplete() {
-                                    target.textContent = finalText
-                                },
-                            })
-                        },
-                    })
-                }
+                    // Scan line: runs continuously (even on mobile, it's cheap)
+                    if (scanLineRef.current && !reduceMotion) {
+                        gsap.fromTo(
+                            scanLineRef.current,
+                            { top: '0%', opacity: 0.8 },
+                            {
+                                top: '100%',
+                                opacity: 0,
+                                duration: 2.8,
+                                repeat: -1,
+                                ease: 'none',
+                                repeatDelay: 0.5,
+                            }
+                        )
+                    }
 
-                // Camera mockup: entrada dramática
-                if (cameraRef.current) {
-                    gsap.from(cameraRef.current, {
-                        opacity: 0,
-                        scale: 0.88,
-                        y: 60,
-                        rotateX: 10,
-                        duration: 1.1,
-                        ease: 'power4.out',
-                        scrollTrigger: {
-                            trigger: cameraRef.current,
+                    // Heading: text scramble
+                    if (headingRef.current && !reduceMotion) {
+                        const target = headingRef.current
+                        const finalText = target.textContent || ''
+                        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#!'
+
+                        ScrollTrigger.create({
+                            trigger: target,
                             start: 'top 80%',
-                            toggleActions: 'play none none none',
-                        },
-                    })
-                }
+                            once: true,
+                            onEnter: () => {
+                                const obj = { p: 0 }
+                                gsap.to(obj, {
+                                    p: 1,
+                                    duration: 1.4,
+                                    ease: 'power3.out',
+                                    onUpdate() {
+                                        const progress = obj.p
+                                        target.textContent = finalText
+                                            .split('')
+                                            .map((char, i) => {
+                                                if (char === ' ') return ' '
+                                                if (i < Math.floor(progress * finalText.length)) return char
+                                                return chars[Math.floor(Math.random() * chars.length)]
+                                            })
+                                            .join('')
+                                    },
+                                    onComplete() {
+                                        target.textContent = finalText
+                                    },
+                                })
+                            },
+                        })
+                    }
 
-                // Use case cards: stagger reveal desde la derecha
-                caseRefs.current.forEach((el, i) => {
-                    if (!el) return
-                    gsap.from(el, {
-                        opacity: 0,
-                        x: 50,
-                        duration: 0.7,
-                        ease: 'power3.out',
-                        scrollTrigger: {
-                            trigger: el,
-                            start: 'top 88%',
-                            toggleActions: 'play none none none',
-                        },
-                        delay: i * 0.1,
+                    // Camera mockup: dramatic entrance
+                    if (cameraRef.current) {
+                        gsap.from(cameraRef.current, {
+                            opacity: 0,
+                            scale: reduceMotion ? 1 : 0.88,
+                            y: isDesktop ? 60 : 30,
+                            rotateX: reduceMotion ? 0 : (isDesktop ? 10 : 0),
+                            duration: dur ?? 1.1,
+                            ease: 'power4.out',
+                            scrollTrigger: {
+                                trigger: cameraRef.current,
+                                start: 'top 80%',
+                                toggleActions: 'play none none none',
+                            },
+                        })
+                    }
+
+                    // Case cards: stagger reveal
+                    caseRefs.current.forEach((el, i) => {
+                        if (!el) return
+                        gsap.from(el, {
+                            opacity: 0,
+                            x: isDesktop ? 50 : 0,
+                            y: isDesktop ? 0 : 30,
+                            duration: dur ?? 0.7,
+                            ease: 'power3.out',
+                            scrollTrigger: {
+                                trigger: el,
+                                start: 'top 88%',
+                                toggleActions: 'play none none none',
+                            },
+                            delay: i * 0.1,
+                        })
                     })
-                })
-            })
+
+                    return () => {}
+                }
+            )
+
+            ctx = { revert: () => mm.revert() }
         }
 
         initGSAP()
