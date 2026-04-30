@@ -3,6 +3,7 @@ import Footer from "@/components/layout/footer";
 import Hero from "@/components/sections/hero";
 import StrategicPillars from "@/components/sections/strategic-pillars";
 import CustomSolutions from "@/components/sections/custom-solutions";
+import PublicSectorSection from "@/components/sections/public-sector";
 import AISection from "@/components/sections/ai-section";
 import Benefits from "@/components/sections/benefits";
 import ContactCTA from "@/components/sections/contact-cta";
@@ -38,6 +39,7 @@ export default async function Home() {
             />
             <StrategicPillars services={services} />
             <CustomSolutions projects={projects} />
+            <PublicSectorSection />
             <AISection />
             <Benefits />
             <ContactCTA

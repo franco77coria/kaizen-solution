@@ -1,5 +1,7 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
+
 import { motion } from 'framer-motion'
 import { Lightbulb, BarChart3, Cloud, CheckCircle, LucideIcon } from 'lucide-react'
 
@@ -46,8 +48,38 @@ const defaultServices = [
 ]
 
 export default function StrategicPillars({ services = defaultServices }: StrategicPillarsProps) {
+    const sectionRef = useRef<HTMLElement>(null)
+    const labelRef = useRef<HTMLSpanElement>(null)
+
+    useEffect(() => {
+        let ctx: { revert: () => void } | null = null
+
+        const initGSAP = async () => {
+            const { gsap, ScrollTrigger } = await import('@/lib/gsap-init')
+            ctx = gsap.context(() => {
+                // Label "Servicios" desliza desde la izquierda
+                if (labelRef.current) {
+                    gsap.from(labelRef.current, {
+                        x: -30,
+                        opacity: 0,
+                        duration: 0.7,
+                        ease: 'power3.out',
+                        scrollTrigger: {
+                            trigger: sectionRef.current,
+                            start: 'top 80%',
+                            toggleActions: 'play none none none',
+                        },
+                    })
+                }
+            })
+        }
+
+        initGSAP()
+        return () => { ctx?.revert() }
+    }, [])
+
     return (
-        <section id="servicios" className="py-28 bg-white">
+        <section ref={sectionRef} id="servicios" className="py-28 bg-white">
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Section Header */}
                 <motion.div
@@ -57,7 +89,7 @@ export default function StrategicPillars({ services = defaultServices }: Strateg
                     transition={{ duration: 0.6 }}
                     className="text-center mb-20"
                 >
-                    <span className="text-sm font-medium tracking-widest uppercase text-daylight-sky mb-4 block">
+                    <span ref={labelRef} className="text-sm font-medium tracking-widest uppercase text-daylight-sky mb-4 block">
                         Servicios
                     </span>
                     <h2 className="text-3xl md:text-5xl font-heading font-bold text-egyptian mb-5">

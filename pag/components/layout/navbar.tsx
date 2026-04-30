@@ -20,7 +20,8 @@ export default function Navbar() {
     const navLinks = [
         { href: '#servicios', label: 'Servicios' },
         { href: '#soluciones', label: 'Soluciones' },
-        { href: '#ia', label: 'IA' },
+        { href: '#sector-publico', label: 'Sector Público' },
+        { href: '#ia', label: 'IA & WhatsApp' },
         { href: '#beneficios', label: 'Beneficios' },
         { href: '#contacto', label: 'Contacto' },
     ]
