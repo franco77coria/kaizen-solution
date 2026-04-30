@@ -3,6 +3,7 @@ import { Inter, Manrope } from "next/font/google";
 import "./globals.css";
 import ChatBot from "@/components/ui/chatbot";
 import CustomCursor from "@/components/ui/custom-cursor";
+import SmoothScroll from "@/components/ui/smooth-scroll";
 
 const inter = Inter({
     subsets: ["latin"],
@@ -140,7 +141,9 @@ export default function RootLayout({
                     type="application/ld+json"
                     dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
                 />
-                {children}
+                <SmoothScroll>
+                    {children}
+                </SmoothScroll>
                 <ChatBot />
                 <CustomCursor />
             </body>

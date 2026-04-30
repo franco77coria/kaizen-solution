@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-
 import { motion } from 'framer-motion'
 import { ArrowRight, ArrowDown } from 'lucide-react'
 
@@ -12,20 +11,22 @@ interface HeroProps {
     whatsappNumber?: string
 }
 
+// Palabras que llevan gradiente — sin spans de React, GSAP las encuentra post-split
+const ACCENT_WORDS = ['digitales', 'medida', 'negocio']
+
 export default function Hero({
     title = "Soluciones digitales a medida para tu negocio",
     subtitle = "Impulsamos la mejora continua, la eficiencia y la adopción inteligente de tecnología. Sistemas y herramientas digitales robustas, creadas 100% a medida.",
     ctaText = "Agenda tu Diagnóstico Gratuito",
     whatsappNumber = "5491163515966"
 }: HeroProps) {
-    const badgeRef = useRef<HTMLDivElement>(null)
     const headingRef = useRef<HTMLHeadingElement>(null)
+    const badgeRef = useRef<HTMLDivElement>(null)
     const subtitleRef = useRef<HTMLParagraphElement>(null)
     const statsRef = useRef<HTMLDivElement>(null)
     const orbRef = useRef<HTMLDivElement>(null)
+    const orb2Ref = useRef<HTMLDivElement>(null)
     const scrollIndicatorRef = useRef<HTMLButtonElement>(null)
-
-    // Refs para counters individuales
     const counter100Ref = useRef<HTMLSpanElement>(null)
     const counter50Ref = useRef<HTMLSpanElement>(null)
 
@@ -36,66 +37,73 @@ export default function Hero({
             const { gsap, SplitText } = await import('@/lib/gsap-init')
 
             ctx = gsap.context(() => {
-                const tl = gsap.timeline()
+                const tl = gsap.timeline({ defaults: { ease: 'power4.out' } })
 
-                // Badge: fade + slide
+                // ── Badge ──
                 if (badgeRef.current) {
-                    gsap.set(badgeRef.current, { opacity: 0, y: 20 })
-                    tl.to(badgeRef.current, {
-                        opacity: 1,
-                        y: 0,
-                        duration: 0.7,
-                        ease: 'power3.out',
-                    })
+                    gsap.set(badgeRef.current, { opacity: 0, y: 24, filter: 'blur(8px)' })
+                    tl.to(badgeRef.current, { opacity: 1, y: 0, filter: 'blur(0px)', duration: 0.8 })
                 }
 
-                // Heading: SplitText char-by-char
+                // ── Heading: SplitText sobre texto plano ──
                 if (headingRef.current) {
+                    // Hacer visible primero (estaba opacity:0 por CSS inline)
                     gsap.set(headingRef.current, { opacity: 1 })
-                    const split = new SplitText(headingRef.current, { type: 'chars,words' })
-                    gsap.set(split.chars, { opacity: 0, y: 60, rotateX: -90 })
+
+                    const split = new SplitText(headingRef.current, { type: 'words' })
+
+                    // Aplicar gradiente a palabras accent DESPUÉS del split
+                    split.words.forEach((word) => {
+                        const el = word as HTMLElement
+                        const txt = el.textContent?.trim().replace(/[.,]/g, '').toLowerCase() || ''
+                        if (ACCENT_WORDS.includes(txt)) {
+                            el.style.background = 'linear-gradient(to right, #00BFF7, #81D8D0)'
+                            el.style.webkitBackgroundClip = 'text'
+                            el.style.webkitTextFillColor = 'transparent'
+                            el.style.backgroundClip = 'text'
+                        }
+                    })
+
+                    // Cada palabra: slide desde abajo + rotación leve
+                    gsap.set(split.words, { opacity: 0, y: 80, rotateX: -60 })
                     tl.to(
-                        split.chars,
+                        split.words,
                         {
                             opacity: 1,
                             y: 0,
                             rotateX: 0,
-                            stagger: 0.022,
-                            duration: 0.7,
-                            ease: 'back.out(1.4)',
+                            stagger: 0.06,
+                            duration: 0.9,
+                            ease: 'back.out(1.2)',
                         },
-                        '-=0.4'
+                        '-=0.5'
                     )
                 }
 
-                // Subtitle: fade + slide
+                // ── Subtitle ──
                 if (subtitleRef.current) {
-                    gsap.set(subtitleRef.current, { opacity: 0, y: 20 })
+                    gsap.set(subtitleRef.current, { opacity: 0, y: 20, filter: 'blur(6px)' })
                     tl.to(
                         subtitleRef.current,
-                        { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out' },
-                        '-=0.2'
+                        { opacity: 1, y: 0, filter: 'blur(0px)', duration: 0.7 },
+                        '-=0.3'
                     )
                 }
 
-                // Stats: fade in como grupo
+                // ── Stats group ──
                 if (statsRef.current) {
-                    gsap.set(statsRef.current, { opacity: 0 })
-                    tl.to(
-                        statsRef.current,
-                        { opacity: 1, duration: 0.8, ease: 'power2.out' },
-                        '+=0.1'
-                    )
+                    gsap.set(statsRef.current, { opacity: 0, y: 16 })
+                    tl.to(statsRef.current, { opacity: 1, y: 0, duration: 0.6 }, '-=0.1')
                 }
 
-                // Counters animados: 0→100 y 0→50
+                // ── Counters ──
                 if (counter100Ref.current) {
                     const obj = { val: 0 }
                     tl.to(
                         obj,
                         {
                             val: 100,
-                            duration: 1.8,
+                            duration: 2,
                             ease: 'power2.out',
                             onUpdate: () => {
                                 if (counter100Ref.current) {
@@ -112,7 +120,7 @@ export default function Hero({
                         obj2,
                         {
                             val: 50,
-                            duration: 1.8,
+                            duration: 2,
                             ease: 'power2.out',
                             onUpdate: () => {
                                 if (counter50Ref.current) {
@@ -124,36 +132,43 @@ export default function Hero({
                     )
                 }
 
-                // Scroll indicator
+                // ── Scroll indicator ──
                 if (scrollIndicatorRef.current) {
                     gsap.set(scrollIndicatorRef.current, { opacity: 0 })
-                    tl.to(
-                        scrollIndicatorRef.current,
-                        { opacity: 1, duration: 0.6 },
-                        '+=0.2'
-                    )
+                    tl.to(scrollIndicatorRef.current, { opacity: 1, duration: 0.5 }, '+=0.3')
                 }
 
-                // Orb: loop suave infinito
+                // ── Orb principal: loop infinito ──
                 if (orbRef.current) {
                     gsap.to(orbRef.current, {
-                        x: 90,
-                        y: -50,
-                        scale: 1.18,
-                        duration: 9,
+                        x: 100,
+                        y: -60,
+                        scale: 1.2,
+                        duration: 10,
                         repeat: -1,
                         yoyo: true,
                         ease: 'sine.inOut',
+                    })
+                }
+
+                // ── Orb secundario: contramovimiento ──
+                if (orb2Ref.current) {
+                    gsap.to(orb2Ref.current, {
+                        x: -60,
+                        y: 40,
+                        scale: 1.15,
+                        duration: 7,
+                        repeat: -1,
+                        yoyo: true,
+                        ease: 'sine.inOut',
+                        delay: 2,
                     })
                 }
             })
         }
 
         initGSAP()
-
-        return () => {
-            ctx?.revert()
-        }
+        return () => { ctx?.revert() }
     }, [title])
 
     const handleCTA = () => {
@@ -166,58 +181,48 @@ export default function Hero({
     }
 
     return (
-        <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#0a0f1e]">
+        <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#0a0f1e]" style={{ perspective: '1000px' }}>
             {/* Grid sutil */}
             <div
-                className="absolute inset-0 opacity-[0.03]"
+                className="absolute inset-0 opacity-[0.025]"
                 style={{
                     backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
                     backgroundSize: '60px 60px',
                 }}
             />
 
-            {/* Orb animado con GSAP */}
+            {/* Orb principal */}
             <div
                 ref={orbRef}
-                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-radial from-egyptian/20 via-daylight-sky/5 to-transparent rounded-full blur-3xl pointer-events-none"
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] bg-gradient-radial from-egyptian/25 via-daylight-sky/8 to-transparent rounded-full blur-3xl pointer-events-none"
             />
 
-            {/* Orb secundario decorativo */}
-            <div className="absolute top-1/4 right-1/4 w-[300px] h-[300px] bg-gradient-radial from-tiffany/10 to-transparent rounded-full blur-2xl pointer-events-none" />
+            {/* Orb secundario */}
+            <div
+                ref={orb2Ref}
+                className="absolute top-1/4 right-1/3 w-[400px] h-[400px] bg-gradient-radial from-tiffany/15 to-transparent rounded-full blur-2xl pointer-events-none"
+            />
 
             <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-32">
                 <div className="text-center space-y-10">
 
-                    {/* Badge — controlado por GSAP */}
+                    {/* Badge */}
                     <div ref={badgeRef} style={{ opacity: 0 }}>
                         <span className="inline-block text-sm font-medium tracking-widest uppercase text-daylight-sky/80 border border-daylight-sky/20 rounded-full px-5 py-2">
                             Transformación Digital con Propósito
                         </span>
                     </div>
 
-                    {/* Heading — SplitText por GSAP */}
+                    {/* H1 — texto plano, SplitText lo procesa limpiamente */}
                     <h1
                         ref={headingRef}
                         style={{ opacity: 0 }}
                         className="text-4xl sm:text-5xl md:text-7xl font-heading font-bold text-white leading-[1.1] tracking-tight"
                     >
-                        {title.split(' ').map((word, i) => {
-                            const accentWords = ['digitales', 'medida', 'negocio']
-                            if (accentWords.includes(word.toLowerCase())) {
-                                return (
-                                    <span
-                                        key={i}
-                                        className="bg-gradient-to-r from-daylight-sky to-tiffany bg-clip-text text-transparent"
-                                    >
-                                        {word}{' '}
-                                    </span>
-                                )
-                            }
-                            return <span key={i}>{word} </span>
-                        })}
+                        {title}
                     </h1>
 
-                    {/* Subtitle — Framer Motion (suave, sin conflicto) */}
+                    {/* Subtitle */}
                     <p
                         ref={subtitleRef}
                         style={{ opacity: 0 }}
@@ -226,51 +231,54 @@ export default function Hero({
                         {subtitle}
                     </p>
 
-                    {/* CTA Buttons — Framer Motion hover */}
+                    {/* CTA buttons — Framer Motion hover */}
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.8, delay: 1.1, ease: [0.16, 1, 0.3, 1] }}
+                        transition={{ duration: 0.8, delay: 1.4, ease: [0.16, 1, 0.3, 1] }}
                         className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4"
                     >
-                        <button
+                        <motion.button
                             onClick={handleCTA}
-                            className="group flex items-center gap-2 bg-gradient-to-r from-daylight-sky to-tiffany text-[#0a0f1e] font-semibold px-8 py-4 rounded-full hover:shadow-lg hover:shadow-daylight-sky/25 transition-all duration-300 hover:scale-[1.02]"
+                            whileHover={{ scale: 1.04 }}
+                            whileTap={{ scale: 0.97 }}
+                            className="group flex items-center gap-2 bg-gradient-to-r from-daylight-sky to-tiffany text-[#0a0f1e] font-semibold px-8 py-4 rounded-full shadow-lg shadow-daylight-sky/20 hover:shadow-daylight-sky/40 transition-shadow duration-300"
                         >
                             {ctaText}
                             <ArrowRight className="group-hover:translate-x-1 transition-transform" size={18} />
-                        </button>
-                        <button
+                        </motion.button>
+                        <motion.button
                             onClick={scrollToServices}
-                            className="flex items-center gap-2 text-white/70 hover:text-white font-medium px-6 py-4 rounded-full border border-white/10 hover:border-white/25 transition-all duration-300"
+                            whileHover={{ scale: 1.02 }}
+                            className="flex items-center gap-2 text-white/70 hover:text-white font-medium px-6 py-4 rounded-full border border-white/10 hover:border-white/30 transition-all duration-300"
                         >
                             Conocer más
-                        </button>
+                        </motion.button>
                     </motion.div>
 
-                    {/* Stats con counters GSAP */}
-                    <div ref={statsRef} style={{ opacity: 0 }} className="flex items-center justify-center gap-12 md:gap-16 pt-16">
-                        <div className="text-center">
-                            <div className="text-2xl md:text-3xl font-bold text-white mb-1">
-                                <span ref={counter100Ref}>0%</span>
+                    {/* Stats con counters */}
+                    <div ref={statsRef} style={{ opacity: 0 }} className="flex items-center justify-center gap-12 md:gap-20 pt-16">
+                        {[
+                            { ref: counter100Ref, initial: '0%', label: 'A Medida' },
+                            { ref: null, initial: '24/7', label: 'Soporte' },
+                            { ref: counter50Ref, initial: '+0', label: 'Proyectos' },
+                        ].map((stat, i) => (
+                            <div key={i} className="text-center">
+                                <div className="text-2xl md:text-3xl font-bold text-white mb-1">
+                                    {stat.ref !== null ? (
+                                        <span ref={stat.ref}>{stat.initial}</span>
+                                    ) : (
+                                        stat.initial
+                                    )}
+                                </div>
+                                <div className="text-xs md:text-sm text-white/40 uppercase tracking-wider">{stat.label}</div>
                             </div>
-                            <div className="text-xs md:text-sm text-white/40 uppercase tracking-wider">A Medida</div>
-                        </div>
-                        <div className="text-center">
-                            <div className="text-2xl md:text-3xl font-bold text-white mb-1">24/7</div>
-                            <div className="text-xs md:text-sm text-white/40 uppercase tracking-wider">Soporte</div>
-                        </div>
-                        <div className="text-center">
-                            <div className="text-2xl md:text-3xl font-bold text-white mb-1">
-                                <span ref={counter50Ref}>+0</span>
-                            </div>
-                            <div className="text-xs md:text-sm text-white/40 uppercase tracking-wider">Proyectos</div>
-                        </div>
+                        ))}
                     </div>
                 </div>
             </div>
 
-            {/* Scroll Indicator — GSAP fade in */}
+            {/* Scroll indicator */}
             <button
                 ref={scrollIndicatorRef}
                 onClick={scrollToServices}
@@ -278,8 +286,8 @@ export default function Hero({
                 className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/30 hover:text-white/60 transition-colors"
             >
                 <motion.div
-                    animate={{ y: [0, 8, 0] }}
-                    transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                    animate={{ y: [0, 10, 0] }}
+                    transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
                 >
                     <ArrowDown size={24} />
                 </motion.div>
