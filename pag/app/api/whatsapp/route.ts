@@ -3,6 +3,29 @@ import { prisma } from "@/lib/prisma"
 import { getWhatsAppConfig, logWhatsApp, upsertContact, normalizePhone } from "@/lib/whatsapp"
 import { Client } from "@upstash/qstash"
 
+// Reenvía el webhook crudo de Meta a WA SaaS (motor de flujos) preservando el body byte-a-byte
+// y la firma, para que WA SaaS valide la firma de Meta. No rompe el flujo propio de kaizen.
+async function forwardToWaSaas(raw: string, signature: string | null) {
+    const url = process.env.WA_SAAS_WEBHOOK_URL || "https://wa-saas-indol.vercel.app/api/webhooks/whatsapp"
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 4000)
+    try {
+        await fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                ...(signature ? { "x-hub-signature-256": signature } : {}),
+            },
+            body: raw,
+            signal: controller.signal,
+        })
+    } catch {
+        // no-fatal: el reenvío no debe afectar el webhook de kaizen
+    } finally {
+        clearTimeout(timer)
+    }
+}
+
 // GET — Webhook verification from Meta
 export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
@@ -35,7 +58,10 @@ export async function GET(request: NextRequest) {
 // POST — Receive incoming messages from Meta
 export async function POST(request: NextRequest) {
     try {
-        const body = await request.json()
+        const raw = await request.text()
+        const body = JSON.parse(raw)
+        // Reenvío a WA SaaS (motor de flujos), además del procesamiento propio de kaizen.
+        await forwardToWaSaas(raw, request.headers.get("x-hub-signature-256"))
         await logWhatsApp("webhook_received", body)
 
         const entry = body?.entry?.[0]
