@@ -15,6 +15,7 @@ async function forwardToWaSaas(raw: string, signature: string | null) {
             headers: {
                 "Content-Type": "application/json",
                 ...(signature ? { "x-hub-signature-256": signature } : {}),
+                ...(process.env.WA_FORWARD_SECRET ? { "x-wa-forward": process.env.WA_FORWARD_SECRET } : {}),
             },
             body: raw,
             signal: controller.signal,
