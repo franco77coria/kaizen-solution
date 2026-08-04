@@ -11,6 +11,10 @@ import ContactCTA from "@/components/sections/contact-cta";
 import { prisma } from "@/lib/prisma";
 import { Service, Project } from "@prisma/client";
 
+// La home se prerenderiza, pero el contenido se edita desde /admin. Sin esto,
+// un cambio en el panel no aparece hasta el próximo deploy.
+export const revalidate = 300;
+
 export default async function Home() {
     let siteConfig;
     let services: Service[] = [];
@@ -38,8 +42,11 @@ export default async function Home() {
                 subtitle={siteConfig?.heroSubtitle}
                 ctaText={siteConfig?.ctaText}
             />
-            <StrategicPillars services={services} />
-            <CustomSolutions projects={projects} />
+            {/* undefined (no []) para que aplique el contenido por defecto del
+                componente: si la DB no responde, la sección muestra los
+                servicios de siempre en vez de una grilla vacía. */}
+            <StrategicPillars services={services.length ? services : undefined} />
+            <CustomSolutions projects={projects.length ? projects : undefined} />
             <PublicSectorSection />
             <AIVisionSection />
             <AISection />

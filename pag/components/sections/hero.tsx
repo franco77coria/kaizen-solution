@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { motion } from 'framer-motion'
 import { ArrowRight, ArrowDown } from 'lucide-react'
 
 interface HeroProps {
@@ -330,22 +329,21 @@ export default function Hero({
                         style={{ opacity: 0 }}
                         className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 pt-4"
                     >
-                        <motion.button
+                        <button
+                            type="button"
                             onClick={handleCTA}
-                            whileHover={{ scale: 1.04 }}
-                            whileTap={{ scale: 0.97 }}
-                            className="group flex items-center gap-2 bg-gradient-to-r from-daylight-sky to-tiffany text-[#0a0f1e] font-semibold px-6 sm:px-8 py-3.5 sm:py-4 rounded-full shadow-lg shadow-daylight-sky/20 hover:shadow-daylight-sky/40 transition-shadow duration-300 text-sm sm:text-base w-full sm:w-auto justify-center"
+                            className="group flex items-center gap-2 bg-gradient-to-r from-daylight-sky to-tiffany text-[#0a0f1e] font-semibold px-6 sm:px-8 py-3.5 sm:py-4 rounded-full shadow-lg shadow-daylight-sky/20 hover:shadow-daylight-sky/40 text-sm sm:text-base w-full sm:w-auto justify-center transition-[transform,box-shadow] duration-300 ease-out hover:scale-[1.04] active:scale-[0.97] motion-reduce:transform-none"
                         >
                             {ctaText}
-                            <ArrowRight className="group-hover:translate-x-1 transition-transform" size={18} />
-                        </motion.button>
-                        <motion.button
+                            <ArrowRight className="group-hover:translate-x-1 transition-transform motion-reduce:transform-none" size={18} />
+                        </button>
+                        <button
+                            type="button"
                             onClick={scrollToServices}
-                            whileHover={{ scale: 1.02 }}
-                            className="flex items-center gap-2 text-white/70 hover:text-white font-medium px-6 py-3.5 sm:py-4 rounded-full border border-white/10 hover:border-white/30 transition-all duration-300 text-sm sm:text-base w-full sm:w-auto justify-center"
+                            className="flex items-center gap-2 text-white/80 hover:text-white font-medium px-6 py-3.5 sm:py-4 rounded-full border border-white/20 hover:border-white/40 text-sm sm:text-base w-full sm:w-auto justify-center transition-all duration-300 ease-out hover:scale-[1.02] motion-reduce:transform-none"
                         >
                             Conocer más
-                        </motion.button>
+                        </button>
                     </div>
 
                     {/* Stats con counters */}
@@ -363,7 +361,7 @@ export default function Hero({
                                         stat.initial
                                     )}
                                 </div>
-                                <div className="text-[10px] sm:text-xs md:text-sm text-white/40 uppercase tracking-wider">{stat.label}</div>
+                                <div className="text-[11px] sm:text-xs md:text-sm text-white/60 uppercase tracking-wider">{stat.label}</div>
                             </div>
                         ))}
                     </div>
@@ -373,16 +371,15 @@ export default function Hero({
             {/* Scroll indicator */}
             <button
                 ref={scrollIndicatorRef}
+                type="button"
                 onClick={scrollToServices}
+                aria-label="Ir a la sección de servicios"
                 style={{ opacity: 0 }}
-                className="absolute bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 text-white/30 hover:text-white/60 transition-colors"
+                className="absolute bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 p-3 text-white/60 hover:text-white transition-colors"
             >
-                <motion.div
-                    animate={{ y: [0, 10, 0] }}
-                    transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
-                >
+                <span className="block animate-bounce-slow motion-reduce:animate-none">
                     <ArrowDown size={24} />
-                </motion.div>
+                </span>
             </button>
         </section>
     )

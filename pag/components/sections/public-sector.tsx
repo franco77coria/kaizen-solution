@@ -235,7 +235,7 @@ export default function PublicSectorSection() {
                             Impacta a Millones
                         </span>
                     </h2>
-                    <p className="text-lg text-white/50 max-w-2xl mx-auto font-light">
+                    <p className="text-lg text-white/65 max-w-2xl mx-auto font-light">
                         Desarrollamos plataformas de misión crítica para campañas políticas y gestión
                         electoral. IA que analiza documentos en tiempo real para garantizar transparencia.
                     </p>
@@ -264,7 +264,7 @@ export default function PublicSectorSection() {
                                     <span className={`text-xs font-semibold tracking-wider uppercase border rounded-full px-3 py-1.5 ${product.badgeColor}`}>
                                         {product.badge}
                                     </span>
-                                    <span className="text-xs text-white/25 font-medium text-right max-w-[130px] leading-tight">
+                                    <span className="text-xs text-white/55 font-medium text-right max-w-[130px] leading-tight">
                                         {product.context}
                                     </span>
                                 </div>
@@ -279,7 +279,7 @@ export default function PublicSectorSection() {
 
                                 {/* Title + subtitle */}
                                 <h3 className="text-xl font-heading font-bold text-white mb-1">{product.title}</h3>
-                                <p className="text-xs text-white/35 mb-4 font-medium tracking-wide">{product.subtitle}</p>
+                                <p className="text-xs text-white/60 mb-4 font-medium tracking-wide">{product.subtitle}</p>
 
                                 {/* Description */}
                                 <p className="text-sm text-white/55 leading-relaxed mb-5">{product.description}</p>
@@ -311,7 +311,7 @@ export default function PublicSectorSection() {
                                         <div className="text-3xl font-bold font-heading" style={{ color: product.accentFrom }}>
                                             {product.stat.value}
                                         </div>
-                                        <div className="text-xs text-white/30 mt-0.5">{product.stat.label}</div>
+                                        <div className="text-xs text-white/55 mt-0.5">{product.stat.label}</div>
                                     </div>
                                     <div
                                         className="w-8 h-8 rounded-full flex items-center justify-center opacity-40 group-hover:opacity-100 transition-opacity duration-300"
@@ -336,11 +336,11 @@ export default function PublicSectorSection() {
                             <div key={item.label} className="space-y-2 group">
                                 <div className="flex justify-center mb-3">
                                     <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/8 flex items-center justify-center group-hover:border-daylight-sky/30 group-hover:bg-daylight-sky/5 transition-all duration-300">
-                                        <ItemIcon size={18} className="text-white/40 group-hover:text-daylight-sky transition-colors duration-300" />
+                                        <ItemIcon size={18} className="text-white/60 group-hover:text-daylight-sky transition-colors duration-300" />
                                     </div>
                                 </div>
                                 <div className="text-sm font-semibold text-white/80">{item.label}</div>
-                                <div className="text-xs text-white/35">{item.sub}</div>
+                                <div className="text-xs text-white/60">{item.sub}</div>
                             </div>
                         )
                     })}

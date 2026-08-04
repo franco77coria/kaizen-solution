@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { motion } from 'framer-motion'
 import { Camera, ShieldAlert, ScanFace, Activity, Factory, MapPin, Zap, ChevronRight } from 'lucide-react'
 
 // ─── Casos de uso de visión artificial ───────────────────────────────────────
@@ -61,6 +60,19 @@ const detections: Detection[] = [
     { label: 'SEMÁFORO', conf: '98.9%', color: '#FFD700', x: '78%', y: '18%', w: '8%', h: '22%' },
 ]
 
+/**
+ * Qué ventanas del skyline están encendidas.
+ *
+ * Antes esto era `Math.random() > 0.4` dentro del render: el servidor y el
+ * cliente sorteaban distinto y React tiraba un error de hidratación y
+ * re-renderizaba todo el bloque. Con un hash determinístico sobre (edificio,
+ * ventana) el patrón sigue pareciendo aleatorio pero da igual en ambos lados.
+ */
+function isWindowLit(building: number, window: number): boolean {
+    const h = Math.sin(building * 12.9898 + window * 78.233) * 43758.5453
+    return h - Math.floor(h) > 0.4
+}
+
 // ─── Stats del panel inferior ─────────────────────────────────────────────────
 const initialStats = [
     { label: 'Vehículos/min', value: 12, unit: '' },
@@ -72,6 +84,8 @@ const initialStats = [
 export default function AIVisionSection() {
     const sectionRef = useRef<HTMLDivElement>(null)
     const headingRef = useRef<HTMLHeadingElement>(null)
+    const eyebrowRef = useRef<HTMLSpanElement>(null)
+    const subheadRef = useRef<HTMLParagraphElement>(null)
     const cameraRef = useRef<HTMLDivElement>(null)
     const scanLineRef = useRef<HTMLDivElement>(null)
     const detectionRefs = useRef<(HTMLDivElement | null)[]>([])
@@ -93,22 +107,48 @@ export default function AIVisionSection() {
     }, [])
 
     // ── Animación de bounding boxes: aparecen/desaparecen en secuencia ──
+    // El loop es infinito, así que necesita dos frenos: cancelarse al desmontar
+    // (si no, sigue haciendo setState sobre un componente muerto) y pausar
+    // cuando la sección no está en pantalla, que es la mayor parte del tiempo.
     useEffect(() => {
+        let cancelled = false
+        let visible = false
+
+        const observer = new IntersectionObserver(
+            ([entry]) => { visible = entry.isIntersecting },
+            { rootMargin: '200px' }
+        )
+        if (sectionRef.current) observer.observe(sectionRef.current)
+
+        const wait = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
         const sequence = async () => {
-            // eslint-disable-next-line no-constant-condition
-            while (true) {
+            while (!cancelled) {
+                if (!visible || document.hidden) {
+                    await wait(500)
+                    continue
+                }
+
                 for (let i = 0; i < detections.length; i++) {
-                    await new Promise(r => setTimeout(r, 600 + Math.random() * 800))
+                    await wait(600 + Math.random() * 800)
+                    if (cancelled) return
                     setActiveDet(prev => prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i])
                 }
-                await new Promise(r => setTimeout(r, 1200))
+                await wait(1200)
+                if (cancelled) return
                 setActiveDet(detections.map((_, i) => i)) // todos activos
-                await new Promise(r => setTimeout(r, 2000))
+                await wait(2000)
+                if (cancelled) return
                 setActiveDet([]) // todos inactivos
-                await new Promise(r => setTimeout(r, 800))
+                await wait(800)
             }
         }
         sequence()
+
+        return () => {
+            cancelled = true
+            observer.disconnect()
+        }
     }, [])
 
     // ── GSAP: scan line + sección reveal + scramble heading ──
@@ -129,6 +169,35 @@ export default function AIVisionSection() {
                 (context) => {
                     const { isDesktop, reduceMotion } = context.conditions!
                     const dur = reduceMotion ? 0 : undefined
+
+                    // ── Header: eyebrow + subhead (antes con framer-motion) ──
+                    if (eyebrowRef.current) {
+                        gsap.from(eyebrowRef.current, {
+                            opacity: 0,
+                            y: reduceMotion ? 0 : 16,
+                            duration: dur ?? 0.6,
+                            ease: 'power3.out',
+                            scrollTrigger: {
+                                trigger: eyebrowRef.current,
+                                start: 'top 90%',
+                                toggleActions: 'play none none none',
+                            },
+                        })
+                    }
+
+                    if (subheadRef.current) {
+                        gsap.from(subheadRef.current, {
+                            opacity: 0,
+                            duration: dur ?? 0.6,
+                            delay: reduceMotion ? 0 : 0.3,
+                            ease: 'power2.out',
+                            scrollTrigger: {
+                                trigger: subheadRef.current,
+                                start: 'top 90%',
+                                toggleActions: 'play none none none',
+                            },
+                        })
+                    }
 
                     // Scan line: runs continuously (even on mobile, it's cheap)
                     if (scanLineRef.current && !reduceMotion) {
@@ -245,14 +314,12 @@ export default function AIVisionSection() {
 
                 {/* Header */}
                 <div className="text-center mb-16">
-                    <motion.span
-                        initial={{ opacity: 0, y: 16 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
+                    <span
+                        ref={eyebrowRef}
                         className="inline-block text-sm font-medium tracking-widest uppercase text-daylight-sky/80 border border-daylight-sky/20 rounded-full px-5 py-2 mb-6"
                     >
                         Visión Artificial · Computer Vision
-                    </motion.span>
+                    </span>
 
                     {/* Text scramble heading */}
                     <h2
@@ -262,16 +329,13 @@ export default function AIVisionSection() {
                         IA que Ve, Entiende y Actúa
                     </h2>
 
-                    <motion.p
-                        initial={{ opacity: 0 }}
-                        whileInView={{ opacity: 1 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: 0.3 }}
-                        className="text-lg text-white/50 max-w-2xl mx-auto font-light"
+                    <p
+                        ref={subheadRef}
+                        className="text-lg text-white/70 max-w-2xl mx-auto font-light"
                     >
                         Sistemas de percepción visual que transforman cámaras ordinarias en agentes
                         inteligentes capaces de analizar, decidir y actuar en tiempo real.
-                    </motion.p>
+                    </p>
                 </div>
 
                 {/* ── Layout principal: mockup cámara izquierda + casos derecha ── */}
@@ -326,7 +390,7 @@ export default function AIVisionSection() {
                                             <div className="grid grid-cols-2 gap-1 p-1 h-full">
                                                 {[...Array(Math.floor(h / 20))].map((_, j) => (
                                                     <div key={j} className="rounded-sm" style={{
-                                                        background: Math.random() > 0.4 ? '#FFD70030' : 'transparent',
+                                                        background: isWindowLit(i, j) ? '#FFD70030' : 'transparent',
                                                         height: '6px'
                                                     }} />
                                                 ))}
@@ -373,7 +437,7 @@ export default function AIVisionSection() {
                                     >
                                         {/* Label */}
                                         <div
-                                            className="absolute -top-5 left-0 px-1.5 py-0.5 text-[8px] font-mono font-bold tracking-wider"
+                                            className="absolute -top-5 left-0 px-1.5 py-0.5 text-[11px] font-mono font-bold tracking-wider"
                                             style={{ background: det.color, color: '#0a0f1e' }}
                                         >
                                             {det.label} {det.conf}
@@ -388,7 +452,7 @@ export default function AIVisionSection() {
 
                                 {/* Overlay de detecciones activas - contador */}
                                 <div className="absolute top-3 left-3 z-20 bg-black/60 backdrop-blur-sm rounded-lg px-2 py-1.5 border border-white/10">
-                                    <div className="text-[9px] font-mono text-daylight-sky tracking-wider mb-0.5">DETECCIONES</div>
+                                    <div className="text-[11px] font-mono text-daylight-sky tracking-wider mb-0.5">DETECCIONES</div>
                                     <div className="text-base font-bold font-mono text-white">{activeDet.length}</div>
                                 </div>
                             </div>
@@ -400,7 +464,7 @@ export default function AIVisionSection() {
                                         <div className="text-sm font-bold font-mono text-daylight-sky tabular-nums transition-all duration-500">
                                             {stat.value}{stat.unit}
                                         </div>
-                                        <div className="text-[8px] text-white/30 uppercase tracking-wider mt-0.5 leading-tight">
+                                        <div className="text-[11px] text-white/55 uppercase tracking-wider mt-0.5 leading-tight">
                                             {stat.label}
                                         </div>
                                     </div>
@@ -410,18 +474,18 @@ export default function AIVisionSection() {
                             {/* Resultado de IA */}
                             <div className="px-4 py-3 bg-[#0d1e35] border-t border-white/5 flex items-center gap-3">
                                 <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse flex-shrink-0" />
-                                <span className="text-xs font-mono text-white/50">
+                                <span className="text-xs font-mono text-white/65">
                                     Semáforo{' '}
                                     <span className={`font-bold transition-colors duration-700 ${trafficLight === 'green' ? 'text-green-400' : 'text-red-400'}`}>
                                         {trafficLight === 'green' ? 'VERDE → flujo optimizado' : 'ROJO → analizando densidad...'}
                                     </span>
                                 </span>
-                                <span className="ml-auto text-[10px] text-white/20 font-mono">IA_MODEL_v3.2</span>
+                                <span className="ml-auto text-[11px] text-white/55 font-mono">IA_MODEL_v3.2</span>
                             </div>
                         </div>
 
                         {/* Label debajo del mockup */}
-                        <p className="text-center text-xs text-white/25 mt-3 font-mono tracking-wider">
+                        <p className="text-center text-xs text-white/55 mt-3 font-mono tracking-wider">
                             SIMULACIÓN · Sistema de visión artificial en tiempo real
                         </p>
                     </div>
@@ -452,9 +516,9 @@ export default function AIVisionSection() {
                                                 {useCase.stat}
                                             </span>
                                         </div>
-                                        <p className="text-xs text-white/45 leading-relaxed">{useCase.description}</p>
+                                        <p className="text-xs text-white/60 leading-relaxed">{useCase.description}</p>
                                     </div>
-                                    <ChevronRight size={14} className="text-white/20 group-hover:text-daylight-sky flex-shrink-0 mt-0.5 group-hover:translate-x-0.5 transition-all duration-300" />
+                                    <ChevronRight size={14} className="text-white/55 group-hover:text-daylight-sky flex-shrink-0 mt-0.5 group-hover:translate-x-0.5 transition-all duration-300" />
                                 </div>
                             )
                         })}

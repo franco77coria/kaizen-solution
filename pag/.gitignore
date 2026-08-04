@@ -52,3 +52,10 @@ next-env.d.ts
 # OS
 Thumbs.db
 .DS_Store
+
+# skills de agentes instaladas con `npx skills add` (vendorizadas, ~12MB).
+# Se restauran con `npx skills experimental_install` desde skills-lock.json.
+.agents/
+.claude/skills/
+# estado local del CLI de supabase
+supabase/.temp/

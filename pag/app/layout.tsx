@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Manrope } from "next/font/google";
 import "./globals.css";
 import ChatBot from "@/components/ui/chatbot";
-import CustomCursor from "@/components/ui/custom-cursor";
 import SmoothScroll from "@/components/ui/smooth-scroll";
 
 const inter = Inter({
@@ -20,8 +19,11 @@ const manrope = Manrope({
 export const viewport: Viewport = {
     width: 'device-width',
     initialScale: 1,
-    maximumScale: 1,
+    // Sin maximumScale ni userScalable: bloquear el zoom incumple WCAG 1.4.4.
+    // El zoom accidental al enfocar inputs en iOS ya está resuelto en
+    // globals.css forzando font-size 16px en los campos.
     viewportFit: 'cover',
+    themeColor: '#0a0f1e',
 };
 
 const siteUrl = 'https://www.kaizensolutionscol.com'
@@ -56,7 +58,7 @@ export const metadata: Metadata = {
         siteName: 'Kaizen Solution',
         images: [
             {
-                url: '/og-image.png',
+                url: '/og-image.jpg',
                 width: 1200,
                 height: 630,
                 alt: 'Kaizen Solution — Tecnología Electoral y Transformación Digital',
@@ -69,7 +71,7 @@ export const metadata: Metadata = {
         card: 'summary_large_image',
         title: 'Kaizen Solution | Tecnología Electoral y Transformación Digital',
         description: 'Tecnología de punta para campañas políticas y sector público. WhatsApp CRM + Audio IA.',
-        images: ['/og-image.png'],
+        images: ['/og-image.jpg'],
     },
     robots: {
         index: true,
@@ -84,9 +86,9 @@ export const metadata: Metadata = {
     },
 };
 
-const jsonLd = {
-    '@context': 'https://schema.org',
+const organizationLd = {
     '@type': 'Organization',
+    '@id': `${siteUrl}/#organization`,
     name: 'Kaizen Solution S.A.S.',
     alternateName: 'Kaizen Solution',
     url: siteUrl,
@@ -129,13 +131,62 @@ const jsonLd = {
     ],
 }
 
+const websiteLd = {
+    '@type': 'WebSite',
+    '@id': `${siteUrl}/#website`,
+    url: siteUrl,
+    name: 'Kaizen Solution',
+    inLanguage: 'es',
+    publisher: { '@id': `${siteUrl}/#organization` },
+}
+
+// ProfessionalService le da a Google el contexto de "qué vende y dónde",
+// que Organization sola no aporta.
+const serviceLd = {
+    '@type': 'ProfessionalService',
+    '@id': `${siteUrl}/#service`,
+    name: 'Kaizen Solution — Transformación Digital y Tecnología Electoral',
+    url: siteUrl,
+    image: `${siteUrl}/og-image.jpg`,
+    parentOrganization: { '@id': `${siteUrl}/#organization` },
+    areaServed: [
+        { '@type': 'Country', name: 'Colombia' },
+        { '@type': 'Country', name: 'Argentina' },
+    ],
+    availableLanguage: 'es',
+    hasOfferCatalog: {
+        '@type': 'OfferCatalog',
+        name: 'Servicios',
+        itemListElement: [
+            'Consultoría Estratégica en TI',
+            'Analítica y Business Intelligence',
+            'Adopción e Implementación Tecnológica',
+            'Desarrollo de software a medida',
+            'WhatsApp CRM y campañas masivas con Audio IA',
+            'Tecnología electoral y gestión de testigos',
+            'Análisis geodemográfico',
+            'Visión artificial aplicada',
+        ].map((name) => ({
+            '@type': 'Offer',
+            itemOffered: { '@type': 'Service', name },
+        })),
+    },
+}
+
+const jsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [organizationLd, websiteLd, serviceLd],
+}
+
 export default function RootLayout({
     children,
 }: Readonly<{
     children: React.ReactNode;
 }>) {
     return (
-        <html lang="es" className="scroll-smooth">
+        // Sin scroll-smooth: Lenis maneja el scroll y `scroll-behavior: smooth`
+        // de CSS pelea con él (saltos al navegar por anclas).
+        <html lang="es">
             <body className={`${inter.variable} ${manrope.variable} antialiased`}>
                 <script
                     type="application/ld+json"
@@ -145,7 +196,6 @@ export default function RootLayout({
                     {children}
                 </SmoothScroll>
                 <ChatBot />
-                <CustomCursor />
             </body>
         </html>
     );

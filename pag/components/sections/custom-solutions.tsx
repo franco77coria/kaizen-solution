@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import { ShoppingCart, Calendar, Package, Zap, TrendingUp, LucideIcon, Briefcase, Smartphone, Globe, LayoutDashboard } from 'lucide-react'
+import { parseJsonArray } from '@/lib/json-array'
 
 const iconMap: Record<string, LucideIcon> = {
     'ERP/CRM': Package,
@@ -200,11 +201,11 @@ export default function CustomSolutions({ projects = defaultSolutions }: CustomS
     }, [])
 
     return (
-        <section ref={sectionRef} id="soluciones" className="py-28 bg-gray-50/50" style={{ perspective: '1200px' }}>
+        <section ref={sectionRef} id="soluciones" className="py-28 bg-gray-50/50 overflow-hidden" style={{ perspective: '1200px' }}>
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Section Header */}
                 <div ref={headerRef} className="text-center mb-20">
-                    <span className="text-sm font-medium tracking-widest uppercase text-daylight-sky mb-4 block">
+                    <span className="text-sm font-medium tracking-widest uppercase text-accent-ink mb-4 block">
                         Soluciones
                     </span>
                     <h2 className="text-3xl md:text-5xl font-heading font-bold text-egyptian mb-5">
@@ -219,7 +220,7 @@ export default function CustomSolutions({ projects = defaultSolutions }: CustomS
                 <div ref={gridRef} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {projects.map((project) => {
                         const Icon = iconMap[project.category] || Briefcase
-                        const tagsList = JSON.parse(project.tags) as string[]
+                        const tagsList = parseJsonArray(project.tags)
 
                         return (
                             <div
@@ -231,7 +232,7 @@ export default function CustomSolutions({ projects = defaultSolutions }: CustomS
                                         <div className="w-12 h-12 rounded-xl bg-[#0a0f1e] flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
                                             <Icon className="text-tiffany" size={24} />
                                         </div>
-                                        <span className="text-xs font-medium tracking-wider uppercase text-daylight-sky bg-daylight-sky/10 px-3 py-1.5 rounded-full">
+                                        <span className="text-xs font-medium tracking-wider uppercase text-accent-ink bg-daylight-sky/10 px-3 py-1.5 rounded-full">
                                             {project.category}
                                         </span>
                                     </div>

@@ -30,6 +30,10 @@ const config: Config = {
                 turquoise: '#40E0D0',
                 cerulean: '#0095C9',
                 'daylight-sky': '#00BFF7',
+                // #00BFF7 rinde 8.91:1 sobre #0a0f1e pero solo 2.14:1 sobre
+                // blanco. Este es el mismo acento para TEXTO sobre fondo claro
+                // (5.36:1). Para fondos, bordes e iconos seguí usando daylight-sky.
+                'accent-ink': '#0E7490',
                 ocean: '#01D9D0',
 
                 // Light Blues
@@ -40,7 +44,9 @@ const config: Config = {
                 sky: '#87CEEB',
 
                 // Grays
-                slate: '#708090',
+                // #708090 daba 4.05:1 sobre blanco — abajo del mínimo AA para
+                // texto normal. #5A6473 mantiene el gris frío y da 5.99:1.
+                slate: '#5A6473',
                 steel: '#4682B4',
                 verdigris: '#43B3AE',
             },
@@ -54,6 +60,10 @@ const config: Config = {
                 'slide-down': 'slideDown 0.6s ease-out',
                 'scale-in': 'scaleIn 0.4s ease-out',
                 'float': 'float 3s ease-in-out infinite',
+                // Reemplaza el motion.div del indicador de scroll del hero
+                'bounce-slow': 'bounceSlow 2.2s ease-in-out infinite',
+                // Punto pulsante del launcher del chat
+                'ping-slow': 'pingSlow 2.5s ease-in-out infinite',
             },
             keyframes: {
                 fadeIn: {
@@ -75,6 +85,14 @@ const config: Config = {
                 float: {
                     '0%, 100%': { transform: 'translateY(0px)' },
                     '50%': { transform: 'translateY(-10px)' },
+                },
+                bounceSlow: {
+                    '0%, 100%': { transform: 'translateY(0px)' },
+                    '50%': { transform: 'translateY(10px)' },
+                },
+                pingSlow: {
+                    '0%, 100%': { transform: 'scale(1)' },
+                    '50%': { transform: 'scale(1.3)' },
                 },
             },
             backgroundImage: {

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import { Lightbulb, BarChart3, Cloud, CheckCircle, LucideIcon } from 'lucide-react'
+import { parseJsonArray } from '@/lib/json-array'
 
 const iconMap: Record<string, LucideIcon> = {
     'Lightbulb': Lightbulb,
@@ -140,11 +141,11 @@ export default function StrategicPillars({ services = defaultServices }: Strateg
     }, [])
 
     return (
-        <section ref={sectionRef} id="servicios" className="py-28 bg-white" style={{ perspective: '1200px' }}>
+        <section ref={sectionRef} id="servicios" className="py-28 bg-white overflow-hidden" style={{ perspective: '1200px' }}>
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Section Header */}
                 <div ref={headerRef} className="text-center mb-20">
-                    <span className="text-sm font-medium tracking-widest uppercase text-daylight-sky mb-4 block">
+                    <span className="text-sm font-medium tracking-widest uppercase text-accent-ink mb-4 block">
                         Servicios
                     </span>
                     <h2 className="text-3xl md:text-5xl font-heading font-bold text-egyptian mb-5">
@@ -159,7 +160,7 @@ export default function StrategicPillars({ services = defaultServices }: Strateg
                 <div ref={cardsRef} className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {services.map((service) => {
                         const Icon = (service.icon && iconMap[service.icon]) ? iconMap[service.icon] : Lightbulb
-                        const featuresList = JSON.parse(service.features) as string[]
+                        const featuresList = parseJsonArray(service.features)
 
                         return (
                             <div
