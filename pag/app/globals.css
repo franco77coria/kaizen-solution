@@ -52,6 +52,12 @@
         @apply font-heading;
     }
 
+    /* El navegador pinta los <button> con cursor default; queremos la manito */
+    button:not(:disabled),
+    [role="button"]:not([aria-disabled="true"]) {
+        cursor: pointer;
+    }
+
     /* Prevent zoom on input focus on iOS */
     input,
     select,
@@ -235,7 +241,11 @@
     z-index: 1;
 }
 
-/* ── GSAP performance: GPU-accelerated transforms ── */
+/* ── GSAP performance: GPU-accelerated transforms ──
+   `will-change` permanente reserva una capa de compositor por elemento durante
+   toda la vida de la página, aunque la animación ya haya terminado. GSAP setea
+   y limpia will-change solo mientras anima, así que acá solo dejamos las
+   propiedades que evitan parpadeo en las transformaciones 3D. */
 .benefit-item,
 .pillar-card,
 .solution-card,
@@ -243,7 +253,6 @@
 .contact-step,
 .footer-col,
 [data-gsap] {
-    will-change: transform, opacity;
     transform-style: preserve-3d;
     backface-visibility: hidden;
 }

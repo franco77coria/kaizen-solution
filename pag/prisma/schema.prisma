@@ -100,7 +100,9 @@ model ContactSubmission {
 model ChatLead {
   id                  String   @id @default(cuid())
   name                String
+  email               String? // Del formulario de contacto; el chatbot no lo pide
   whatsapp            String
+  company             String?
   conversationSummary String   @db.Text // Summary of what the user was interested in
   status              String   @default("new") // new, contacted, qualified, closed
   notes               String?  @db.Text // Admin notes

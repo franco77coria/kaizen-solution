@@ -1,4 +1,27 @@
 import { NextRequest } from 'next/server';
+import { z } from 'zod';
+import { checkRateLimit } from '@/lib/rate-limit';
+
+/**
+ * El cliente manda el historial completo en cada turno, así que el body es
+ * superficie de ataque directa: sin esto se puede inyectar un mensaje con
+ * role "system" y reprogramar el bot, o usarlo como LLM gratis contra la
+ * cuota de Groq. Solo aceptamos user/assistant y acotamos tamaño.
+ */
+const MAX_MESSAGES = 30;
+const MAX_CHARS_PER_MESSAGE = 4000;
+
+const chatRequestSchema = z.object({
+    messages: z
+        .array(
+            z.object({
+                role: z.enum(['user', 'assistant']),
+                content: z.string().min(1).max(MAX_CHARS_PER_MESSAGE),
+            })
+        )
+        .min(1)
+        .max(MAX_MESSAGES),
+});
 
 // Fallback responses when API is unavailable
 const FALLBACK_RESPONSES: Record<string, string> = {
@@ -138,13 +161,23 @@ Toda idea puede mejorar, todo proceso puede optimizarse y toda solución puede e
 IMPORTANTE: Mantené las respuestas concisas (máximo 3-4 párrafos). Usá emojis con moderación. Respondé siempre en español.`;
 
 export async function POST(req: NextRequest) {
-    try {
-        const { messages } = await req.json();
+    const limited = checkRateLimit(req, { name: 'chat', limit: 20, windowMs: 5 * 60_000 });
+    if (limited) return limited;
 
-        if (!messages || !Array.isArray(messages)) {
+    try {
+        let raw: unknown;
+        try {
+            raw = await req.json();
+        } catch {
+            return new Response('Invalid JSON', { status: 400 });
+        }
+
+        const parsed = chatRequestSchema.safeParse(raw);
+        if (!parsed.success) {
             return new Response('Invalid request body', { status: 400 });
         }
 
+        const { messages } = parsed.data;
         const apiKey = process.env.GROQ_API_KEY;
         const lastUserMessage = messages[messages.length - 1]?.content || '';
 

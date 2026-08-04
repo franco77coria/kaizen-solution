@@ -270,7 +270,7 @@ export default function AISection() {
                         Potencia tu Negocio con{' '}
                         <span className="bg-gradient-to-r from-daylight-sky to-tiffany bg-clip-text text-transparent">IA</span>
                     </h2>
-                    <p className="text-lg text-white/50 max-w-2xl mx-auto font-light">
+                    <p className="text-lg text-white/65 max-w-2xl mx-auto font-light">
                         Soluciones de inteligencia artificial que transforman datos en decisiones estratégicas
                     </p>
                 </div>
@@ -288,7 +288,7 @@ export default function AISection() {
                                         <Icon className="text-daylight-sky" size={22} />
                                     </div>
                                     <h3 className="text-base font-semibold mb-2">{feature.title}</h3>
-                                    <p className="text-sm text-white/50 leading-relaxed">{feature.description}</p>
+                                    <p className="text-sm text-white/65 leading-relaxed">{feature.description}</p>
                                 </div>
                             </div>
                         )
@@ -324,7 +324,7 @@ export default function AISection() {
                                 + Audio IA
                             </span>
                         </h2>
-                        <p className="text-lg text-white/50 max-w-2xl mx-auto font-light">
+                        <p className="text-lg text-white/65 max-w-2xl mx-auto font-light">
                             Una plataforma ya construida y en producción. Campañas masivas de WhatsApp con mensajes
                             de voz personalizados por cada contacto, usando ElevenLabs.
                         </p>
@@ -352,7 +352,7 @@ export default function AISection() {
                                                     </span>
                                                 )}
                                             </div>
-                                            <p className="text-sm text-white/45 leading-relaxed">{feature.description}</p>
+                                            <p className="text-sm text-white/60 leading-relaxed">{feature.description}</p>
                                         </div>
                                     </div>
                                 )
@@ -387,7 +387,7 @@ export default function AISection() {
                                         </div>
                                         <div>
                                             <div className="text-xs font-semibold text-white">Kaizen Campaign</div>
-                                            <div className="text-[10px] text-green-400">En línea</div>
+                                            <div className="text-[11px] text-green-400">En línea</div>
                                         </div>
                                         <div className="ml-auto">
                                             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
@@ -402,13 +402,13 @@ export default function AISection() {
                                             ref={(el) => { messageRefs.current[0] = el }}
                                             className="bg-[#1a2637] rounded-xl rounded-tl-none p-3 max-w-[90%]"
                                         >
-                                            <div className="text-[10px] text-tiffany font-semibold mb-1">
+                                            <div className="text-[11px] text-tiffany font-semibold mb-1">
                                                 Campaña: Elecciones 2026
                                             </div>
                                             <p className="text-xs text-white/80 leading-relaxed">
                                                 Hola <span className="text-tiffany font-medium">{'{nombre}'}</span>, te enviamos tu mensaje personalizado como testigo de mesa.
                                             </p>
-                                            <div className="text-[9px] text-white/30 mt-1.5 text-right">9:42 AM</div>
+                                            <div className="text-[11px] text-white/55 mt-1.5 text-right">9:42 AM</div>
                                         </div>
 
                                         {/* Mensaje 2: Audio */}
@@ -430,10 +430,10 @@ export default function AISection() {
                                                             />
                                                         ))}
                                                     </div>
-                                                    <div className="text-[9px] text-white/40">0:15 · ElevenLabs AI</div>
+                                                    <div className="text-[11px] text-white/60">0:15 · ElevenLabs AI</div>
                                                 </div>
                                             </div>
-                                            <div className="text-[9px] text-white/30 mt-1 text-right flex items-center justify-end gap-1">
+                                            <div className="text-[11px] text-white/55 mt-1 text-right flex items-center justify-end gap-1">
                                                 9:42 AM <CheckCheck size={10} className="text-tiffany" />
                                             </div>
                                         </div>
@@ -443,29 +443,29 @@ export default function AISection() {
                                             ref={(el) => { messageRefs.current[2] = el }}
                                             className="bg-[#162230] rounded-xl p-3 border border-tiffany/10"
                                         >
-                                            <div className="text-[9px] text-tiffany font-semibold mb-2 uppercase tracking-wider">
+                                            <div className="text-[11px] text-tiffany font-semibold mb-2 uppercase tracking-wider">
                                                 Estado de campaña
                                             </div>
                                             <div className="grid grid-cols-2 gap-2">
                                                 <div>
                                                     <div className="text-sm font-bold text-white">2,847</div>
-                                                    <div className="text-[9px] text-white/35">Enviados</div>
+                                                    <div className="text-[11px] text-white/60">Enviados</div>
                                                 </div>
                                                 <div>
                                                     <div className="text-sm font-bold text-tiffany">2,791</div>
-                                                    <div className="text-[9px] text-white/35">Entregados</div>
+                                                    <div className="text-[11px] text-white/60">Entregados</div>
                                                 </div>
                                             </div>
                                             <div className="mt-2 bg-white/5 rounded-full h-1.5 overflow-hidden">
                                                 <div className="bg-gradient-to-r from-tiffany to-daylight-sky h-full rounded-full" style={{ width: '98%' }} />
                                             </div>
-                                            <div className="text-[9px] text-white/25 mt-1 text-right">98.4% entrega</div>
+                                            <div className="text-[11px] text-white/55 mt-1 text-right">98.4% entrega</div>
                                         </div>
                                     </div>
 
                                     {/* Input bar */}
                                     <div className="bg-[#1a2637] px-3 py-2.5 flex items-center gap-2 border-t border-white/5">
-                                        <div className="flex-1 bg-white/5 rounded-full px-3 py-1.5 text-[10px] text-white/25">
+                                        <div className="flex-1 bg-white/5 rounded-full px-3 py-1.5 text-[11px] text-white/55">
                                             Escribe un mensaje...
                                         </div>
                                         <div className="w-7 h-7 rounded-full bg-gradient-to-br from-tiffany to-daylight-sky flex items-center justify-center">

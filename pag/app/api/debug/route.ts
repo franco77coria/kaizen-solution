@@ -2,10 +2,15 @@ import { NextResponse } from "next/server"
 import { NextRequest } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { decrypt } from "@/lib/whatsapp"
+import { requireAdmin } from "@/lib/api-auth"
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
+    // Expone logs de WhatsApp, senders y teléfonos: nunca público.
+    const denied = await requireAdmin()
+    if (denied) return denied
+
     const { searchParams } = request.nextUrl
     const mode = searchParams.get("mode")
 

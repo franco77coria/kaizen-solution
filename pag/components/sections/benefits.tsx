@@ -182,11 +182,11 @@ export default function Benefits() {
     }
 
     return (
-        <section ref={sectionRef} id="beneficios" className="py-28 bg-white">
+        <section ref={sectionRef} id="beneficios" className="py-28 bg-white overflow-hidden">
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Section Header */}
                 <div ref={headerRef} className="text-center mb-20">
-                    <span className="text-sm font-medium tracking-widest uppercase text-daylight-sky mb-4 block">
+                    <span className="text-sm font-medium tracking-widest uppercase text-accent-ink mb-4 block">
                         Beneficios
                     </span>
                     <h2 className="text-3xl md:text-5xl font-heading font-bold text-egyptian mb-5">

@@ -17,7 +17,7 @@ export default function Navbar() {
         const handleScroll = () => {
             setIsScrolled(window.scrollY > 20)
         }
-        window.addEventListener('scroll', handleScroll)
+        window.addEventListener('scroll', handleScroll, { passive: true })
         return () => window.removeEventListener('scroll', handleScroll)
     }, [])
 
@@ -88,6 +88,16 @@ export default function Navbar() {
         return () => { ctx?.revert() }
     }, [])
 
+    // Escape cierra el menú móvil
+    useEffect(() => {
+        if (!isMobileMenuOpen) return
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') setIsMobileMenuOpen(false)
+        }
+        window.addEventListener('keydown', onKeyDown)
+        return () => window.removeEventListener('keydown', onKeyDown)
+    }, [isMobileMenuOpen])
+
     // ── GSAP: animate mobile menu open/close ──
     useEffect(() => {
         if (!mobileMenuRef.current) return
@@ -155,7 +165,7 @@ export default function Navbar() {
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-18 py-4">
                     {/* Logo */}
-                    <Link href="/" className="flex items-center gap-2.5 group">
+                    <Link href="/" className="flex items-center gap-2.5 group min-h-[44px]">
                         <div className="transform transition-transform duration-300 group-hover:scale-105">
                             <KaizenLogo className="h-9 w-9" />
                         </div>
@@ -189,8 +199,12 @@ export default function Navbar() {
 
                     {/* Mobile Menu Button */}
                     <button
+                        type="button"
                         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                        className={`md:hidden p-2 rounded-lg transition-colors ${isScrolled ? 'text-outer-space' : 'text-white'}`}
+                        aria-label={isMobileMenuOpen ? 'Cerrar menú' : 'Abrir menú'}
+                        aria-expanded={isMobileMenuOpen}
+                        aria-controls="mobile-menu"
+                        className={`md:hidden flex items-center justify-center h-11 w-11 -mr-2 rounded-lg transition-colors ${isScrolled ? 'text-outer-space' : 'text-white'}`}
                     >
                         {isMobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
                     </button>
@@ -199,21 +213,22 @@ export default function Navbar() {
 
             {/* Mobile Menu */}
             {isMobileMenuOpen && (
-                <div ref={mobileMenuRef} className="md:hidden bg-white border-t border-gray-100 shadow-xl overflow-hidden">
-                    <div className="px-4 py-6 space-y-4">
+                <div id="mobile-menu" ref={mobileMenuRef} className="md:hidden bg-white border-t border-gray-100 shadow-xl overflow-hidden">
+                    <div className="px-4 py-4 space-y-1">
                         {navLinks.map((link) => (
                             <Link
                                 key={link.href}
                                 href={link.href}
                                 onClick={() => setIsMobileMenuOpen(false)}
-                                className="mobile-nav-item block text-outer-space/70 hover:text-daylight-sky font-medium transition-colors text-sm"
+                                className="mobile-nav-item flex items-center min-h-[44px] px-2 -mx-2 rounded-lg text-outer-space hover:text-accent-ink hover:bg-gray-50 font-medium transition-colors text-sm"
                             >
                                 {link.label}
                             </Link>
                         ))}
                         <button
+                            type="button"
                             onClick={() => { handleCTA(); setIsMobileMenuOpen(false) }}
-                            className="mobile-nav-item w-full text-sm font-semibold bg-gradient-to-r from-daylight-sky to-tiffany text-[#0a0f1e] px-5 py-3 rounded-full"
+                            className="mobile-nav-item w-full min-h-[44px] mt-3 text-sm font-semibold bg-gradient-to-r from-daylight-sky to-tiffany text-[#0a0f1e] px-5 py-3 rounded-full"
                         >
                             Agendar Diagnóstico
                         </button>

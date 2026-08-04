@@ -142,10 +142,10 @@ export default function Footer({
                                     <span className="bg-gradient-to-r from-daylight-sky to-tiffany bg-clip-text text-transparent">Kaizen</span>{' '}
                                     Solution
                                 </h3>
-                                <p className="text-[11px] text-white/30 tracking-wider uppercase">Consulting & Data Management</p>
+                                <p className="text-[11px] text-white/55 tracking-wider uppercase">Consulting & Data Management</p>
                             </div>
                         </Link>
-                        <p className="text-sm text-white/40 leading-relaxed mb-6 max-w-sm">
+                        <p className="text-sm text-white/60 leading-relaxed mb-6 max-w-sm">
                             Transformación Digital con Propósito. Soluciones digitales a medida para tu negocio y la gestión pública.
                         </p>
 
@@ -160,10 +160,10 @@ export default function Footer({
                                             href={social.url!}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className={`flex items-center justify-center h-9 w-9 rounded-lg bg-white/5 ${social.hoverClass} transition-all duration-300 hover:scale-110`}
+                                            className={`flex items-center justify-center h-11 w-11 rounded-lg bg-white/5 ${social.hoverClass} transition-all duration-300 hover:scale-110`}
                                             aria-label={social.label}
                                         >
-                                            <Icon size={16} className="text-white/50 hover:text-white" />
+                                            <Icon size={16} className="text-white/65 hover:text-white" />
                                         </a>
                                     )
                                 })}
@@ -173,8 +173,8 @@ export default function Footer({
 
                     {/* Quick Links */}
                     <div className="footer-col md:col-span-3">
-                        <h4 className="text-xs font-semibold mb-5 text-white/30 uppercase tracking-widest">Navegación</h4>
-                        <ul className="space-y-3">
+                        <h4 className="text-xs font-semibold mb-5 text-white/55 uppercase tracking-widest">Navegación</h4>
+                        <ul className="space-y-0">
                             {[
                                 { href: '#servicios', label: 'Servicios' },
                                 { href: '#soluciones', label: 'Soluciones' },
@@ -183,7 +183,7 @@ export default function Footer({
                                 { href: '#contacto', label: 'Contacto' },
                             ].map((link) => (
                                 <li key={link.href}>
-                                    <Link href={link.href} className="text-sm text-white/40 hover:text-daylight-sky transition-colors hover:translate-x-1 inline-block">
+                                    <Link href={link.href} className="flex items-center min-h-[44px] text-sm text-white/60 hover:text-daylight-sky transition-colors hover:translate-x-1">
                                         {link.label}
                                     </Link>
                                 </li>
@@ -193,28 +193,28 @@ export default function Footer({
 
                     {/* Contact */}
                     <div className="footer-col md:col-span-4">
-                        <h4 className="text-xs font-semibold mb-5 text-white/30 uppercase tracking-widest">Contacto</h4>
+                        <h4 className="text-xs font-semibold mb-5 text-white/55 uppercase tracking-widest">Contacto</h4>
                         <ul className="space-y-4">
                             <li className="flex items-start gap-3">
                                 <MapPin size={16} className="mt-0.5 flex-shrink-0 text-daylight-sky/50" />
-                                <div className="text-sm text-white/40">
+                                <div className="text-sm text-white/60">
                                     <p>Buenos Aires, Argentina</p>
                                     <p>Bogotá D.C., Colombia</p>
                                 </div>
                             </li>
                             <li className="flex items-start gap-3">
                                 <Mail size={16} className="mt-0.5 flex-shrink-0 text-daylight-sky/50" />
-                                <a href={`mailto:${email}`} className="text-sm text-white/40 hover:text-daylight-sky transition-colors">
+                                <a href={`mailto:${email}`} className="inline-flex items-center min-h-[44px] text-sm text-white/60 hover:text-daylight-sky transition-colors">
                                     {email}
                                 </a>
                             </li>
                             <li className="flex items-start gap-3">
                                 <MessageCircle size={16} className="mt-0.5 flex-shrink-0 text-daylight-sky/50" />
-                                <div className="text-sm text-white/40 space-y-1">
-                                    <a href="https://wa.me/5491163515966" target="_blank" rel="noopener noreferrer" className="block hover:text-daylight-sky transition-colors">
+                                <div className="text-sm text-white/60 space-y-1">
+                                    <a href="https://wa.me/5491163515966" target="_blank" rel="noopener noreferrer" className="flex items-center min-h-[44px] hover:text-daylight-sky transition-colors">
                                         +54 9 11 6351-5966 (ARG)
                                     </a>
-                                    <a href="https://wa.me/573212050514" target="_blank" rel="noopener noreferrer" className="block hover:text-daylight-sky transition-colors">
+                                    <a href="https://wa.me/573212050514" target="_blank" rel="noopener noreferrer" className="flex items-center min-h-[44px] hover:text-daylight-sky transition-colors">
                                         +57 321 205 0514 (COL)
                                     </a>
                                 </div>
@@ -226,17 +226,17 @@ export default function Footer({
                 {/* Bottom Bar */}
                 <div ref={dividerRef} className="border-t border-white/5 mt-12 origin-center" />
                 <div ref={bottomRef} className="pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-                    <p className="text-xs text-white/25">
+                    <p className="text-xs text-white/55">
                         © {currentYear} {companyName}. Todos los derechos reservados.
                     </p>
                     <div className="flex items-center gap-6">
-                        <Link href="/privacidad" className="text-xs text-white/25 hover:text-daylight-sky transition-colors">
+                        <Link href="/privacidad" className="inline-flex items-center min-h-[44px] text-xs text-white/55 hover:text-daylight-sky transition-colors">
                             Política de Privacidad
                         </Link>
-                        <Link href="/terminos-y-condiciones" className="text-xs text-white/25 hover:text-daylight-sky transition-colors">
+                        <Link href="/terminos-y-condiciones" className="inline-flex items-center min-h-[44px] text-xs text-white/55 hover:text-daylight-sky transition-colors">
                             Términos y Condiciones
                         </Link>
-                        <Link href="/eliminacion-de-datos" className="text-xs text-white/25 hover:text-daylight-sky transition-colors">
+                        <Link href="/eliminacion-de-datos" className="inline-flex items-center min-h-[44px] text-xs text-white/55 hover:text-daylight-sky transition-colors">
                             Eliminación de Datos
                         </Link>
                     </div>

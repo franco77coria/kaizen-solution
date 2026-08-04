@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Send, MessageCircle, CheckCircle } from 'lucide-react'
+import { Send, MessageCircle, CheckCircle, AlertCircle } from 'lucide-react'
 
 interface ContactCTAProps {
     whatsappNumber?: string | null
@@ -24,9 +24,11 @@ export default function ContactCTA({
         phone: '',
         company: '',
         message: '',
+        website: '', // honeypot — oculto para personas, tentador para bots
     })
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [isSubmitted, setIsSubmitted] = useState(false)
+    const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
     useEffect(() => {
         let ctx: { revert: () => void } | null = null
@@ -126,30 +128,49 @@ export default function ContactCTA({
         return () => { ctx?.revert() }
     }, [])
 
+    // Link a WhatsApp precargado con los datos del formulario. Se renderiza como
+    // <a> en el estado de éxito en vez de abrirse con window.open: después de un
+    // await ya no estamos dentro del gesto del usuario y Safari bloquea el popup.
+    const whatsappHref = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
+        `Hola, soy ${formData.name}${formData.company ? ` de ${formData.company}` : ''}. Me gustaría agendar un Diagnóstico de Madurez Digital.${formData.message ? `\n\n${formData.message}` : ''}`
+    )}`
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+        if (isSubmitting) return
+
         setIsSubmitting(true)
+        setErrorMsg(null)
 
         try {
-            await fetch('/api/leads', {
+            const res = await fetch('/api/leads', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     name: formData.name,
+                    email: formData.email,
                     whatsapp: formData.phone,
-                    conversationSummary: `Formulario de contacto: ${formData.message || 'Sin mensaje'}. Empresa: ${formData.company || 'No especificó'}`
-                })
-            }).catch(() => { /* DB might not be available */ })
+                    company: formData.company,
+                    message: formData.message,
+                    website: formData.website,
+                }),
+            })
+
+            if (!res.ok) {
+                setErrorMsg(
+                    res.status === 429
+                        ? 'Enviaste varias solicitudes seguidas. Esperá unos minutos o escribinos por WhatsApp.'
+                        : 'No pudimos registrar tu solicitud. Probá de nuevo o escribinos por WhatsApp.'
+                )
+                return
+            }
+
+            setIsSubmitted(true)
         } catch {
-            /* continue anyway */
+            setErrorMsg('Hubo un problema de conexión. Probá de nuevo o escribinos por WhatsApp.')
+        } finally {
+            setIsSubmitting(false)
         }
-
-        const message = `Hola, soy ${formData.name}${formData.company ? ` de ${formData.company}` : ''}. Me gustaría agendar un Diagnóstico de Madurez Digital.${formData.message ? `\n\n${formData.message}` : ''}`
-        window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`, '_blank')
-
-        setIsSubmitting(false)
-        setIsSubmitted(true)
-        setTimeout(() => setIsSubmitted(false), 5000)
     }
 
     const handleWhatsAppClick = () => {
@@ -157,12 +178,12 @@ export default function ContactCTA({
     }
 
     return (
-        <section ref={sectionRef} id="contacto" className="py-28 bg-gray-50/50">
+        <section ref={sectionRef} id="contacto" className="py-28 bg-gray-50/50 overflow-hidden">
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
                     {/* Left Side - Info */}
                     <div ref={leftColRef}>
-                        <span className="text-sm font-medium tracking-widest uppercase text-daylight-sky mb-4 block">
+                        <span className="text-sm font-medium tracking-widest uppercase text-accent-ink mb-4 block">
                             Contacto
                         </span>
                         <h2 className="text-3xl md:text-4xl font-heading font-bold text-egyptian mb-6 leading-tight">
@@ -179,7 +200,7 @@ export default function ContactCTA({
                                 { step: '03', title: 'Implementación', desc: 'Te acompañamos en cada paso del proceso' },
                             ].map((item) => (
                                 <div key={item.step} className="contact-step flex items-start gap-4">
-                                    <span className="text-xs font-bold text-daylight-sky bg-daylight-sky/10 px-2.5 py-1 rounded-full mt-0.5">
+                                    <span className="text-xs font-bold text-accent-ink bg-daylight-sky/10 px-2.5 py-1 rounded-full mt-0.5">
                                         {item.step}
                                     </span>
                                     <div>
@@ -207,13 +228,65 @@ export default function ContactCTA({
 
                     {/* Right Side - Form */}
                     <div ref={rightColRef}>
-                        <form ref={formFieldsRef} onSubmit={handleSubmit} className="bg-white rounded-3xl border border-gray-100 shadow-xl shadow-gray-100/50 p-8 space-y-5">
-                            {isSubmitted && (
-                                <div className="form-field flex items-center gap-2 bg-tiffany/10 border border-tiffany/20 rounded-xl p-3">
-                                    <CheckCircle className="text-tiffany" size={18} />
-                                    <span className="text-sm text-egyptian font-medium">¡Mensaje enviado! Te contactaremos pronto.</span>
+                        {isSubmitted ? (
+                            <div
+                                role="status"
+                                className="bg-white rounded-3xl border border-gray-100 shadow-xl shadow-gray-100/50 p-8 text-center"
+                            >
+                                <div className="w-14 h-14 rounded-2xl bg-teal-50 flex items-center justify-center mx-auto mb-5">
+                                    <CheckCircle className="text-teal-700" size={26} />
+                                </div>
+                                <h3 className="text-xl font-heading font-bold text-egyptian mb-2">
+                                    Recibimos tu solicitud, {formData.name.split(' ')[0]}
+                                </h3>
+                                <p className="text-sm text-outer-space mb-7 leading-relaxed">
+                                    Te vamos a contactar dentro de las próximas 24 horas hábiles. Si preferís
+                                    adelantar la conversación, escribinos ahora por WhatsApp.
+                                </p>
+                                <a
+                                    href={whatsappHref}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center justify-center gap-2 w-full bg-[#0a0f1e] hover:bg-egyptian text-white font-semibold py-4 rounded-xl transition-colors duration-300"
+                                >
+                                    <MessageCircle size={18} />
+                                    Continuar por WhatsApp
+                                </a>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsSubmitted(false)
+                                        setFormData({ name: '', email: '', phone: '', company: '', message: '', website: '' })
+                                    }}
+                                    className="mt-4 text-sm text-outer-space hover:text-egyptian underline underline-offset-4"
+                                >
+                                    Enviar otra solicitud
+                                </button>
+                            </div>
+                        ) : (
+                        <form ref={formFieldsRef} onSubmit={handleSubmit} noValidate={false} className="bg-white rounded-3xl border border-gray-100 shadow-xl shadow-gray-100/50 p-8 space-y-5">
+                            {errorMsg && (
+                                <div
+                                    role="alert"
+                                    className="form-field flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl p-3"
+                                >
+                                    <AlertCircle className="text-red-700 flex-shrink-0 mt-0.5" size={18} />
+                                    <span className="text-sm text-red-800">{errorMsg}</span>
                                 </div>
                             )}
+
+                            {/* Honeypot: fuera de pantalla, no en display:none (algunos bots lo detectan) */}
+                            <div aria-hidden="true" className="absolute left-[-9999px] w-px h-px overflow-hidden">
+                                <label htmlFor="contact-website">No completar este campo</label>
+                                <input
+                                    id="contact-website"
+                                    type="text"
+                                    tabIndex={-1}
+                                    autoComplete="off"
+                                    value={formData.website}
+                                    onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                                />
+                            </div>
 
                             <div className="form-field grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
@@ -227,7 +300,7 @@ export default function ContactCTA({
                                         value={formData.name}
                                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                         placeholder="Juan Pérez"
-                                        className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:border-daylight-sky focus:ring-2 focus:ring-daylight-sky/10 outline-none transition-all text-sm"
+                                        className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:border-accent-ink focus:ring-2 focus:ring-accent-ink/20 outline-none transition-all text-sm"
                                     />
                                 </div>
                                 <div>
@@ -241,7 +314,7 @@ export default function ContactCTA({
                                         value={formData.email}
                                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                         placeholder="juan@empresa.com"
-                                        className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:border-daylight-sky focus:ring-2 focus:ring-daylight-sky/10 outline-none transition-all text-sm"
+                                        className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:border-accent-ink focus:ring-2 focus:ring-accent-ink/20 outline-none transition-all text-sm"
                                     />
                                 </div>
                             </div>
@@ -257,7 +330,7 @@ export default function ContactCTA({
                                         value={formData.phone}
                                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                                         placeholder="+57 300 000 0000"
-                                        className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:border-daylight-sky focus:ring-2 focus:ring-daylight-sky/10 outline-none transition-all text-sm"
+                                        className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:border-accent-ink focus:ring-2 focus:ring-accent-ink/20 outline-none transition-all text-sm"
                                     />
                                 </div>
                                 <div>
@@ -270,7 +343,7 @@ export default function ContactCTA({
                                         value={formData.company}
                                         onChange={(e) => setFormData({ ...formData, company: e.target.value })}
                                         placeholder="Mi Empresa S.A.S."
-                                        className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:border-daylight-sky focus:ring-2 focus:ring-daylight-sky/10 outline-none transition-all text-sm"
+                                        className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:border-accent-ink focus:ring-2 focus:ring-accent-ink/20 outline-none transition-all text-sm"
                                     />
                                 </div>
                             </div>
@@ -285,7 +358,7 @@ export default function ContactCTA({
                                     value={formData.message}
                                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                                     placeholder="Contanos sobre tu proyecto o necesidad..."
-                                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:border-daylight-sky focus:ring-2 focus:ring-daylight-sky/10 outline-none transition-all text-sm resize-none"
+                                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:border-accent-ink focus:ring-2 focus:ring-accent-ink/20 outline-none transition-all text-sm resize-none"
                                 />
                             </div>
 
@@ -293,17 +366,19 @@ export default function ContactCTA({
                                 <button
                                     type="submit"
                                     disabled={isSubmitting}
-                                    className="w-full flex items-center justify-center gap-2 bg-[#0a0f1e] hover:bg-egyptian text-white font-semibold py-4 rounded-xl transition-all duration-300 disabled:opacity-50 hover:shadow-lg"
+                                    aria-busy={isSubmitting}
+                                    className="w-full flex items-center justify-center gap-2 bg-[#0a0f1e] hover:bg-egyptian text-white font-semibold py-4 rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg"
                                 >
                                     {isSubmitting ? 'Enviando...' : 'Enviar Solicitud'}
                                     <Send size={16} />
                                 </button>
                             </div>
 
-                            <p className="text-xs text-slate text-center">
-                                Al enviar, aceptás nuestra <a href="/privacidad" className="text-daylight-sky hover:underline">Política de Privacidad</a>
+                            <p className="text-xs text-outer-space text-center">
+                                Al enviar, aceptás nuestra <a href="/privacidad" className="text-teal-700 underline underline-offset-2 hover:text-egyptian">Política de Privacidad</a>
                             </p>
                         </form>
+                        )}
                     </div>
                 </div>
             </div>
