@@ -39,7 +39,6 @@ export const MUNICIPIOS: Record<string, Municipio> = {
         plan: 'Plan de Desarrollo 2024-2027',
         periodoInicio: 2024,
         periodoFin: 2027,
-        escudo: '/politica/anapoima/escudo.png',
         tema: {
             primary: '#D4520C',
             primaryDark: '#B8440A',

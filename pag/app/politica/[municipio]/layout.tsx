@@ -44,14 +44,8 @@ export default async function PoliticaLayout({
                         <div className="flex items-center justify-between h-16">
                             {/* Logo & Municipio */}
                             <div className="flex items-center space-x-3">
-                                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--pol-primary)] to-[var(--pol-primary-dark)] text-white font-bold shadow-lg shadow-[var(--pol-primary)]/20">
-                                    {municipio.escudo ? (
-                                        <img src={municipio.escudo} alt={municipio.nombre} className="w-7 h-7 object-contain" onError={(e) => {
-                                            // Fallback al monograma si no carga la imagen
-                                            e.currentTarget.style.display = 'none'
-                                        }} />
-                                    ) : null}
-                                    <span className="text-sm tracking-wider">{monograma(municipio)}</span>
+                                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--pol-primary)] via-orange-600 to-amber-700 text-white font-black shadow-lg shadow-[var(--pol-primary)]/30 border border-orange-400/30">
+                                    <span className="text-sm font-black tracking-wider text-white">{monograma(municipio)}</span>
                                 </div>
                                 <div>
                                     <div className="flex items-center space-x-2">

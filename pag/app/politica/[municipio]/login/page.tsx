@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getMunicipio, monograma } from '@/lib/politica/municipios'
-import { ShieldCheck, ArrowRight, Loader2, Sparkles, Building2 } from 'lucide-react'
+import { ShieldCheck, ArrowRight, Loader2, Landmark, Sparkles, Building2, User, Phone } from 'lucide-react'
 
 export default function PoliticaLoginPage({
     params,
@@ -58,55 +58,62 @@ export default function PoliticaLoginPage({
     }
 
     return (
-        <div className="min-h-screen bg-slate-950 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden select-none">
-            {/* Ambient Lighting Gradients */}
-            <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-gradient-to-tr from-orange-600/20 to-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute bottom-10 right-10 w-[300px] h-[300px] bg-slate-800/30 rounded-full blur-2xl pointer-events-none" />
+        <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden select-none font-sans antialiased">
+            {/* Tech Grid Background */}
+            <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:24px_24px] opacity-40 pointer-events-none" />
 
-            <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
-                {/* Municipal Badge Logo */}
-                <div className="flex justify-center">
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--pol-primary)] to-slate-900 border border-[var(--pol-primary)]/40 flex items-center justify-center shadow-xl shadow-[var(--pol-primary)]/20">
-                        {municipio.escudo ? (
-                            <img src={municipio.escudo} alt={municipio.nombre} className="w-10 h-10 object-contain" onError={(e) => {
-                                e.currentTarget.style.display = 'none'
-                            }} />
-                        ) : null}
-                        <span className="text-xl font-black tracking-wider text-white">{monograma(municipio)}</span>
+            {/* Glowing Mesh Orbs */}
+            <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-tr from-orange-600/25 via-amber-500/15 to-transparent rounded-full blur-[120px] pointer-events-none" />
+            <div className="absolute bottom-10 right-10 w-[400px] h-[400px] bg-gradient-to-br from-indigo-900/20 via-slate-900/40 to-transparent rounded-full blur-[100px] pointer-events-none" />
+
+            <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10 text-center space-y-4">
+                {/* Municipal Badge Emblem */}
+                <div className="inline-flex items-center justify-center p-1 rounded-2xl bg-gradient-to-b from-orange-500/30 via-orange-500/10 to-transparent border border-orange-500/40 shadow-2xl shadow-orange-500/20 backdrop-blur-xl">
+                    <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-orange-600 via-amber-600 to-slate-900 flex items-center justify-center border border-orange-400/40 shadow-inner">
+                        <div className="flex flex-col items-center justify-center text-white">
+                            <Landmark className="w-6 h-6 text-amber-200 mb-0.5" />
+                            <span className="text-xs font-black tracking-widest leading-none">{monograma(municipio)}</span>
+                        </div>
                     </div>
                 </div>
 
-                <h2 className="mt-4 text-center text-2xl sm:text-3xl font-extrabold text-slate-100 tracking-tight">
-                    Alcaldía Municipal de {municipio.nombre}
-                </h2>
-                <p className="mt-2 text-center text-sm text-slate-400 font-medium">
-                    {municipio.lema} • <span className="text-[var(--pol-primary-light)] font-semibold">{municipio.plan}</span>
-                </p>
+                <div>
+                    <h2 className="text-2xl sm:text-3xl font-black text-slate-100 tracking-tight">
+                        Alcaldía Municipal de {municipio.nombre}
+                    </h2>
+                    <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900/90 border border-slate-800 backdrop-blur-md">
+                        <Sparkles className="w-3.5 h-3.5 text-orange-400" />
+                        <span className="text-xs font-semibold text-slate-300">
+                            {municipio.lema} • <span className="text-orange-400 font-bold">{municipio.plan}</span>
+                        </span>
+                    </div>
+                </div>
             </div>
 
             <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md relative z-10 px-4">
-                <div className="bg-slate-900/90 backdrop-blur-xl py-8 px-6 shadow-2xl rounded-2xl border border-slate-800 sm:px-10">
-                    <div className="mb-6 pb-4 border-b border-slate-800 flex items-center space-x-3">
-                        <div className="p-2 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-400">
+                {/* Futuristic Glassmorphic Card */}
+                <div className="bg-slate-900/70 backdrop-blur-2xl py-8 px-6 sm:px-10 shadow-[0_0_80px_-15px_rgba(212,82,12,0.25)] rounded-3xl border border-slate-800/90">
+                    <div className="mb-6 pb-5 border-b border-slate-800/80 flex items-center space-x-3.5">
+                        <div className="p-2.5 rounded-xl bg-orange-500/10 border border-orange-500/30 text-orange-400">
                             <Building2 className="w-5 h-5" />
                         </div>
                         <div>
-                            <h3 className="text-base font-semibold text-slate-200">Seguimiento a Políticas Públicas</h3>
-                            <p className="text-xs text-slate-400">Ingresá tu nombre o número de teléfono registrado</p>
+                            <h3 className="text-base font-extrabold text-slate-100 tracking-tight">Tablero de Políticas Públicas</h3>
+                            <p className="text-xs text-slate-400 font-medium">Ingresá tu nombre o número de teléfono registrado</p>
                         </div>
                     </div>
 
                     {error && (
-                        <div className="mb-4 p-3.5 rounded-xl bg-red-950/60 border border-red-800/80 text-red-200 text-sm font-medium animate-fadeIn flex items-start space-x-2">
-                            <span className="text-red-400 font-bold">⚠️</span>
+                        <div className="mb-5 p-4 rounded-2xl bg-red-950/80 border border-red-800/80 text-red-200 text-sm font-semibold animate-fadeIn flex items-start space-x-2.5">
+                            <span className="text-red-400 text-base">⚠️</span>
                             <span>{error}</span>
                         </div>
                     )}
 
-                    <form className="space-y-5" onSubmit={handleSubmit}>
+                    <form className="space-y-6" onSubmit={handleSubmit}>
                         <div>
-                            <label htmlFor="usuario-input" className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
-                                Nombre o Teléfono
+                            <label htmlFor="usuario-input" className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
+                                Identificación de Usuario
                             </label>
                             <div className="relative">
                                 <input
@@ -116,8 +123,8 @@ export default function PoliticaLoginPage({
                                     required
                                     value={input}
                                     onChange={(e) => setInput(e.target.value)}
-                                    placeholder="Ej: Sofia Moreno o 310..."
-                                    className="w-full px-4 py-3.5 rounded-xl bg-slate-950/80 border border-slate-700/80 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[var(--pol-primary)] focus:border-transparent text-sm transition-all"
+                                    placeholder="Ingresá tu nombre o teléfono (ej: 310...)"
+                                    className="w-full px-4 py-3.5 rounded-xl bg-slate-950/90 border border-slate-700/80 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm transition-all font-medium shadow-inner"
                                 />
                             </div>
                         </div>
@@ -125,28 +132,28 @@ export default function PoliticaLoginPage({
                         <button
                             type="submit"
                             disabled={loading || !input.trim()}
-                            className="w-full flex justify-center items-center py-3.5 px-4 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-[var(--pol-primary)] to-[var(--pol-primary-dark)] hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--pol-primary)] shadow-lg shadow-[var(--pol-primary)]/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            className="w-full flex justify-center items-center py-3.5 px-4 rounded-xl text-sm font-extrabold text-white bg-gradient-to-r from-orange-600 via-amber-600 to-orange-700 hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 shadow-xl shadow-orange-600/30 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                         >
                             {loading ? (
                                 <>
                                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                    Validando...
+                                    Validando credenciales...
                                 </>
                             ) : (
                                 <>
                                     Ingresar al Tablero
-                                    <ArrowRight className="w-4 h-4 ml-2" />
+                                    <ArrowRight className="w-4 h-4 ml-2.5" />
                                 </>
                             )}
                         </button>
                     </form>
 
-                    <div className="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
-                        <span className="flex items-center">
-                            <ShieldCheck className="w-3.5 h-3.5 mr-1 text-emerald-400" />
-                            Acceso seguro institucional
+                    <div className="mt-8 pt-5 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400 font-medium">
+                        <span className="flex items-center text-slate-300">
+                            <ShieldCheck className="w-4 h-4 mr-1.5 text-emerald-400" />
+                            Acceso seguro municipal
                         </span>
-                        <span className="text-slate-400">Kaizen Solution</span>
+                        <span className="text-slate-400 font-semibold">Kaizen Solution</span>
                     </div>
                 </div>
             </div>
