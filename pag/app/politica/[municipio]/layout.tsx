@@ -29,7 +29,7 @@ export default async function PoliticaLayout({
     const cssVars = temaCssVars(municipio)
 
     return (
-        <div style={cssVars} className="dark bg-[#060a12] text-slate-100 min-h-screen">
+        <div style={cssVars} className="bg-[#f8fafc] text-slate-900 min-h-screen font-sans antialiased">
             <PoliticaShell municipio={municipio} sesion={sesion}>
                 {children}
             </PoliticaShell>

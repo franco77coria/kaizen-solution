@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Send, Upload, CheckCircle2, AlertCircle, FileText, DollarSign, Calendar } from 'lucide-react'
+import { Send, CheckCircle2, AlertCircle } from 'lucide-react'
 
 interface ReportarClientProps {
     municipio: any
@@ -83,42 +83,38 @@ export default function ReportarClient({
     }
 
     return (
-        <div className="max-w-3xl mx-auto space-y-8">
-            <div className="border-b border-slate-800 pb-6">
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-100 tracking-tight flex items-center gap-3">
-                    <Send className="w-7 h-7 text-[var(--pol-primary-light)]" />
-                    Reportar Avance de Actividad
-                </h1>
-                <p className="text-sm text-slate-400 mt-1">
+        <div className="max-w-3xl mx-auto space-y-6">
+            <div>
+                <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Reportar Avance</h1>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">
                     Registrá los logros, ejecuciones presupuestales y evidencias de tu dependencia
                 </p>
             </div>
 
             {successMsg && (
-                <div className="p-4 rounded-xl bg-emerald-950/80 border border-emerald-800 text-emerald-200 text-sm font-semibold flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                     {successMsg}
                 </div>
             )}
 
             {errorMsg && (
-                <div className="p-4 rounded-xl bg-red-950/80 border border-red-800 text-red-200 text-sm font-semibold flex items-center gap-2">
-                    <AlertCircle className="w-5 h-5 text-red-400" />
+                <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs font-bold flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-red-600" />
                     {errorMsg}
                 </div>
             )}
 
-            <form onSubmit={handleSubmit} className="p-6 sm:p-8 rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl space-y-6">
-                {/* Seleccionar Actividad */}
-                <div className="space-y-2">
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-300">
+            <form onSubmit={handleSubmit} className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-5">
+                <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-slate-700">
                         Actividad / Compromiso *
                     </label>
                     <select
                         required
                         value={actividadId}
                         onChange={(e) => setActividadId(e.target.value)}
-                        className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-700 text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--pol-primary)]"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--pol-primary)]"
                     >
                         <option value="">-- Seleccioná la actividad a reportar --</option>
                         {actividades.map((a) => (
@@ -130,20 +126,19 @@ export default function ReportarClient({
                 </div>
 
                 {actSeleccionada && (
-                    <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2 text-xs">
-                        <div className="text-slate-400">
-                            Meta configurada: <span className="font-semibold text-white">{actSeleccionada.tipoMeta}</span>
+                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1">
+                        <div className="text-slate-500">
+                            Meta configurada: <span className="font-semibold text-slate-900">{actSeleccionada.tipoMeta}</span>
                             {actSeleccionada.metaNumero != null && ` (${actSeleccionada.metaNumero})`}
                         </div>
-                        <div className="text-slate-400">
-                            Dependencia: <span className="font-semibold text-slate-200">{actSeleccionada.dependencia?.nombre || 'General'}</span>
+                        <div className="text-slate-500">
+                            Dependencia: <span className="font-semibold text-slate-800">{actSeleccionada.dependencia?.nombre || 'General'}</span>
                         </div>
                     </div>
                 )}
 
-                {/* Período */}
-                <div className="space-y-2">
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-300">
+                <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-slate-700">
                         Período / Año *
                     </label>
                     <input
@@ -152,14 +147,13 @@ export default function ReportarClient({
                         value={periodoTexto}
                         onChange={(e) => setPeriodoTexto(e.target.value)}
                         placeholder="Ej: 2026 o I Trimestre 2026"
-                        className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-700 text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--pol-primary)]"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--pol-primary)]"
                     />
                 </div>
 
-                {/* Valor de Avance */}
                 {actSeleccionada?.tipoMeta === 'BOOLEANO' ? (
                     <div className="space-y-2">
-                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-300">
+                        <label className="block text-xs font-bold text-slate-700">
                             Estado del Cumplimiento
                         </label>
                         <div className="flex gap-4">
@@ -169,9 +163,8 @@ export default function ReportarClient({
                                     name="booleano"
                                     checked={valorBooleano}
                                     onChange={() => setValorBooleano(true)}
-                                    className="text-[var(--pol-primary)]"
                                 />
-                                <span className="text-sm font-semibold text-emerald-400">Realizado / Cumplido</span>
+                                <span className="text-xs font-bold text-emerald-700">Realizado / Cumplido</span>
                             </label>
                             <label className="flex items-center space-x-2 cursor-pointer">
                                 <input
@@ -179,15 +172,14 @@ export default function ReportarClient({
                                     name="booleano"
                                     checked={!valorBooleano}
                                     onChange={() => setValorBooleano(false)}
-                                    className="text-[var(--pol-primary)]"
                                 />
-                                <span className="text-sm font-semibold text-slate-400">En Proceso / Pendiente</span>
+                                <span className="text-xs font-bold text-slate-600">En Proceso / Pendiente</span>
                             </label>
                         </div>
                     </div>
                 ) : (
-                    <div className="space-y-2">
-                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-300">
+                    <div className="space-y-1.5">
+                        <label className="block text-xs font-bold text-slate-700">
                             Valor Reportado (Cantidad / Avance)
                         </label>
                         <input
@@ -196,15 +188,14 @@ export default function ReportarClient({
                             value={valorNumero}
                             onChange={(e) => setValorNumero(e.target.value)}
                             placeholder="Ej: 15"
-                            className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-700 text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--pol-primary)]"
+                            className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--pol-primary)]"
                         />
                     </div>
                 )}
 
-                {/* Presupuesto Ejecutado */}
-                <div className="space-y-2">
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-300">
-                        Presupuesto Ejecutado en este Reporte ($ COP)
+                <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-slate-700">
+                        Presupuesto Ejecutado ($ COP)
                     </label>
                     <input
                         type="number"
@@ -212,27 +203,25 @@ export default function ReportarClient({
                         value={presupuestoEjecutado}
                         onChange={(e) => setPresupuestoEjecutado(e.target.value)}
                         placeholder="Ej: 5000000"
-                        className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-700 text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--pol-primary)]"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--pol-primary)]"
                     />
                 </div>
 
-                {/* Observaciones */}
-                <div className="space-y-2">
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-300">
-                        Observaciones / Descripción del Avance
+                <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-slate-700">
+                        Observaciones / Descripción
                     </label>
                     <textarea
                         rows={3}
                         value={observaciones}
                         onChange={(e) => setObservaciones(e.target.value)}
                         placeholder="Detallá las acciones realizadas..."
-                        className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-700 text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--pol-primary)]"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--pol-primary)]"
                     />
                 </div>
 
-                {/* Evidencia Link */}
-                <div className="space-y-2">
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-300">
+                <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-slate-700">
                         Enlace a Evidencia (Google Drive / OneDrive / Archivo)
                     </label>
                     <input
@@ -240,14 +229,14 @@ export default function ReportarClient({
                         value={evidenciaUrl}
                         onChange={(e) => setEvidenciaUrl(e.target.value)}
                         placeholder="https://drive.google.com/..."
-                        className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-700 text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--pol-primary)]"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--pol-primary)]"
                     />
                 </div>
 
                 <button
                     type="submit"
                     disabled={submitting || !actividadId}
-                    className="w-full py-3.5 px-4 rounded-xl font-bold text-white bg-gradient-to-r from-[var(--pol-primary)] to-[var(--pol-primary-dark)] hover:brightness-110 shadow-lg shadow-[var(--pol-primary)]/30 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                    className="w-full py-3 px-4 rounded-xl font-bold text-xs text-white bg-[var(--pol-primary)] hover:opacity-90 transition-opacity shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                     {submitting ? 'Guardando reporte...' : 'Enviar Reporte de Avance'}
                 </button>

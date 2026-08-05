@@ -1,12 +1,11 @@
 'use client'
 
 import React, { useState, useMemo } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 import {
     Search, Filter, ChevronDown, ChevronRight, Download,
     CheckCircle2, Clock, AlertTriangle, Layers, Building2, TrendingUp,
-    ExternalLink, DollarSign, Calendar, X, Eye, Sparkles, BarChart3,
-    ChevronLeft, List, Grid
+    ExternalLink, DollarSign, Calendar, X, Eye, BarChart3,
+    ChevronLeft, List, RefreshCw
 } from 'lucide-react'
 import { calcularCumplimientoActividad, promedioSimple } from '@/lib/politica/calculo'
 
@@ -33,10 +32,10 @@ export default function DashboardClient({
     const [selectedDependencia, setSelectedDependencia] = useState<string>('todas')
     const [selectedEstado, setSelectedEstado] = useState<string>('todos')
 
-    // Modo de Vista: 'arbol' (Estructura Jerárquica) vs 'lista' (Vista Lista Paginada)
+    // Modo de Vista: 'arbol' vs 'lista'
     const [viewMode, setViewMode] = useState<'arbol' | 'lista'>('arbol')
 
-    // Paginación para la vista de lista
+    // Paginación para vista de lista
     const [currentPage, setCurrentPage] = useState(1)
     const [pageSize, setPageSize] = useState(10)
 
@@ -113,7 +112,6 @@ export default function DashboardClient({
         return actividadesFiltradas.slice(start, start + pageSize)
     }, [actividadesFiltradas, currentPage, pageSize])
 
-    // Resetear a la página 1 cuando cambian los filtros
     const handleFilterChange = (setter: any, val: any) => {
         setter(val)
         setCurrentPage(1)
@@ -188,122 +186,111 @@ export default function DashboardClient({
     }
 
     return (
-        <div className="space-y-8">
-            {/* Header del Tablero */}
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-800/80 pb-6">
+        <div className="space-y-6">
+            {/* Header Limpio Minimalista (Igual a la imagen de referencia) */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl font-black text-slate-100 tracking-tight flex items-center gap-3">
-                        <span>Tablero de Control de Políticas Públicas</span>
-                        <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20">
-                            En Tiempo Real
-                        </span>
-                    </h1>
-                    <p className="text-sm text-slate-400 mt-1 font-medium">
-                        Monitoreo de cumplimiento del Plan de Desarrollo Municipal • {municipio.nombre}
+                    <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Dashboard</h1>
+                    <p className="text-xs text-slate-500 font-medium mt-0.5">
+                        Monitoreo de cumplimiento del Plan de Desarrollo • {municipio.nombre}
                     </p>
                 </div>
 
                 <button
                     onClick={exportarCSV}
-                    className="self-start md:self-auto px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white font-bold text-sm border border-slate-800 transition-all duration-200 active:scale-[0.98] flex items-center shadow-lg shadow-black/40"
+                    className="px-4 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs transition-colors shadow-sm flex items-center justify-center space-x-2"
                 >
-                    <Download className="w-4 h-4 mr-2 text-orange-400" />
-                    Exportar reporte CSV
+                    <Download className="w-3.5 h-3.5 text-slate-500" />
+                    <span>Exportar reporte CSV</span>
                 </button>
             </div>
 
-            {/* Tarjetas KPI Animadas */}
-            <motion.div
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4 }}
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
-            >
-                {/* KPI 1: Cumplimiento Global */}
-                <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-[#0c121e] border border-slate-800/90 shadow-xl relative overflow-hidden group hover:border-orange-500/40 transition-all duration-300">
+            {/* 4 Tarjetas KPI Claras en Fondo Blanco (Exactamente idénticas a la imagen de referencia) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* KPI 1: Avance Global */}
+                <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-3">
                     <div className="flex items-center justify-between">
-                        <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Avance Global</span>
-                        <TrendingUp className="w-5 h-5 text-orange-400" />
+                        <span className="text-xs font-semibold text-slate-500">Avance global</span>
+                        <div className="w-7 h-7 rounded-full bg-cyan-50 flex items-center justify-center text-cyan-600">
+                            <TrendingUp className="w-4 h-4" />
+                        </div>
                     </div>
-                    <div className="mt-3 flex items-baseline justify-between">
-                        <span className="text-3xl sm:text-4xl font-black text-slate-100 tracking-tight">{cumplimientoGlobal}%</span>
-                        <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
-                            {cumplidas100} / {totalActividades} metas
-                        </span>
-                    </div>
-                    <div className="w-full h-2 rounded-full bg-slate-800/80 mt-3 overflow-hidden">
-                        <div
-                            className="h-full bg-gradient-to-r from-orange-500 to-emerald-400 rounded-full transition-all duration-700"
-                            style={{ width: `${cumplimientoGlobal}%` }}
-                        />
+                    <div>
+                        <div className="text-3xl font-extrabold text-slate-900 tracking-tight">{cumplimientoGlobal}%</div>
+                        <p className="text-[11px] text-slate-400 font-medium mt-1">
+                            {cumplidas100} de {totalActividades} metas completadas
+                        </p>
                     </div>
                 </div>
 
-                {/* KPI 2: Actividades Cumplidas */}
-                <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800/90 shadow-xl hover:border-slate-700 transition-all duration-300">
+                {/* KPI 2: Metas Completadas */}
+                <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-3">
                     <div className="flex items-center justify-between">
-                        <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Metas Completadas</span>
-                        <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                        <span className="text-xs font-semibold text-slate-500">Metas completadas</span>
+                        <div className="w-7 h-7 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">
+                            <CheckCircle2 className="w-4 h-4" />
+                        </div>
                     </div>
-                    <div className="mt-3 flex items-baseline justify-between">
-                        <span className="text-3xl sm:text-4xl font-black text-emerald-400">{cumplidas100}</span>
-                        <span className="text-xs text-slate-400 font-bold">
-                            {totalActividades ? Math.round((cumplidas100 / totalActividades) * 100) : 0}% del total
-                        </span>
+                    <div>
+                        <div className="text-3xl font-extrabold text-slate-900 tracking-tight">{cumplidas100}</div>
+                        <p className="text-[11px] text-slate-400 font-medium mt-1">
+                            {totalActividades ? Math.round((cumplidas100 / totalActividades) * 100) : 0}% del total de compromisos
+                        </p>
                     </div>
-                    <p className="text-xs text-slate-500 font-medium mt-2">Actividades con 100% de ejecución</p>
                 </div>
 
                 {/* KPI 3: En Proceso */}
-                <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800/90 shadow-xl hover:border-slate-700 transition-all duration-300">
+                <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-3">
                     <div className="flex items-center justify-between">
-                        <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400">En Proceso</span>
-                        <Clock className="w-5 h-5 text-amber-400" />
+                        <span className="text-xs font-semibold text-slate-500">En proceso</span>
+                        <div className="w-7 h-7 rounded-full bg-amber-50 flex items-center justify-center text-amber-600">
+                            <Clock className="w-4 h-4" />
+                        </div>
                     </div>
-                    <div className="mt-3 flex items-baseline justify-between">
-                        <span className="text-3xl sm:text-4xl font-black text-amber-400">{enProceso}</span>
-                        <span className="text-xs text-slate-400 font-bold">{sinAvance} sin avance</span>
+                    <div>
+                        <div className="text-3xl font-extrabold text-slate-900 tracking-tight">{enProceso}</div>
+                        <p className="text-[11px] text-slate-400 font-medium mt-1">
+                            {sinAvance} compromisos aún sin avance
+                        </p>
                     </div>
-                    <p className="text-xs text-slate-500 font-medium mt-2">Compromisos con reporte activo</p>
                 </div>
 
-                {/* KPI 4: Presupuesto Exec */}
-                <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800/90 shadow-xl hover:border-slate-700 transition-all duration-300">
+                {/* KPI 4: Presupuesto Ejecutado */}
+                <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-3">
                     <div className="flex items-center justify-between">
-                        <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Presupuesto Ejecutado</span>
-                        <DollarSign className="w-5 h-5 text-cyan-400" />
+                        <span className="text-xs font-semibold text-slate-500">Presupuesto ejecutado</span>
+                        <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-700">
+                            <DollarSign className="w-4 h-4" />
+                        </div>
                     </div>
-                    <div className="mt-3">
-                        <span className="text-2xl sm:text-3xl font-black text-slate-100">
+                    <div>
+                        <div className="text-2xl font-extrabold text-slate-900 tracking-tight">
                             ${totalPresupuestoEjecutado.toLocaleString('es-CO')}
-                        </span>
+                        </div>
+                        <p className="text-[11px] text-slate-400 font-medium mt-1">
+                            Planeado: ${totalPresupuestoPlaneado.toLocaleString('es-CO')}
+                        </p>
                     </div>
-                    <p className="text-xs text-slate-400 font-medium mt-1">
-                        Planeado: ${totalPresupuestoPlaneado.toLocaleString('es-CO')}
-                    </p>
                 </div>
-            </motion.div>
+            </div>
 
-            {/* Gráfico de Barras SVG por Ejes */}
+            {/* Barra de Progreso por Ejes (Card Limpia) */}
             {resumenPorEje.length > 0 && (
-                <div className="p-6 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-2xl space-y-4">
+                <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-4">
                     <div className="flex items-center justify-between">
-                        <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
-                            <BarChart3 className="w-5 h-5 text-orange-400" />
-                            Cumplimiento por Eje Estratégico
-                        </h3>
+                        <h3 className="text-sm font-extrabold text-slate-900">Cumplimiento por Eje Estratégico</h3>
                         <span className="text-xs text-slate-400 font-medium">Principales ejes</span>
                     </div>
-                    <div className="space-y-3 pt-2">
+                    <div className="space-y-3 pt-1">
                         {resumenPorEje.map((eje) => (
                             <div key={eje.nombre} className="space-y-1.5">
-                                <div className="flex items-center justify-between text-xs font-semibold">
-                                    <span className="text-slate-200">{eje.nombre} ({eje.total} metas)</span>
-                                    <span className="font-bold text-emerald-400">{eje.pct}%</span>
+                                <div className="flex items-center justify-between text-xs">
+                                    <span className="font-semibold text-slate-700">{eje.nombre} ({eje.total} metas)</span>
+                                    <span className="font-bold text-[var(--pol-primary-ink)]">{eje.pct}%</span>
                                 </div>
-                                <div className="w-full h-2.5 rounded-full bg-slate-950 overflow-hidden border border-slate-800">
+                                <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
                                     <div
-                                        className="h-full bg-gradient-to-r from-orange-500 to-emerald-400 rounded-full transition-all duration-700"
+                                        className="h-full bg-[var(--pol-primary)] rounded-full transition-all duration-500"
                                         style={{ width: `${eje.pct}%` }}
                                     />
                                 </div>
@@ -313,101 +300,93 @@ export default function DashboardClient({
                 </div>
             )}
 
-            {/* Barra de Filtros & Selector de Modo de Vista */}
-            <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl space-y-4">
-                <div className="flex flex-col md:flex-row gap-3 items-center justify-between">
-                    {/* Input de Búsqueda */}
-                    <div className="relative flex-1 w-full">
-                        <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400" />
-                        <input
-                            type="text"
-                            value={search}
-                            onChange={(e) => handleFilterChange(setSearch, e.target.value)}
-                            placeholder="Buscar por actividad, código o dependencia..."
-                            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-slate-200 placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-                        />
-                    </div>
+            {/* Barra de Filtros Minimalista */}
+            <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm flex flex-col md:flex-row gap-3 items-center justify-between">
+                <div className="relative flex-1 w-full">
+                    <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
+                    <input
+                        type="text"
+                        value={search}
+                        onChange={(e) => handleFilterChange(setSearch, e.target.value)}
+                        placeholder="Buscar por actividad, código o dependencia..."
+                        className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--pol-primary)] font-medium"
+                    />
+                </div>
 
-                    {/* Selector de Política */}
-                    <select
-                        value={selectedPolitica}
-                        onChange={(e) => handleFilterChange(setSelectedPolitica, e.target.value)}
-                        className="w-full md:w-auto px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 font-medium"
+                <select
+                    value={selectedPolitica}
+                    onChange={(e) => handleFilterChange(setSelectedPolitica, e.target.value)}
+                    className="w-full md:w-auto px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[var(--pol-primary)]"
+                >
+                    <option value="todas">Todas las Políticas ({politicas.length})</option>
+                    {politicas.map((p) => (
+                        <option key={p.id} value={p.id}>{p.nombre}</option>
+                    ))}
+                </select>
+
+                <select
+                    value={selectedDependencia}
+                    onChange={(e) => handleFilterChange(setSelectedDependencia, e.target.value)}
+                    className="w-full md:w-auto px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[var(--pol-primary)]"
+                >
+                    <option value="todas">Todas las Dependencias ({dependencias.length})</option>
+                    {dependencias.map((d) => (
+                        <option key={d.id} value={d.id}>{d.nombre}</option>
+                    ))}
+                </select>
+
+                <select
+                    value={selectedEstado}
+                    onChange={(e) => handleFilterChange(setSelectedEstado, e.target.value)}
+                    className="w-full md:w-auto px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[var(--pol-primary)]"
+                >
+                    <option value="todos">Todos los estados</option>
+                    <option value="100">Completadas (100%)</option>
+                    <option value="proceso">En proceso (1-99%)</option>
+                    <option value="0">Sin avance (0%)</option>
+                </select>
+
+                {/* Modos de Vista */}
+                <div className="flex items-center p-1 rounded-xl bg-slate-100 border border-slate-200 self-stretch md:self-auto">
+                    <button
+                        onClick={() => setViewMode('arbol')}
+                        className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                            viewMode === 'arbol'
+                                ? 'bg-white text-slate-900 shadow-sm'
+                                : 'text-slate-500 hover:text-slate-800'
+                        }`}
                     >
-                        <option value="todas">Todas las Políticas Publicas ({politicas.length})</option>
-                        {politicas.map((p) => (
-                            <option key={p.id} value={p.id}>{p.nombre}</option>
-                        ))}
-                    </select>
-
-                    {/* Selector de Dependencia */}
-                    <select
-                        value={selectedDependencia}
-                        onChange={(e) => handleFilterChange(setSelectedDependencia, e.target.value)}
-                        className="w-full md:w-auto px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 font-medium"
+                        <Layers className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Jerarquía</span>
+                    </button>
+                    <button
+                        onClick={() => setViewMode('lista')}
+                        className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                            viewMode === 'lista'
+                                ? 'bg-white text-slate-900 shadow-sm'
+                                : 'text-slate-500 hover:text-slate-800'
+                        }`}
                     >
-                        <option value="todas">Todas las Dependencias ({dependencias.length})</option>
-                        {dependencias.map((d) => (
-                            <option key={d.id} value={d.id}>{d.nombre}</option>
-                        ))}
-                    </select>
-
-                    {/* Selector de Estado */}
-                    <select
-                        value={selectedEstado}
-                        onChange={(e) => handleFilterChange(setSelectedEstado, e.target.value)}
-                        className="w-full md:w-auto px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 font-medium"
-                    >
-                        <option value="todos">Todos los Estados</option>
-                        <option value="100">Completadas (100%)</option>
-                        <option value="proceso">En Proceso (1-99%)</option>
-                        <option value="0">Sin Avance (0%)</option>
-                    </select>
-
-                    {/* Modos de Vista: Jerarquía vs Lista Paginada */}
-                    <div className="flex items-center p-1 rounded-xl bg-slate-950 border border-slate-800 self-stretch md:self-auto">
-                        <button
-                            onClick={() => setViewMode('arbol')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                                viewMode === 'arbol'
-                                    ? 'bg-orange-600 text-white shadow-md'
-                                    : 'text-slate-400 hover:text-slate-200'
-                            }`}
-                            title="Vista en Estructura Jerárquica"
-                        >
-                            <Layers className="w-3.5 h-3.5" />
-                            <span className="hidden sm:inline">Jerarquía</span>
-                        </button>
-                        <button
-                            onClick={() => setViewMode('lista')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                                viewMode === 'lista'
-                                    ? 'bg-orange-600 text-white shadow-md'
-                                    : 'text-slate-400 hover:text-slate-200'
-                            }`}
-                            title="Vista de Lista Paginada"
-                        >
-                            <List className="w-3.5 h-3.5" />
-                            <span className="hidden sm:inline">Lista Paginada</span>
-                        </button>
-                    </div>
+                        <List className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Lista Paginada</span>
+                    </button>
                 </div>
             </div>
 
-            {/* VISTA 1: Jerarquía por Árbol (4 Niveles) */}
+            {/* VISTA 1: Jerarquía por Árbol */}
             {viewMode === 'arbol' && (
-                <div className="rounded-2xl bg-slate-900/90 border border-slate-800 shadow-2xl overflow-hidden">
-                    <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
-                        <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
-                            <Layers className="w-5 h-5 text-orange-400" />
-                            Matriz Jerárquica de Seguimiento
+                <div className="rounded-2xl bg-white border border-slate-200/80 shadow-sm overflow-hidden">
+                    <div className="px-6 py-4 border-b border-slate-200/80 flex items-center justify-between bg-slate-50/50">
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+                            <Layers className="w-4 h-4 text-slate-600" />
+                            Estructura de Compromisos
                         </h3>
-                        <span className="text-xs text-slate-400 font-semibold">
-                            {actividadesFiltradas.length} actividades encontradas
+                        <span className="text-xs text-slate-500 font-medium">
+                            {actividadesFiltradas.length} actividades
                         </span>
                     </div>
 
-                    <div className="divide-y divide-slate-800/80">
+                    <div className="divide-y divide-slate-100">
                         {politicas.map((pol) => {
                             const isPolOpen = expandedPoliticas[pol.id] ?? true
                             const polActividades = actividadesFiltradas.filter((a) =>
@@ -420,27 +399,27 @@ export default function DashboardClient({
                             const polPct = promedioSimple(polActividades.map((a) => a.resumen.cumplimientoPct))
 
                             return (
-                                <div key={pol.id} className="bg-slate-900/40">
+                                <div key={pol.id} className="bg-white">
                                     {/* Nivel 1: Política */}
                                     <div
                                         onClick={() => toggleExpand(setExpandedPoliticas, pol.id)}
-                                        className="px-6 py-4 flex items-center justify-between cursor-pointer hover:bg-slate-800/60 transition-colors select-none"
+                                        className="px-6 py-4 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors select-none"
                                     >
                                         <div className="flex items-center space-x-3">
-                                            <button className="text-slate-400 hover:text-white transition-transform">
-                                                {isPolOpen ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+                                            <button className="text-slate-400 hover:text-slate-700">
+                                                {isPolOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                                             </button>
-                                            <span className="font-black text-slate-100 text-base sm:text-lg tracking-tight">{pol.nombre}</span>
-                                            <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 font-semibold border border-slate-700">
+                                            <span className="font-extrabold text-slate-900 text-base tracking-tight">{pol.nombre}</span>
+                                            <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-semibold border border-slate-200">
                                                 {polActividades.length} actividades
                                             </span>
                                         </div>
 
                                         <div className="flex items-center space-x-4">
-                                            <div className="w-32 bg-slate-800 h-2.5 rounded-full overflow-hidden hidden sm:block">
-                                                <div className="bg-emerald-400 h-full rounded-full transition-all duration-500" style={{ width: `${polPct}%` }} />
+                                            <div className="w-28 bg-slate-100 h-2 rounded-full overflow-hidden hidden sm:block">
+                                                <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${polPct}%` }} />
                                             </div>
-                                            <span className="font-black text-emerald-400 text-base min-w-[50px] text-right">{polPct}%</span>
+                                            <span className="font-extrabold text-emerald-600 text-sm min-w-[45px] text-right">{polPct}%</span>
                                         </div>
                                     </div>
 
@@ -455,16 +434,16 @@ export default function DashboardClient({
                                                 const ejePct = promedioSimple(ejeActividades.map((a) => a.resumen.cumplimientoPct))
 
                                                 return (
-                                                    <div key={eje.id} className="rounded-xl bg-slate-950/70 border border-slate-800/90 overflow-hidden">
+                                                    <div key={eje.id} className="rounded-xl bg-slate-50/70 border border-slate-200/80 overflow-hidden">
                                                         <div
                                                             onClick={() => toggleExpand(setExpandedEjes, eje.id)}
-                                                            className="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-slate-800/40 transition-colors select-none"
+                                                            className="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-slate-100/60 transition-colors select-none"
                                                         >
                                                             <div className="flex items-center space-x-2">
                                                                 {isEjeOpen ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
-                                                                <span className="font-bold text-slate-200 text-sm">{eje.nombre}</span>
+                                                                <span className="font-bold text-slate-800 text-sm">{eje.nombre}</span>
                                                             </div>
-                                                            <span className="text-xs font-black text-emerald-400">{ejePct}%</span>
+                                                            <span className="text-xs font-bold text-emerald-600">{ejePct}%</span>
                                                         </div>
 
                                                         {/* Nivel 3: Líneas */}
@@ -476,10 +455,10 @@ export default function DashboardClient({
                                                                     if (lineaActividades.length === 0) return null
 
                                                                     return (
-                                                                        <div key={linea.id} className="pl-3 border-l-2 border-slate-700/60 space-y-2 mt-2">
+                                                                        <div key={linea.id} className="pl-3 border-l-2 border-slate-200 space-y-2 mt-2">
                                                                             <div
                                                                                 onClick={() => toggleExpand(setExpandedLineas, linea.id)}
-                                                                                className="flex items-center justify-between text-xs font-bold text-slate-300 cursor-pointer py-1 select-none"
+                                                                                className="flex items-center justify-between text-xs font-bold text-slate-700 cursor-pointer py-1 select-none"
                                                                             >
                                                                                 <span className="flex items-center gap-1.5">
                                                                                     {isLineaOpen ? <ChevronDown className="w-3.5 h-3.5 text-slate-400" /> : <ChevronRight className="w-3.5 h-3.5 text-slate-400" />}
@@ -495,59 +474,52 @@ export default function DashboardClient({
                                                                                         <div
                                                                                             key={act.id}
                                                                                             onClick={() => setSelectedActividadModal(act)}
-                                                                                            className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 transition-all duration-200 cursor-pointer active:scale-[0.99] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md"
+                                                                                            className="p-3.5 rounded-xl bg-white border border-slate-200/80 hover:border-slate-300 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs"
                                                                                         >
-                                                                                            <div className="space-y-1.5 flex-1">
+                                                                                            <div className="space-y-1 flex-1">
                                                                                                 <div className="flex items-center gap-2 flex-wrap">
                                                                                                     {act.codigo && (
-                                                                                                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-slate-800 text-amber-400 border border-slate-700">
+                                                                                                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
                                                                                                             {act.codigo}
                                                                                                         </span>
                                                                                                     )}
-                                                                                                    <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-800/80 text-slate-300 border border-slate-700/60 flex items-center gap-1">
-                                                                                                        <Building2 className="w-3 h-3 text-orange-400" />
+                                                                                                    <span className="text-xs font-medium px-2 py-0.5 rounded bg-slate-100 text-slate-600 flex items-center gap-1">
+                                                                                                        <Building2 className="w-3 h-3 text-slate-400" />
                                                                                                         {act.dependencia?.nombre || 'General'}
                                                                                                     </span>
-                                                                                                    {act.avancesList.length > 0 && (
-                                                                                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center gap-1">
-                                                                                                            <Eye className="w-3 h-3" />
-                                                                                                            {act.avancesList.length} reportes
-                                                                                                        </span>
-                                                                                                    )}
                                                                                                 </div>
-                                                                                                <p className="text-sm font-semibold text-slate-100 leading-snug">
+                                                                                                <p className="text-sm font-semibold text-slate-900 leading-snug">
                                                                                                     {act.nombre}
                                                                                                 </p>
                                                                                             </div>
 
                                                                                             <div className="flex items-center space-x-4 self-end sm:self-center">
                                                                                                 <div className="text-right">
-                                                                                                    <div className="text-xs font-bold text-slate-200">
+                                                                                                    <div className="text-xs font-semibold text-slate-700">
                                                                                                         {act.resumen.avanceTexto} / {act.resumen.metaTexto}
                                                                                                     </div>
-                                                                                                    <div className="text-[11px] font-black text-emerald-400">
+                                                                                                    <div className="text-[11px] font-bold text-emerald-600">
                                                                                                         {act.resumen.cumplimientoPct}% ejecutado
                                                                                                     </div>
                                                                                                 </div>
 
-                                                                                                <div className="flex items-center">
-                                                                                                    {act.resumen.cumplimientoPct >= 100 ? (
-                                                                                                        <span className="flex items-center gap-1 text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">
-                                                                                                            <CheckCircle2 className="w-3.5 h-3.5" />
-                                                                                                            Cumplida
-                                                                                                        </span>
-                                                                                                    ) : act.resumen.cumplimientoPct > 0 ? (
-                                                                                                        <span className="flex items-center gap-1 text-xs font-bold text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20">
-                                                                                                            <Clock className="w-3.5 h-3.5" />
-                                                                                                            En Proceso
-                                                                                                        </span>
-                                                                                                    ) : (
-                                                                                                        <span className="flex items-center gap-1 text-xs font-bold text-slate-400 bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700">
-                                                                                                            <AlertTriangle className="w-3.5 h-3.5 text-slate-500" />
-                                                                                                            Pendiente
-                                                                                                        </span>
-                                                                                                    )}
-                                                                                                </div>
+                                                                                                {/* Pasteles de estado idénticos a la imagen de referencia */}
+                                                                                                {act.resumen.cumplimientoPct >= 100 ? (
+                                                                                                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold flex items-center gap-1">
+                                                                                                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                                                                                        Cumplida
+                                                                                                    </span>
+                                                                                                ) : act.resumen.cumplimientoPct > 0 ? (
+                                                                                                    <span className="px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-xs font-semibold flex items-center gap-1">
+                                                                                                        <Clock className="w-3 h-3 text-amber-600" />
+                                                                                                        En proceso
+                                                                                                    </span>
+                                                                                                ) : (
+                                                                                                    <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 text-xs font-semibold flex items-center gap-1">
+                                                                                                        <AlertTriangle className="w-3 h-3 text-slate-400" />
+                                                                                                        Sin avance
+                                                                                                    </span>
+                                                                                                )}
                                                                                             </div>
                                                                                         </div>
                                                                                     ))}
@@ -572,13 +544,13 @@ export default function DashboardClient({
 
             {/* VISTA 2: Lista Paginada Rápida */}
             {viewMode === 'lista' && (
-                <div className="rounded-2xl bg-slate-900/90 border border-slate-800 shadow-2xl overflow-hidden space-y-4">
-                    <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
-                        <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
-                            <List className="w-5 h-5 text-orange-400" />
+                <div className="rounded-2xl bg-white border border-slate-200/80 shadow-sm overflow-hidden space-y-3">
+                    <div className="px-6 py-4 border-b border-slate-200/80 flex items-center justify-between bg-slate-50/50">
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+                            <List className="w-4 h-4 text-slate-600" />
                             Vista de Lista Paginada
                         </h3>
-                        <div className="flex items-center space-x-3 text-xs text-slate-400">
+                        <div className="flex items-center space-x-2 text-xs text-slate-500">
                             <span>Mostrar</span>
                             <select
                                 value={pageSize}
@@ -586,7 +558,7 @@ export default function DashboardClient({
                                     setPageSize(Number(e.target.value))
                                     setCurrentPage(1)
                                 }}
-                                className="px-2 py-1 rounded bg-slate-950 border border-slate-800 text-slate-200 text-xs font-bold"
+                                className="px-2 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 text-xs font-semibold"
                             >
                                 <option value={10}>10 por pág.</option>
                                 <option value={25}>25 por pág.</option>
@@ -595,49 +567,49 @@ export default function DashboardClient({
                         </div>
                     </div>
 
-                    <div className="p-4 space-y-3">
+                    <div className="p-4 space-y-2.5">
                         {actividadesPaginadas.map((act) => (
                             <div
                                 key={act.id}
                                 onClick={() => setSelectedActividadModal(act)}
-                                className="p-4 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 transition-all duration-200 cursor-pointer active:scale-[0.99] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md"
+                                className="p-4 rounded-xl bg-white border border-slate-200/80 hover:border-slate-300 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs"
                             >
-                                <div className="space-y-1.5 flex-1">
+                                <div className="space-y-1 flex-1">
                                     <div className="flex items-center gap-2 flex-wrap">
                                         {act.codigo && (
-                                            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-slate-800 text-amber-400 border border-slate-700">
+                                            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
                                                 {act.codigo}
                                             </span>
                                         )}
-                                        <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-800/80 text-slate-300 border border-slate-700/60 flex items-center gap-1">
-                                            <Building2 className="w-3 h-3 text-orange-400" />
+                                        <span className="text-xs font-medium px-2 py-0.5 rounded bg-slate-100 text-slate-600 flex items-center gap-1">
+                                            <Building2 className="w-3 h-3 text-slate-400" />
                                             {act.dependencia?.nombre || 'General'}
                                         </span>
                                     </div>
-                                    <p className="text-sm font-semibold text-slate-100 leading-snug">{act.nombre}</p>
+                                    <p className="text-sm font-semibold text-slate-900 leading-snug">{act.nombre}</p>
                                 </div>
 
                                 <div className="flex items-center space-x-4">
                                     <div className="text-right">
-                                        <div className="text-xs font-bold text-slate-200">
+                                        <div className="text-xs font-semibold text-slate-700">
                                             {act.resumen.avanceTexto} / {act.resumen.metaTexto}
                                         </div>
-                                        <div className="text-[11px] font-black text-emerald-400">
+                                        <div className="text-[11px] font-bold text-emerald-600">
                                             {act.resumen.cumplimientoPct}% ejecutado
                                         </div>
                                     </div>
 
                                     {act.resumen.cumplimientoPct >= 100 ? (
-                                        <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">
+                                        <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold">
                                             Cumplida
                                         </span>
                                     ) : act.resumen.cumplimientoPct > 0 ? (
-                                        <span className="text-xs font-bold text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20">
-                                            En Proceso
+                                        <span className="px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-xs font-semibold">
+                                            En proceso
                                         </span>
                                     ) : (
-                                        <span className="text-xs font-bold text-slate-400 bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-700">
-                                            Pendiente
+                                        <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 text-xs font-semibold">
+                                            Sin avance
                                         </span>
                                     )}
                                 </div>
@@ -646,16 +618,16 @@ export default function DashboardClient({
                     </div>
 
                     {/* Controles de Paginación */}
-                    <div className="px-6 py-4 border-t border-slate-800 bg-slate-950/60 flex items-center justify-between text-xs text-slate-400 font-semibold">
+                    <div className="px-6 py-3.5 border-t border-slate-200 bg-slate-50/50 flex items-center justify-between text-xs text-slate-500 font-medium">
                         <span>
-                            Página <strong className="text-slate-100">{currentPage}</strong> de <strong className="text-slate-100">{totalPages}</strong> ({actividadesFiltradas.length} resultados)
+                            Página <strong className="text-slate-900">{currentPage}</strong> de <strong className="text-slate-900">{totalPages}</strong> ({actividadesFiltradas.length} actividades)
                         </span>
 
                         <div className="flex items-center space-x-2">
                             <button
                                 disabled={currentPage === 1}
                                 onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                                className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 font-bold transition-all flex items-center gap-1"
+                                className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 disabled:opacity-40 text-slate-700 font-semibold transition-all flex items-center gap-1 shadow-xs"
                             >
                                 <ChevronLeft className="w-4 h-4" />
                                 Anterior
@@ -664,7 +636,7 @@ export default function DashboardClient({
                             <button
                                 disabled={currentPage >= totalPages}
                                 onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                                className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 font-bold transition-all flex items-center gap-1"
+                                className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 disabled:opacity-40 text-slate-700 font-semibold transition-all flex items-center gap-1 shadow-xs"
                             >
                                 Siguiente
                                 <ChevronRight className="w-4 h-4" />
@@ -674,71 +646,70 @@ export default function DashboardClient({
                 </div>
             )}
 
-            {/* Modal de Detalle de Actividad y Evidencias */}
+            {/* Modal de Detalle de Actividad */}
             {selectedActividadModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn">
-                    <div className="relative w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-6 space-y-6 max-h-[90vh] overflow-y-auto">
-                        <div className="flex items-start justify-between border-b border-slate-800 pb-4">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-fadeIn">
+                    <div className="relative w-full max-w-xl bg-white border border-slate-200 rounded-2xl shadow-xl p-6 space-y-5 max-h-[90vh] overflow-y-auto">
+                        <div className="flex items-start justify-between border-b border-slate-100 pb-3">
                             <div>
-                                <span className="text-xs font-bold text-orange-400 uppercase tracking-wider">
+                                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                                     Detalle del Compromiso
                                 </span>
-                                <h3 className="text-lg font-bold text-slate-100 mt-1">
+                                <h3 className="text-base font-bold text-slate-900 mt-0.5 leading-snug">
                                     {selectedActividadModal.nombre}
                                 </h3>
                             </div>
                             <button
                                 onClick={() => setSelectedActividadModal(null)}
-                                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+                                className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors"
                             >
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4 text-xs">
-                            <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
-                                <span className="text-slate-400">Dependencia</span>
-                                <p className="font-bold text-slate-200">{selectedActividadModal.dependencia?.nombre || 'General'}</p>
+                        <div className="grid grid-cols-2 gap-3 text-xs">
+                            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
+                                <span className="text-slate-500 font-medium">Dependencia</span>
+                                <p className="font-bold text-slate-900">{selectedActividadModal.dependencia?.nombre || 'General'}</p>
                             </div>
-                            <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
-                                <span className="text-slate-400">Avance / Meta</span>
-                                <p className="font-bold text-emerald-400">
+                            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
+                                <span className="text-slate-500 font-medium">Ejecución</span>
+                                <p className="font-bold text-emerald-600">
                                     {selectedActividadModal.resumen.avanceTexto} / {selectedActividadModal.resumen.metaTexto} ({selectedActividadModal.resumen.cumplimientoPct}%)
                                 </p>
                             </div>
                         </div>
 
-                        {/* Lista de Avances Reportados */}
+                        {/* Avances */}
                         <div className="space-y-3">
                             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                                Historial de Avances y Evidencias ({selectedActividadModal.avancesList.length})
+                                Reportes Registrados ({selectedActividadModal.avancesList.length})
                             </h4>
 
                             {selectedActividadModal.avancesList.length === 0 ? (
-                                <p className="text-xs text-slate-500 py-4 text-center">No hay reportes de avance registrados aún para esta actividad.</p>
+                                <p className="text-xs text-slate-400 py-3 text-center">Sin reportes registrados para esta actividad.</p>
                             ) : (
-                                <div className="space-y-3">
+                                <div className="space-y-2.5">
                                     {selectedActividadModal.avancesList.map((av: any) => (
-                                        <div key={av.id} className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2 text-xs">
-                                            <div className="flex items-center justify-between text-slate-400">
-                                                <span className="font-semibold text-slate-300">Período: {av.periodoTexto || 'N/A'}</span>
+                                        <div key={av.id} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1.5 text-xs">
+                                            <div className="flex items-center justify-between text-slate-500">
+                                                <span className="font-semibold text-slate-800">Período: {av.periodoTexto || 'N/A'}</span>
                                                 <span>{new Date(av.createdAt).toLocaleDateString('es-CO')}</span>
                                             </div>
                                             {av.observaciones && (
-                                                <p className="text-slate-300">{av.observaciones}</p>
+                                                <p className="text-slate-600">{av.observaciones}</p>
                                             )}
 
-                                            {/* Evidencias */}
                                             {av.evidencias && av.evidencias.length > 0 && (
-                                                <div className="pt-2 border-t border-slate-800/80 flex items-center gap-2">
-                                                    <span className="text-slate-400 font-semibold">Evidencia:</span>
+                                                <div className="pt-2 border-t border-slate-200/60 flex items-center gap-2">
+                                                    <span className="text-slate-500 font-semibold">Evidencia:</span>
                                                     {av.evidencias.map((ev: any) => (
                                                         <a
                                                             key={ev.id}
                                                             href={ev.url}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
-                                                            className="inline-flex items-center text-xs text-orange-400 hover:underline font-bold"
+                                                            className="inline-flex items-center text-xs text-[var(--pol-primary-ink)] hover:underline font-bold"
                                                         >
                                                             <ExternalLink className="w-3 h-3 mr-1" />
                                                             {ev.nombre || 'Ver archivo'}
