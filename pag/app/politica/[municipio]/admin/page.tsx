@@ -3,8 +3,11 @@ import { notFound, redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { getMunicipio } from '@/lib/politica/municipios'
 import { obtenerSesionPol } from '@/lib/politica/session'
+import { getCachedMunicipioId } from '@/lib/politica/db'
 import { PolRol } from '@prisma/client'
 import AdminClient from '@/components/politica/AdminClient'
+
+export const dynamic = 'force-dynamic'
 
 export default async function PoliticaAdminPage({
     params,
@@ -19,29 +22,27 @@ export default async function PoliticaAdminPage({
         redirect(`/politica/${municipio.slug}`)
     }
 
-    const munRecord = await prisma.polMunicipio.findUnique({
-        where: { slug: municipio.slug },
-    })
-    if (!munRecord) notFound()
+    const munId = await getCachedMunicipioId(municipio.slug)
+    if (!munId) notFound()
 
     const [usuarios, auditoria, avancesNoConciliados, actividades] = await Promise.all([
         prisma.polUsuario.findMany({
-            where: { municipioId: munRecord.id },
+            where: { municipioId: munId },
             include: { dependencia: true },
             orderBy: { nombre: 'asc' },
         }),
         prisma.polAuditoria.findMany({
-            where: { municipioId: munRecord.id },
+            where: { municipioId: munId },
             include: { usuario: true },
             orderBy: { createdAt: 'desc' },
             take: 100,
         }),
         prisma.polAvance.findMany({
-            where: { municipioId: munRecord.id, conciliado: false },
+            where: { municipioId: munId, conciliado: false },
             orderBy: { createdAt: 'desc' },
         }),
         prisma.polActividad.findMany({
-            where: { municipioId: munRecord.id },
+            where: { municipioId: munId },
             select: { id: true, nombre: true, codigo: true },
         }),
     ])

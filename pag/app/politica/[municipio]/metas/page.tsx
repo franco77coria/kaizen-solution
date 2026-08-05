@@ -3,10 +3,10 @@ import { notFound, redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { getMunicipio } from '@/lib/politica/municipios'
 import { obtenerSesionPol } from '@/lib/politica/session'
+import { getCachedMunicipioId } from '@/lib/politica/db'
 import MetasClient from '@/components/politica/MetasClient'
 
 export const dynamic = 'force-dynamic'
-export const revalidate = 0
 
 export default async function MetasPage({
     params,
@@ -21,18 +21,14 @@ export default async function MetasPage({
         redirect(`/politica/${municipio.slug}/login`)
     }
 
-    const munRecord = await prisma.polMunicipio.findUnique({
-        where: { slug: municipio.slug },
-        select: { id: true },
-    })
-
-    if (!munRecord) {
+    const munId = await getCachedMunicipioId(municipio.slug)
+    if (!munId) {
         notFound()
     }
 
     const [politicas, dependencias, actividades, avances] = await Promise.all([
         prisma.polPolitica.findMany({
-            where: { municipioId: munRecord.id },
+            where: { municipioId: munId },
             orderBy: { orden: 'asc' },
             select: {
                 id: true,
@@ -54,7 +50,7 @@ export default async function MetasPage({
             },
         }),
         prisma.polDependencia.findMany({
-            where: { municipioId: munRecord.id },
+            where: { municipioId: munId },
             orderBy: { nombre: 'asc' },
             select: {
                 id: true,
@@ -62,7 +58,7 @@ export default async function MetasPage({
             },
         }),
         prisma.polActividad.findMany({
-            where: { municipioId: munRecord.id },
+            where: { municipioId: munId },
             select: {
                 id: true,
                 nombre: true,
@@ -97,7 +93,7 @@ export default async function MetasPage({
             },
         }),
         prisma.polAvance.findMany({
-            where: { municipioId: munRecord.id },
+            where: { municipioId: munId },
             select: {
                 id: true,
                 actividadId: true,

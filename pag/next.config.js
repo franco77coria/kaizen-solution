@@ -52,7 +52,11 @@ const nextConfig = {
         formats: ['image/avif', 'image/webp'],
     },
 
+    compress: true,
+    swcMinify: true,
+
     experimental: {
+        optimizePackageImports: ['lucide-react', 'date-fns', 'framer-motion'],
         serverActions: {
             bodySizeLimit: '2mb',
         },

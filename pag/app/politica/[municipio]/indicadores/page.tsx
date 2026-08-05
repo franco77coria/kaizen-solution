@@ -3,7 +3,10 @@ import { notFound, redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { getMunicipio } from '@/lib/politica/municipios'
 import { obtenerSesionPol } from '@/lib/politica/session'
+import { getCachedMunicipioId } from '@/lib/politica/db'
 import IndicadoresClient from '@/components/politica/IndicadoresClient'
+
+export const dynamic = 'force-dynamic'
 
 export default async function PoliticaIndicadoresPage({
     params,
@@ -18,14 +21,12 @@ export default async function PoliticaIndicadoresPage({
         redirect(`/politica/${municipio.slug}/login`)
     }
 
-    const munRecord = await prisma.polMunicipio.findUnique({
-        where: { slug: municipio.slug },
-    })
-    if (!munRecord) notFound()
+    const munId = await getCachedMunicipioId(municipio.slug)
+    if (!munId) notFound()
 
     const [indicadores, politicas] = await Promise.all([
         prisma.polIndicador.findMany({
-            where: { municipioId: munRecord.id },
+            where: { municipioId: munId },
             include: {
                 metas: true,
                 politica: true,
@@ -33,7 +34,7 @@ export default async function PoliticaIndicadoresPage({
             orderBy: { codigo: 'asc' },
         }),
         prisma.polPolitica.findMany({
-            where: { municipioId: munRecord.id },
+            where: { municipioId: munId },
             orderBy: { orden: 'asc' },
         }),
     ])

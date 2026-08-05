@@ -3,10 +3,10 @@ import { notFound, redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { getMunicipio } from '@/lib/politica/municipios'
 import { obtenerSesionPol } from '@/lib/politica/session'
+import { getCachedMunicipioId } from '@/lib/politica/db'
 import DashboardClient from '@/components/politica/DashboardClient'
 
 export const dynamic = 'force-dynamic'
-export const revalidate = 0
 
 export default async function PoliticaDashboardPage({
     params,
@@ -21,19 +21,15 @@ export default async function PoliticaDashboardPage({
         redirect(`/politica/${municipio.slug}/login`)
     }
 
-    const munRecord = await prisma.polMunicipio.findUnique({
-        where: { slug: municipio.slug },
-        select: { id: true },
-    })
-
-    if (!munRecord) {
+    const munId = await getCachedMunicipioId(municipio.slug)
+    if (!munId) {
         notFound()
     }
 
-    // Carga de datos optimizada en paralelo con select específico
+    // Carga de datos ultra-optimizada en paralelo con select específicos
     const [politicas, dependencias, actividades, avances] = await Promise.all([
         prisma.polPolitica.findMany({
-            where: { municipioId: munRecord.id },
+            where: { municipioId: munId },
             orderBy: { orden: 'asc' },
             select: {
                 id: true,
@@ -42,7 +38,7 @@ export default async function PoliticaDashboardPage({
             },
         }),
         prisma.polDependencia.findMany({
-            where: { municipioId: munRecord.id },
+            where: { municipioId: munId },
             orderBy: { nombre: 'asc' },
             select: {
                 id: true,
@@ -50,7 +46,7 @@ export default async function PoliticaDashboardPage({
             },
         }),
         prisma.polActividad.findMany({
-            where: { municipioId: munRecord.id },
+            where: { municipioId: munId },
             select: {
                 id: true,
                 nombre: true,
@@ -83,7 +79,7 @@ export default async function PoliticaDashboardPage({
             },
         }),
         prisma.polAvance.findMany({
-            where: { municipioId: munRecord.id },
+            where: { municipioId: munId },
             select: {
                 id: true,
                 actividadId: true,
