@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getMunicipio, monograma } from '@/lib/politica/municipios'
-import { ShieldCheck, ArrowRight, Loader2, Landmark, Sparkles, Building2, User, Phone } from 'lucide-react'
+import { ShieldCheck, ArrowRight, Loader2, Landmark, Sparkles, Building2, TrendingUp, CheckCircle2, Layers, Lock } from 'lucide-react'
 
 export default function PoliticaLoginPage({
     params,
@@ -19,7 +19,7 @@ export default function PoliticaLoginPage({
 
     if (!municipio) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white">
+            <div className="min-h-screen flex items-center justify-center bg-[#070b14] text-white">
                 <p>Municipio no encontrado</p>
             </div>
         )
@@ -58,105 +58,161 @@ export default function PoliticaLoginPage({
     }
 
     return (
-        <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden select-none font-sans antialiased">
-            {/* Tech Grid Background */}
-            <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:24px_24px] opacity-40 pointer-events-none" />
+        <div className="min-h-screen bg-[#070b14] text-slate-100 flex flex-col justify-between relative overflow-hidden select-none font-sans antialiased">
+            {/* Tech Mesh & Dot Background */}
+            <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1.5px,transparent_1.5px)] [background-size:32px_32px] opacity-40 pointer-events-none" />
 
-            {/* Glowing Mesh Orbs */}
-            <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-tr from-orange-600/25 via-amber-500/15 to-transparent rounded-full blur-[120px] pointer-events-none" />
-            <div className="absolute bottom-10 right-10 w-[400px] h-[400px] bg-gradient-to-br from-indigo-900/20 via-slate-900/40 to-transparent rounded-full blur-[100px] pointer-events-none" />
+            {/* Glowing Radial Light Beam */}
+            <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-gradient-to-b from-orange-600/20 via-amber-500/10 to-transparent rounded-full blur-[140px] pointer-events-none" />
+            <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-indigo-950/30 rounded-full blur-[120px] pointer-events-none" />
 
-            <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10 text-center space-y-4">
-                {/* Municipal Badge Emblem */}
-                <div className="inline-flex items-center justify-center p-1 rounded-2xl bg-gradient-to-b from-orange-500/30 via-orange-500/10 to-transparent border border-orange-500/40 shadow-2xl shadow-orange-500/20 backdrop-blur-xl">
-                    <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-orange-600 via-amber-600 to-slate-900 flex items-center justify-center border border-orange-400/40 shadow-inner">
-                        <div className="flex flex-col items-center justify-center text-white">
-                            <Landmark className="w-6 h-6 text-amber-200 mb-0.5" />
-                            <span className="text-xs font-black tracking-widest leading-none">{monograma(municipio)}</span>
+            {/* Top Corporate Bar */}
+            <header className="relative z-10 w-full max-w-7xl mx-auto px-6 py-6 flex items-center justify-between border-b border-slate-800/60">
+                <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-600 to-amber-600 flex items-center justify-center font-black text-white shadow-lg shadow-orange-600/30 border border-orange-400/40">
+                        <span className="text-sm tracking-wider">{monograma(municipio)}</span>
+                    </div>
+                    <div>
+                        <span className="font-extrabold text-slate-100 text-sm block">Alcaldía Municipal de {municipio.nombre}</span>
+                        <span className="text-xs text-slate-400 font-medium">{municipio.plan}</span>
+                    </div>
+                </div>
+
+                <div className="hidden sm:flex items-center space-x-2 text-xs px-3 py-1.5 rounded-full bg-slate-900/80 border border-slate-800 text-slate-300">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="font-semibold">Plataforma Institucional Activa</span>
+                </div>
+            </header>
+
+            {/* Main Hero & Access Section */}
+            <main className="relative z-10 w-full max-w-7xl mx-auto px-6 py-12 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center flex-1">
+                {/* Left Column: Institutional Value Props & Live Metric Cards */}
+                <div className="lg:col-span-7 space-y-8">
+                    <div className="space-y-4">
+                        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-orange-500/10 border border-orange-500/30 text-orange-400 text-xs font-bold uppercase tracking-wider">
+                            <Sparkles className="w-4 h-4" />
+                            {municipio.lema}
+                        </div>
+
+                        <h1 className="text-3xl sm:text-5xl font-black text-slate-100 tracking-tight leading-tight">
+                            Tablero de Monitoreo & <br />
+                            <span className="bg-gradient-to-r from-orange-400 via-amber-300 to-orange-500 bg-clip-text text-transparent">
+                                Políticas Públicas Municipales
+                            </span>
+                        </h1>
+
+                        <p className="text-slate-400 text-base max-w-xl leading-relaxed font-medium">
+                            Plataforma oficial para el seguimiento en tiempo real de los compromisos, líneas estratégicas e indicadores del Plan de Desarrollo Municipal de {municipio.nombre}.
+                        </p>
+                    </div>
+
+                    {/* Feature Highlights Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+                        <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-md space-y-2">
+                            <div className="p-2 w-fit rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                <TrendingUp className="w-4 h-4" />
+                            </div>
+                            <h4 className="text-sm font-bold text-slate-200">7 Políticas Públicas</h4>
+                            <p className="text-xs text-slate-400">Seguimiento centralizado de todos los ejes de desarrollo</p>
+                        </div>
+
+                        <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-md space-y-2">
+                            <div className="p-2 w-fit rounded-lg bg-orange-500/10 text-orange-400 border border-orange-500/20">
+                                <Layers className="w-4 h-4" />
+                            </div>
+                            <h4 className="text-sm font-bold text-slate-200">306 Actividades</h4>
+                            <p className="text-xs text-slate-400">Medición de metas físicas, financieras y de gestión</p>
+                        </div>
+
+                        <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-md space-y-2">
+                            <div className="p-2 w-fit rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                                <CheckCircle2 className="w-4 h-4" />
+                            </div>
+                            <h4 className="text-sm font-bold text-slate-200">Evidencias Auditables</h4>
+                            <p className="text-xs text-slate-400">Soporte documental digital por cada reporte de avance</p>
                         </div>
                     </div>
                 </div>
 
-                <div>
-                    <h2 className="text-2xl sm:text-3xl font-black text-slate-100 tracking-tight">
-                        Alcaldía Municipal de {municipio.nombre}
-                    </h2>
-                    <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900/90 border border-slate-800 backdrop-blur-md">
-                        <Sparkles className="w-3.5 h-3.5 text-orange-400" />
-                        <span className="text-xs font-semibold text-slate-300">
-                            {municipio.lema} • <span className="text-orange-400 font-bold">{municipio.plan}</span>
-                        </span>
-                    </div>
-                </div>
-            </div>
+                {/* Right Column: Premium High-Tech Login Card */}
+                <div className="lg:col-span-5 w-full">
+                    <div className="relative group">
+                        {/* Glowing Aura Effect behind card */}
+                        <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-orange-600 via-amber-600 to-orange-500 opacity-25 blur-xl group-hover:opacity-40 transition duration-500" />
 
-            <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md relative z-10 px-4">
-                {/* Futuristic Glassmorphic Card */}
-                <div className="bg-slate-900/70 backdrop-blur-2xl py-8 px-6 sm:px-10 shadow-[0_0_80px_-15px_rgba(212,82,12,0.25)] rounded-3xl border border-slate-800/90">
-                    <div className="mb-6 pb-5 border-b border-slate-800/80 flex items-center space-x-3.5">
-                        <div className="p-2.5 rounded-xl bg-orange-500/10 border border-orange-500/30 text-orange-400">
-                            <Building2 className="w-5 h-5" />
-                        </div>
-                        <div>
-                            <h3 className="text-base font-extrabold text-slate-100 tracking-tight">Tablero de Políticas Públicas</h3>
-                            <p className="text-xs text-slate-400 font-medium">Ingresá tu nombre o número de teléfono registrado</p>
-                        </div>
-                    </div>
+                        <div className="relative bg-slate-900/85 backdrop-blur-2xl p-8 sm:p-10 rounded-3xl border border-slate-800 shadow-2xl space-y-6">
+                            <div className="flex items-center justify-between border-b border-slate-800 pb-5">
+                                <div>
+                                    <h3 className="text-xl font-extrabold text-slate-100 tracking-tight">Acceso Institucional</h3>
+                                    <p className="text-xs text-slate-400 mt-1 font-medium">Ingresá tu nombre o número de teléfono registrado</p>
+                                </div>
+                                <div className="p-3 rounded-2xl bg-orange-500/10 border border-orange-500/30 text-orange-400">
+                                    <Lock className="w-5 h-5" />
+                                </div>
+                            </div>
 
-                    {error && (
-                        <div className="mb-5 p-4 rounded-2xl bg-red-950/80 border border-red-800/80 text-red-200 text-sm font-semibold animate-fadeIn flex items-start space-x-2.5">
-                            <span className="text-red-400 text-base">⚠️</span>
-                            <span>{error}</span>
-                        </div>
-                    )}
+                            {error && (
+                                <div className="p-4 rounded-2xl bg-red-950/90 border border-red-800 text-red-200 text-xs font-semibold flex items-start space-x-2.5">
+                                    <span className="text-red-400 text-base">⚠️</span>
+                                    <span>{error}</span>
+                                </div>
+                            )}
 
-                    <form className="space-y-6" onSubmit={handleSubmit}>
-                        <div>
-                            <label htmlFor="usuario-input" className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
-                                Identificación de Usuario
-                            </label>
-                            <div className="relative">
-                                <input
-                                    id="usuario-input"
-                                    name="input"
-                                    type="text"
-                                    required
-                                    value={input}
-                                    onChange={(e) => setInput(e.target.value)}
-                                    placeholder="Ingresá tu nombre o teléfono (ej: 310...)"
-                                    className="w-full px-4 py-3.5 rounded-xl bg-slate-950/90 border border-slate-700/80 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm transition-all font-medium shadow-inner"
-                                />
+                            <form className="space-y-5" onSubmit={handleSubmit}>
+                                <div className="space-y-2">
+                                    <label htmlFor="usuario-input" className="block text-xs font-bold uppercase tracking-wider text-slate-300">
+                                        Identificación o Teléfono
+                                    </label>
+                                    <div className="relative">
+                                        <input
+                                            id="usuario-input"
+                                            name="input"
+                                            type="text"
+                                            required
+                                            value={input}
+                                            onChange={(e) => setInput(e.target.value)}
+                                            placeholder="Ingresá tu teléfono (ej: 310...) o tu nombre"
+                                            className="w-full px-4 py-4 rounded-2xl bg-slate-950/90 border border-slate-700/80 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm font-medium transition-all shadow-inner"
+                                        />
+                                    </div>
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    disabled={loading || !input.trim()}
+                                    className="w-full flex justify-center items-center py-4 px-4 rounded-2xl text-sm font-black text-white bg-gradient-to-r from-orange-600 via-amber-600 to-orange-600 hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 shadow-xl shadow-orange-600/30 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 tracking-wide"
+                                >
+                                    {loading ? (
+                                        <>
+                                            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                                            Ingresando...
+                                        </>
+                                    ) : (
+                                        <>
+                                            Ingresar al Tablero
+                                            <ArrowRight className="w-5 h-5 ml-2.5" />
+                                        </>
+                                    )}
+                                </button>
+                            </form>
+
+                            <div className="pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400 font-medium">
+                                <span className="flex items-center text-slate-300 font-semibold">
+                                    <ShieldCheck className="w-4 h-4 mr-1.5 text-emerald-400" />
+                                    Acceso seguro institucional
+                                </span>
+                                <span className="text-slate-400 font-bold">Kaizen Solution</span>
                             </div>
                         </div>
-
-                        <button
-                            type="submit"
-                            disabled={loading || !input.trim()}
-                            className="w-full flex justify-center items-center py-3.5 px-4 rounded-xl text-sm font-extrabold text-white bg-gradient-to-r from-orange-600 via-amber-600 to-orange-700 hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 shadow-xl shadow-orange-600/30 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-                        >
-                            {loading ? (
-                                <>
-                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                    Validando credenciales...
-                                </>
-                            ) : (
-                                <>
-                                    Ingresar al Tablero
-                                    <ArrowRight className="w-4 h-4 ml-2.5" />
-                                </>
-                            )}
-                        </button>
-                    </form>
-
-                    <div className="mt-8 pt-5 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400 font-medium">
-                        <span className="flex items-center text-slate-300">
-                            <ShieldCheck className="w-4 h-4 mr-1.5 text-emerald-400" />
-                            Acceso seguro municipal
-                        </span>
-                        <span className="text-slate-400 font-semibold">Kaizen Solution</span>
                     </div>
                 </div>
-            </div>
+            </main>
+
+            {/* Bottom Footer */}
+            <footer className="relative z-10 w-full max-w-7xl mx-auto px-6 py-6 border-t border-slate-800/60 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 gap-3">
+                <p>© 2026 Alcaldía Municipal de {municipio.nombre} • Todos los derechos reservados</p>
+                <p className="font-semibold text-slate-300">Desarrollado por Kaizen Solution S.A.S.</p>
+            </footer>
         </div>
     )
 }

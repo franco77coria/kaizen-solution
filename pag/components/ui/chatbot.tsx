@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { usePathname } from 'next/navigation'
 import dynamic from 'next/dynamic'
 
 /**
@@ -17,7 +18,12 @@ const BotIcon = () => (
 )
 
 export default function ChatBot() {
+    const pathname = usePathname()
     const [isOpen, setIsOpen] = useState(false)
+
+    if (pathname?.startsWith('/politica')) {
+        return null
+    }
     // Una vez abierto, el panel queda montado para no perder la conversación
     // al cerrarlo y volver a abrirlo.
     const [hasOpened, setHasOpened] = useState(false)
