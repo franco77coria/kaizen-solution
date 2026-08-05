@@ -4,8 +4,8 @@ import React, { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-    LayoutDashboard, Target, FileText, Shield, LogOut, ChevronLeft, ChevronRight,
-    Building2, Menu, X, Landmark, User, HelpCircle, CheckCircle2
+    LayoutDashboard, CheckSquare2, Target, FileText, Shield, LogOut, ChevronLeft, ChevronRight,
+    Menu, X, Sparkles
 } from 'lucide-react'
 
 interface PoliticaShellProps {
@@ -32,8 +32,10 @@ export default function PoliticaShell({
 
     if (!sesion) {
         return (
-            <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans antialiased">
-                {children}
+            <div className="min-h-screen bg-[#f0f2f5] text-slate-900 font-sans antialiased p-3 sm:p-6">
+                <div className="w-full min-h-[calc(100vh-1.5rem)] rounded-[28px] sm:rounded-[32px] bg-white border border-slate-200/80 p-6 sm:p-10 shadow-xs">
+                    {children}
+                </div>
             </div>
         )
     }
@@ -44,6 +46,12 @@ export default function PoliticaShell({
             href: `/politica/${municipio.slug}`,
             icon: LayoutDashboard,
             exact: true,
+        },
+        {
+            label: 'Plan de Metas',
+            href: `/politica/${municipio.slug}/metas`,
+            icon: CheckSquare2,
+            exact: false,
         },
         {
             label: 'Indicadores KPI',
@@ -76,21 +84,22 @@ export default function PoliticaShell({
     }
 
     return (
-        <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans antialiased flex flex-col md:flex-row relative">
+        <div className="min-h-screen bg-[#f0f2f5] text-slate-900 font-sans antialiased flex flex-col md:flex-row relative">
             {/* Header Mobile */}
-            <header className="md:hidden sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 py-3 flex items-center justify-between shadow-sm">
+            <header className="md:hidden sticky top-0 z-50 bg-[#f0f2f5]/95 backdrop-blur-md px-4 py-3 flex items-center justify-between border-b border-slate-200/80">
                 <div className="flex items-center space-x-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-[var(--pol-primary)] flex items-center justify-center font-bold text-white text-xs shadow-sm">
+                    <div className="w-9 h-9 rounded-2xl bg-[var(--pol-primary)] flex items-center justify-center font-extrabold text-white text-xs shadow-xs">
                         {municipio.nombre.slice(0, 2).toUpperCase()}
                     </div>
                     <div>
-                        <span className="font-bold text-slate-900 text-sm">{municipio.nombre}</span>
-                        <span className="text-[10px] text-slate-500 block">{municipio.lema}</span>
+                        <span className="font-extrabold text-slate-900 text-sm tracking-tight">{municipio.nombre}</span>
+                        <span className="text-[10px] text-slate-500 block font-medium">{municipio.lema}</span>
                     </div>
                 </div>
                 <button
                     onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                    className="p-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200"
+                    className="p-2.5 rounded-2xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 shadow-xs"
+                    aria-label="Abrir menú"
                 >
                     {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                 </button>
@@ -99,13 +108,13 @@ export default function PoliticaShell({
             {/* Mobile Navigation Drawer */}
             {mobileMenuOpen && (
                 <div className="md:hidden fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm flex flex-col pt-16 px-4 pb-6 space-y-4 animate-fadeIn">
-                    <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-1">
-                        <p className="text-[11px] text-slate-400 font-semibold uppercase">Usuario</p>
-                        <p className="text-sm font-bold text-slate-900">{sesion.nombre}</p>
+                    <div className="p-4 rounded-3xl bg-white border border-slate-200/80 shadow-sm space-y-1">
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Usuario conectado</p>
+                        <p className="text-sm font-extrabold text-slate-900">{sesion.nombre}</p>
                         <p className="text-xs text-[var(--pol-primary-ink)] font-semibold">{sesion.rol}</p>
                     </div>
 
-                    <nav className="space-y-1 flex-1 bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
+                    <nav className="space-y-1.5 flex-1 bg-white p-3 rounded-3xl border border-slate-200/80 shadow-sm overflow-y-auto">
                         {navItems.map((item) => {
                             const active = isActive(item)
                             const Icon = item.icon
@@ -114,14 +123,21 @@ export default function PoliticaShell({
                                     key={item.href}
                                     href={item.href}
                                     onClick={() => setMobileMenuOpen(false)}
-                                    className={`flex items-center space-x-3 px-4 py-3 rounded-xl font-medium text-sm transition-all ${
+                                    className={`flex items-center space-x-3 px-4 py-3 rounded-2xl font-bold text-sm transition-all ${
                                         active
-                                            ? 'bg-[var(--pol-primary)] text-white shadow-sm'
+                                            ? 'bg-[var(--pol-primary)] text-white shadow-xs'
                                             : 'text-slate-600 hover:bg-slate-100'
                                     }`}
                                 >
                                     <Icon className="w-5 h-5" />
                                     <span>{item.label}</span>
+                                    {item.badge && (
+                                        <span className={`ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                            active ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-800'
+                                        }`}>
+                                            {item.badge}
+                                        </span>
+                                    )}
                                 </Link>
                             )
                         })}
@@ -130,7 +146,7 @@ export default function PoliticaShell({
                     <form action={`/api/politica/${municipio.slug}/logout`} method="POST">
                         <button
                             type="submit"
-                            className="w-full py-3 px-4 rounded-xl font-semibold text-sm bg-white border border-slate-200 text-red-600 flex items-center justify-center space-x-2 shadow-sm"
+                            className="w-full py-3.5 px-4 rounded-2xl font-bold text-xs bg-white border border-slate-200 text-red-600 flex items-center justify-center space-x-2 shadow-xs"
                         >
                             <LogOut className="w-4 h-4" />
                             <span>Cerrar Sesión</span>
@@ -139,16 +155,16 @@ export default function PoliticaShell({
                 </div>
             )}
 
-            {/* Desktop Minimalist Sidebar (Idéntico a la imagen de referencia) */}
+            {/* Desktop Minimalist Sidebar (Idéntico a la imagen de referencia de Factory Pets) */}
             <aside
-                className={`hidden md:flex flex-col sticky top-0 h-screen z-40 bg-[#f8fafc] border-r border-slate-200/80 transition-all duration-300 ${
+                className={`hidden md:flex flex-col sticky top-0 h-screen z-40 bg-[#f0f2f5] transition-all duration-300 ${
                     collapsed ? 'w-20' : 'w-64'
                 }`}
             >
-                {/* Brand Logo & Title */}
-                <div className="p-5 border-b border-slate-200/60 flex items-center justify-between">
+                {/* Brand Header */}
+                <div className="p-5 flex items-center justify-between">
                     <div className="flex items-center space-x-3 overflow-hidden">
-                        <div className="w-9 h-9 min-w-[36px] rounded-xl bg-[var(--pol-primary)] flex items-center justify-center font-extrabold text-white text-xs shadow-sm">
+                        <div className="w-10 h-10 min-w-[40px] rounded-2xl bg-[var(--pol-primary)] flex items-center justify-center font-extrabold text-white text-xs shadow-xs">
                             {municipio.nombre.slice(0, 2).toUpperCase()}
                         </div>
                         {!collapsed && (
@@ -161,15 +177,16 @@ export default function PoliticaShell({
 
                     <button
                         onClick={() => setCollapsed(!collapsed)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors"
-                        title={collapsed ? 'Expandir' : 'Colapsar'}
+                        className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-200/70 transition-colors"
+                        title={collapsed ? 'Expandir menú' : 'Colapsar menú'}
+                        aria-label={collapsed ? 'Expandir' : 'Colapsar'}
                     >
                         {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
                     </button>
                 </div>
 
                 {/* Nav Items */}
-                <nav className="flex-1 px-3 py-4 space-y-1">
+                <nav className="flex-1 px-3.5 py-2 space-y-1.5">
                     {navItems.map((item) => {
                         const active = isActive(item)
                         const Icon = item.icon
@@ -178,10 +195,10 @@ export default function PoliticaShell({
                                 key={item.href}
                                 href={item.href}
                                 className={`flex items-center ${
-                                    collapsed ? 'justify-center px-2' : 'space-x-3 px-3.5'
-                                } py-2.5 rounded-xl font-medium text-sm transition-all duration-150 ${
+                                    collapsed ? 'justify-center px-2' : 'space-x-3 px-4'
+                                } py-3 rounded-2xl font-bold text-xs transition-all duration-150 ${
                                     active
-                                        ? 'bg-[var(--pol-primary)] text-white font-semibold shadow-sm'
+                                        ? 'bg-[var(--pol-primary)] text-white shadow-xs'
                                         : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                                 }`}
                                 title={collapsed ? item.label : undefined}
@@ -189,7 +206,9 @@ export default function PoliticaShell({
                                 <Icon className={`w-4 h-4 min-w-[16px] ${active ? 'text-white' : 'text-slate-500'}`} />
                                 {!collapsed && <span className="truncate">{item.label}</span>}
                                 {!collapsed && item.badge && (
-                                    <span className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                                    <span className={`ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                        active ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-800'
+                                    }`}>
                                         {item.badge}
                                     </span>
                                 )}
@@ -198,25 +217,25 @@ export default function PoliticaShell({
                     })}
                 </nav>
 
-                {/* User Pill Footer */}
-                <div className="p-3 border-t border-slate-200/80">
+                {/* User Pill Footer (Capsule Rounded-Full como en la imagen) */}
+                <div className="p-3.5">
                     {!collapsed ? (
-                        <div className="p-3 rounded-2xl bg-white border border-slate-200/80 shadow-sm flex items-center justify-between">
+                        <div className="p-2.5 pl-3 rounded-full bg-white border border-slate-200/80 shadow-xs flex items-center justify-between">
                             <div className="flex items-center space-x-2.5 overflow-hidden">
-                                <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-700 text-xs border border-slate-200">
+                                <div className="w-8 h-8 min-w-[32px] rounded-full bg-cyan-50 border border-cyan-200 flex items-center justify-center font-bold text-cyan-700 text-xs">
                                     {sesion.nombre.slice(0, 1).toUpperCase()}
                                 </div>
                                 <div className="truncate">
                                     <p className="text-xs font-bold text-slate-900 truncate">{sesion.nombre}</p>
-                                    <p className="text-[10px] text-slate-500 font-medium capitalize">{sesion.rol.toLowerCase()}</p>
+                                    <p className="text-[10px] text-slate-500 font-semibold capitalize">{sesion.rol.toLowerCase()}</p>
                                 </div>
                             </div>
 
                             <form action={`/api/politica/${municipio.slug}/logout`} method="POST">
                                 <button
                                     type="submit"
-                                    className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                                    title="Salir"
+                                    className="p-1.5 rounded-full text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                    title="Cerrar sesión"
                                 >
                                     <LogOut className="w-4 h-4" />
                                 </button>
@@ -226,8 +245,8 @@ export default function PoliticaShell({
                         <form action={`/api/politica/${municipio.slug}/logout`} method="POST" className="flex justify-center">
                             <button
                                 type="submit"
-                                className="p-2 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                                title="Salir"
+                                className="p-2.5 rounded-full bg-white border border-slate-200 text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors shadow-xs"
+                                title="Cerrar sesión"
                             >
                                 <LogOut className="w-4 h-4" />
                             </button>
@@ -236,9 +255,11 @@ export default function PoliticaShell({
                 </div>
             </aside>
 
-            {/* Main Content Area */}
-            <main className="flex-1 min-w-0 px-4 sm:px-8 py-8 max-w-7xl mx-auto">
-                {children}
+            {/* Main Content Area (Gran contenedor redondeado blanco idéntico a la imagen de referencia) */}
+            <main className="flex-1 min-w-0 p-2 sm:p-3 lg:p-4">
+                <div className="w-full min-h-[calc(100vh-1.5rem)] rounded-[28px] sm:rounded-[32px] bg-white border border-slate-200/80 shadow-xs p-5 sm:p-8 lg:p-9">
+                    {children}
+                </div>
             </main>
         </div>
     )

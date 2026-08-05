@@ -3,12 +3,12 @@ import { notFound, redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { getMunicipio } from '@/lib/politica/municipios'
 import { obtenerSesionPol } from '@/lib/politica/session'
-import DashboardClient from '@/components/politica/DashboardClient'
+import MetasClient from '@/components/politica/MetasClient'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-export default async function PoliticaDashboardPage({
+export default async function MetasPage({
     params,
 }: {
     params: { municipio: string }
@@ -30,7 +30,6 @@ export default async function PoliticaDashboardPage({
         notFound()
     }
 
-    // Carga de datos optimizada en paralelo con select específico
     const [politicas, dependencias, actividades, avances] = await Promise.all([
         prisma.polPolitica.findMany({
             where: { municipioId: munRecord.id },
@@ -39,6 +38,19 @@ export default async function PoliticaDashboardPage({
                 id: true,
                 nombre: true,
                 orden: true,
+                ejes: {
+                    orderBy: { orden: 'asc' },
+                    select: {
+                        id: true,
+                        nombre: true,
+                        lineas: {
+                            select: {
+                                id: true,
+                                nombre: true,
+                            },
+                        },
+                    },
+                },
             },
         }),
         prisma.polDependencia.findMany({
@@ -60,6 +72,7 @@ export default async function PoliticaDashboardPage({
                 metaBooleana: true,
                 presupuestoPlaneado: true,
                 dependenciaId: true,
+                lineaId: true,
                 dependencia: {
                     select: { id: true, nombre: true },
                 },
@@ -67,6 +80,7 @@ export default async function PoliticaDashboardPage({
                     select: {
                         id: true,
                         nombre: true,
+                        ejeId: true,
                         eje: {
                             select: { id: true, nombre: true },
                         },
@@ -93,13 +107,20 @@ export default async function PoliticaDashboardPage({
                 periodoTexto: true,
                 observaciones: true,
                 createdAt: true,
+                evidencias: {
+                    select: {
+                        id: true,
+                        url: true,
+                        nombre: true,
+                    },
+                },
             },
             orderBy: { createdAt: 'desc' },
         }),
     ])
 
     return (
-        <DashboardClient
+        <MetasClient
             municipio={municipio}
             politicas={politicas}
             dependencias={dependencias}

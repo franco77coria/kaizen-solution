@@ -1,8 +1,9 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Send, CheckCircle2, AlertCircle } from 'lucide-react'
+import ModernSelect, { OptionItem } from './ModernSelect'
 
 interface ReportarClientProps {
     municipio: any
@@ -28,6 +29,15 @@ export default function ReportarClient({
     const [submitting, setSubmitting] = useState(false)
     const [successMsg, setSuccessMsg] = useState<string | null>(null)
     const [errorMsg, setErrorMsg] = useState<string | null>(null)
+
+    const actividadOptions: OptionItem[] = useMemo(() => {
+        return actividades.map((a) => ({
+            value: a.id,
+            label: a.nombre,
+            sublabel: a.codigo ? `Código: ${a.codigo}` : undefined,
+            badge: a.dependencia?.nombre || 'General',
+        }))
+    }, [actividades])
 
     const actSeleccionada = actividades.find((a) => a.id === actividadId)
 
@@ -83,61 +93,55 @@ export default function ReportarClient({
     }
 
     return (
-        <div className="max-w-3xl mx-auto space-y-6">
+        <div className="max-w-4xl mx-auto space-y-6 w-full">
             <div>
-                <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Reportar Avance</h1>
-                <p className="text-xs text-slate-500 font-medium mt-0.5">
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Reportar Avance</h1>
+                <p className="text-xs text-slate-500 font-medium mt-1">
                     Registrá los logros, ejecuciones presupuestales y evidencias de tu dependencia
                 </p>
             </div>
 
             {successMsg && (
-                <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
+                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2 shadow-xs">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                     {successMsg}
                 </div>
             )}
 
             {errorMsg && (
-                <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs font-bold flex items-center gap-2">
+                <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-800 text-xs font-bold flex items-center gap-2 shadow-xs">
                     <AlertCircle className="w-4 h-4 text-red-600" />
                     {errorMsg}
                 </div>
             )}
 
-            <form onSubmit={handleSubmit} className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-5">
-                <div className="space-y-1.5">
+            <form onSubmit={handleSubmit} className="p-6 sm:p-8 rounded-[28px] bg-[#f8fafc] sm:bg-white border border-slate-200/80 shadow-xs space-y-5">
+                <div className="space-y-1.5 w-full">
                     <label className="block text-xs font-bold text-slate-700">
                         Actividad / Compromiso *
                     </label>
-                    <select
-                        required
+                    <ModernSelect
                         value={actividadId}
-                        onChange={(e) => setActividadId(e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--pol-primary)]"
-                    >
-                        <option value="">-- Seleccioná la actividad a reportar --</option>
-                        {actividades.map((a) => (
-                            <option key={a.id} value={a.id}>
-                                [{a.dependencia?.nombre || 'General'}] {a.nombre.slice(0, 90)}...
-                            </option>
-                        ))}
-                    </select>
+                        onChange={setActividadId}
+                        options={actividadOptions}
+                        placeholder="Buscar y seleccionar actividad o compromiso..."
+                        searchable
+                    />
                 </div>
 
                 {actSeleccionada && (
-                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1">
-                        <div className="text-slate-500">
-                            Meta configurada: <span className="font-semibold text-slate-900">{actSeleccionada.tipoMeta}</span>
+                    <div className="p-4 rounded-2xl bg-white border border-slate-200/80 text-xs space-y-1.5 shadow-xs">
+                        <div className="text-slate-500 font-medium">
+                            Meta configurada: <strong className="text-slate-900">{actSeleccionada.tipoMeta}</strong>
                             {actSeleccionada.metaNumero != null && ` (${actSeleccionada.metaNumero})`}
                         </div>
-                        <div className="text-slate-500">
-                            Dependencia: <span className="font-semibold text-slate-800">{actSeleccionada.dependencia?.nombre || 'General'}</span>
+                        <div className="text-slate-500 font-medium">
+                            Dependencia: <strong className="text-slate-900">{actSeleccionada.dependencia?.nombre || 'General'}</strong>
                         </div>
                     </div>
                 )}
 
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 w-full">
                     <label className="block text-xs font-bold text-slate-700">
                         Período / Año *
                     </label>
@@ -147,7 +151,7 @@ export default function ReportarClient({
                         value={periodoTexto}
                         onChange={(e) => setPeriodoTexto(e.target.value)}
                         placeholder="Ej: 2026 o I Trimestre 2026"
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--pol-primary)]"
+                        className="w-full px-3.5 py-2.5 rounded-2xl bg-white border border-slate-200 text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--pol-primary)] shadow-xs"
                     />
                 </div>
 
@@ -156,8 +160,8 @@ export default function ReportarClient({
                         <label className="block text-xs font-bold text-slate-700">
                             Estado del Cumplimiento
                         </label>
-                        <div className="flex gap-4">
-                            <label className="flex items-center space-x-2 cursor-pointer">
+                        <div className="flex gap-4 flex-wrap">
+                            <label className="flex items-center space-x-2 cursor-pointer p-3 rounded-2xl bg-white border border-slate-200 shadow-xs">
                                 <input
                                     type="radio"
                                     name="booleano"
@@ -166,7 +170,7 @@ export default function ReportarClient({
                                 />
                                 <span className="text-xs font-bold text-emerald-700">Realizado / Cumplido</span>
                             </label>
-                            <label className="flex items-center space-x-2 cursor-pointer">
+                            <label className="flex items-center space-x-2 cursor-pointer p-3 rounded-2xl bg-white border border-slate-200 shadow-xs">
                                 <input
                                     type="radio"
                                     name="booleano"
@@ -178,7 +182,7 @@ export default function ReportarClient({
                         </div>
                     </div>
                 ) : (
-                    <div className="space-y-1.5">
+                    <div className="space-y-1.5 w-full">
                         <label className="block text-xs font-bold text-slate-700">
                             Valor Reportado (Cantidad / Avance)
                         </label>
@@ -188,12 +192,12 @@ export default function ReportarClient({
                             value={valorNumero}
                             onChange={(e) => setValorNumero(e.target.value)}
                             placeholder="Ej: 15"
-                            className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--pol-primary)]"
+                            className="w-full px-3.5 py-2.5 rounded-2xl bg-white border border-slate-200 text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--pol-primary)] shadow-xs"
                         />
                     </div>
                 )}
 
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 w-full">
                     <label className="block text-xs font-bold text-slate-700">
                         Presupuesto Ejecutado ($ COP)
                     </label>
@@ -203,11 +207,11 @@ export default function ReportarClient({
                         value={presupuestoEjecutado}
                         onChange={(e) => setPresupuestoEjecutado(e.target.value)}
                         placeholder="Ej: 5000000"
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--pol-primary)]"
+                        className="w-full px-3.5 py-2.5 rounded-2xl bg-white border border-slate-200 text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--pol-primary)] shadow-xs"
                     />
                 </div>
 
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 w-full">
                     <label className="block text-xs font-bold text-slate-700">
                         Observaciones / Descripción
                     </label>
@@ -216,11 +220,11 @@ export default function ReportarClient({
                         value={observaciones}
                         onChange={(e) => setObservaciones(e.target.value)}
                         placeholder="Detallá las acciones realizadas..."
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--pol-primary)]"
+                        className="w-full px-3.5 py-2.5 rounded-2xl bg-white border border-slate-200 text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--pol-primary)] shadow-xs"
                     />
                 </div>
 
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 w-full">
                     <label className="block text-xs font-bold text-slate-700">
                         Enlace a Evidencia (Google Drive / OneDrive / Archivo)
                     </label>
@@ -229,14 +233,14 @@ export default function ReportarClient({
                         value={evidenciaUrl}
                         onChange={(e) => setEvidenciaUrl(e.target.value)}
                         placeholder="https://drive.google.com/..."
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--pol-primary)]"
+                        className="w-full px-3.5 py-2.5 rounded-2xl bg-white border border-slate-200 text-slate-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--pol-primary)] shadow-xs"
                     />
                 </div>
 
                 <button
                     type="submit"
                     disabled={submitting || !actividadId}
-                    className="w-full py-3 px-4 rounded-xl font-bold text-xs text-white bg-[var(--pol-primary)] hover:opacity-90 transition-opacity shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="w-full py-3.5 px-4 rounded-2xl font-bold text-xs text-white bg-[var(--pol-primary)] hover:opacity-90 transition-opacity shadow-xs disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
                 >
                     {submitting ? 'Guardando reporte...' : 'Enviar Reporte de Avance'}
                 </button>
