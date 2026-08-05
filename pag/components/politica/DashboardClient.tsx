@@ -1,10 +1,12 @@
 'use client'
 
 import React, { useState, useMemo } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
-    Search, Filter, ChevronDown, ChevronRight, FileSpreadsheet, Download,
+    Search, Filter, ChevronDown, ChevronRight, Download,
     CheckCircle2, Clock, AlertTriangle, Layers, Building2, TrendingUp,
-    ExternalLink, DollarSign, Calendar, X, Eye, Sparkles, PieChart, BarChart3
+    ExternalLink, DollarSign, Calendar, X, Eye, Sparkles, BarChart3,
+    ChevronLeft, List, Grid
 } from 'lucide-react'
 import { calcularCumplimientoActividad, promedioSimple } from '@/lib/politica/calculo'
 
@@ -31,10 +33,17 @@ export default function DashboardClient({
     const [selectedDependencia, setSelectedDependencia] = useState<string>('todas')
     const [selectedEstado, setSelectedEstado] = useState<string>('todos')
 
+    // Modo de Vista: 'arbol' (Estructura Jerárquica) vs 'lista' (Vista Lista Paginada)
+    const [viewMode, setViewMode] = useState<'arbol' | 'lista'>('arbol')
+
+    // Paginación para la vista de lista
+    const [currentPage, setCurrentPage] = useState(1)
+    const [pageSize, setPageSize] = useState(10)
+
     // Modal de detalle de actividad
     const [selectedActividadModal, setSelectedActividadModal] = useState<any | null>(null)
 
-    // Filas expandidas en la matriz
+    // Filas expandidas en la matriz de árbol
     const [expandedPoliticas, setExpandedPoliticas] = useState<Record<string, boolean>>({})
     const [expandedEjes, setExpandedEjes] = useState<Record<string, boolean>>({})
     const [expandedLineas, setExpandedLineas] = useState<Record<string, boolean>>({})
@@ -97,6 +106,19 @@ export default function DashboardClient({
         })
     }, [actividadesConResumen, search, selectedDependencia, selectedPolitica, selectedEstado])
 
+    // Paginación calculada
+    const totalPages = Math.ceil(actividadesFiltradas.length / pageSize) || 1
+    const actividadesPaginadas = useMemo(() => {
+        const start = (currentPage - 1) * pageSize
+        return actividadesFiltradas.slice(start, start + pageSize)
+    }, [actividadesFiltradas, currentPage, pageSize])
+
+    // Resetear a la página 1 cuando cambian los filtros
+    const handleFilterChange = (setter: any, val: any) => {
+        setter(val)
+        setCurrentPage(1)
+    }
+
     // KPIs globales
     const totalActividades = actividadesFiltradas.length
     const cumplidas100 = actividadesFiltradas.filter((a) => a.resumen.cumplimientoPct >= 100).length
@@ -134,7 +156,7 @@ export default function DashboardClient({
                 total: item.pcts.length,
             }))
             .sort((a, b) => b.pct - a.pct)
-            .slice(0, 6) // Top 6 ejes
+            .slice(0, 5)
     }, [actividadesFiltradas])
 
     // Exportar CSV
@@ -172,7 +194,7 @@ export default function DashboardClient({
                 <div>
                     <h1 className="text-2xl sm:text-3xl font-black text-slate-100 tracking-tight flex items-center gap-3">
                         <span>Tablero de Control de Políticas Públicas</span>
-                        <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 font-semibold border border-emerald-500/20">
+                        <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20">
                             En Tiempo Real
                         </span>
                     </h1>
@@ -185,18 +207,23 @@ export default function DashboardClient({
                     onClick={exportarCSV}
                     className="self-start md:self-auto px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white font-bold text-sm border border-slate-800 transition-all duration-200 active:scale-[0.98] flex items-center shadow-lg shadow-black/40"
                 >
-                    <Download className="w-4 h-4 mr-2 text-[var(--pol-primary-light)]" />
+                    <Download className="w-4 h-4 mr-2 text-orange-400" />
                     Exportar reporte CSV
                 </button>
             </div>
 
-            {/* Tarjetas KPI */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Tarjetas KPI Animadas */}
+            <motion.div
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+            >
                 {/* KPI 1: Cumplimiento Global */}
-                <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border border-slate-800 shadow-xl relative overflow-hidden group hover:border-slate-700 transition-all duration-300">
+                <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-[#0c121e] border border-slate-800/90 shadow-xl relative overflow-hidden group hover:border-orange-500/40 transition-all duration-300">
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Avance Global</span>
-                        <TrendingUp className="w-5 h-5 text-[var(--pol-primary-light)]" />
+                        <TrendingUp className="w-5 h-5 text-orange-400" />
                     </div>
                     <div className="mt-3 flex items-baseline justify-between">
                         <span className="text-3xl sm:text-4xl font-black text-slate-100 tracking-tight">{cumplimientoGlobal}%</span>
@@ -206,14 +233,14 @@ export default function DashboardClient({
                     </div>
                     <div className="w-full h-2 rounded-full bg-slate-800/80 mt-3 overflow-hidden">
                         <div
-                            className="h-full bg-gradient-to-r from-[var(--pol-primary)] to-emerald-400 rounded-full transition-all duration-700"
+                            className="h-full bg-gradient-to-r from-orange-500 to-emerald-400 rounded-full transition-all duration-700"
                             style={{ width: `${cumplimientoGlobal}%` }}
                         />
                     </div>
                 </div>
 
                 {/* KPI 2: Actividades Cumplidas */}
-                <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl hover:border-slate-700 transition-all duration-300">
+                <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800/90 shadow-xl hover:border-slate-700 transition-all duration-300">
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Metas Completadas</span>
                         <CheckCircle2 className="w-5 h-5 text-emerald-400" />
@@ -228,7 +255,7 @@ export default function DashboardClient({
                 </div>
 
                 {/* KPI 3: En Proceso */}
-                <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl hover:border-slate-700 transition-all duration-300">
+                <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800/90 shadow-xl hover:border-slate-700 transition-all duration-300">
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400">En Proceso</span>
                         <Clock className="w-5 h-5 text-amber-400" />
@@ -241,7 +268,7 @@ export default function DashboardClient({
                 </div>
 
                 {/* KPI 4: Presupuesto Exec */}
-                <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl hover:border-slate-700 transition-all duration-300">
+                <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800/90 shadow-xl hover:border-slate-700 transition-all duration-300">
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Presupuesto Ejecutado</span>
                         <DollarSign className="w-5 h-5 text-cyan-400" />
@@ -255,17 +282,17 @@ export default function DashboardClient({
                         Planeado: ${totalPresupuestoPlaneado.toLocaleString('es-CO')}
                     </p>
                 </div>
-            </div>
+            </motion.div>
 
-            {/* Gráfico SVG por Ejes Estratégicos */}
+            {/* Gráfico de Barras SVG por Ejes */}
             {resumenPorEje.length > 0 && (
-                <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl space-y-4">
+                <div className="p-6 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-2xl space-y-4">
                     <div className="flex items-center justify-between">
                         <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
-                            <BarChart3 className="w-5 h-5 text-[var(--pol-primary-light)]" />
+                            <BarChart3 className="w-5 h-5 text-orange-400" />
                             Cumplimiento por Eje Estratégico
                         </h3>
-                        <span className="text-xs text-slate-400 font-medium">Top ejes por avance</span>
+                        <span className="text-xs text-slate-400 font-medium">Principales ejes</span>
                     </div>
                     <div className="space-y-3 pt-2">
                         {resumenPorEje.map((eje) => (
@@ -274,9 +301,9 @@ export default function DashboardClient({
                                     <span className="text-slate-200">{eje.nombre} ({eje.total} metas)</span>
                                     <span className="font-bold text-emerald-400">{eje.pct}%</span>
                                 </div>
-                                <div className="w-full h-3 rounded-full bg-slate-950 overflow-hidden border border-slate-800">
+                                <div className="w-full h-2.5 rounded-full bg-slate-950 overflow-hidden border border-slate-800">
                                     <div
-                                        className="h-full bg-gradient-to-r from-[var(--pol-primary)] to-emerald-400 rounded-full transition-all duration-700"
+                                        className="h-full bg-gradient-to-r from-orange-500 to-emerald-400 rounded-full transition-all duration-700"
                                         style={{ width: `${eje.pct}%` }}
                                     />
                                 </div>
@@ -286,35 +313,38 @@ export default function DashboardClient({
                 </div>
             )}
 
-            {/* Barra de Filtros */}
+            {/* Barra de Filtros & Selector de Modo de Vista */}
             <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl space-y-4">
-                <div className="flex flex-col md:flex-row gap-3">
-                    <div className="relative flex-1">
+                <div className="flex flex-col md:flex-row gap-3 items-center justify-between">
+                    {/* Input de Búsqueda */}
+                    <div className="relative flex-1 w-full">
                         <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400" />
                         <input
                             type="text"
                             value={search}
-                            onChange={(e) => setSearch(e.target.value)}
+                            onChange={(e) => handleFilterChange(setSearch, e.target.value)}
                             placeholder="Buscar por actividad, código o dependencia..."
-                            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-slate-200 placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--pol-primary)]"
+                            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-slate-200 placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
                         />
                     </div>
 
+                    {/* Selector de Política */}
                     <select
                         value={selectedPolitica}
-                        onChange={(e) => setSelectedPolitica(e.target.value)}
-                        className="px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--pol-primary)] font-medium"
+                        onChange={(e) => handleFilterChange(setSelectedPolitica, e.target.value)}
+                        className="w-full md:w-auto px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 font-medium"
                     >
-                        <option value="todas">Todas las Políticas Públicas ({politicas.length})</option>
+                        <option value="todas">Todas las Políticas Publicas ({politicas.length})</option>
                         {politicas.map((p) => (
                             <option key={p.id} value={p.id}>{p.nombre}</option>
                         ))}
                     </select>
 
+                    {/* Selector de Dependencia */}
                     <select
                         value={selectedDependencia}
-                        onChange={(e) => setSelectedDependencia(e.target.value)}
-                        className="px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--pol-primary)] font-medium"
+                        onChange={(e) => handleFilterChange(setSelectedDependencia, e.target.value)}
+                        className="w-full md:w-auto px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 font-medium"
                     >
                         <option value="todas">Todas las Dependencias ({dependencias.length})</option>
                         {dependencias.map((d) => (
@@ -322,192 +352,327 @@ export default function DashboardClient({
                         ))}
                     </select>
 
+                    {/* Selector de Estado */}
                     <select
                         value={selectedEstado}
-                        onChange={(e) => setSelectedEstado(e.target.value)}
-                        className="px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--pol-primary)] font-medium"
+                        onChange={(e) => handleFilterChange(setSelectedEstado, e.target.value)}
+                        className="w-full md:w-auto px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 font-medium"
                     >
                         <option value="todos">Todos los Estados</option>
                         <option value="100">Completadas (100%)</option>
                         <option value="proceso">En Proceso (1-99%)</option>
                         <option value="0">Sin Avance (0%)</option>
                     </select>
+
+                    {/* Modos de Vista: Jerarquía vs Lista Paginada */}
+                    <div className="flex items-center p-1 rounded-xl bg-slate-950 border border-slate-800 self-stretch md:self-auto">
+                        <button
+                            onClick={() => setViewMode('arbol')}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                                viewMode === 'arbol'
+                                    ? 'bg-orange-600 text-white shadow-md'
+                                    : 'text-slate-400 hover:text-slate-200'
+                            }`}
+                            title="Vista en Estructura Jerárquica"
+                        >
+                            <Layers className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">Jerarquía</span>
+                        </button>
+                        <button
+                            onClick={() => setViewMode('lista')}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                                viewMode === 'lista'
+                                    ? 'bg-orange-600 text-white shadow-md'
+                                    : 'text-slate-400 hover:text-slate-200'
+                            }`}
+                            title="Vista de Lista Paginada"
+                        >
+                            <List className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">Lista Paginada</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            {/* Matriz Colapsable de 4 Niveles */}
-            <div className="rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl overflow-hidden">
-                <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
-                    <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
-                        <Layers className="w-5 h-5 text-[var(--pol-primary-light)]" />
-                        Matriz de Seguimiento por Estructura
-                    </h3>
-                    <span className="text-xs text-slate-400 font-semibold">
-                        Mostrando {actividadesFiltradas.length} actividades
-                    </span>
+            {/* VISTA 1: Jerarquía por Árbol (4 Niveles) */}
+            {viewMode === 'arbol' && (
+                <div className="rounded-2xl bg-slate-900/90 border border-slate-800 shadow-2xl overflow-hidden">
+                    <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+                        <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
+                            <Layers className="w-5 h-5 text-orange-400" />
+                            Matriz Jerárquica de Seguimiento
+                        </h3>
+                        <span className="text-xs text-slate-400 font-semibold">
+                            {actividadesFiltradas.length} actividades encontradas
+                        </span>
+                    </div>
+
+                    <div className="divide-y divide-slate-800/80">
+                        {politicas.map((pol) => {
+                            const isPolOpen = expandedPoliticas[pol.id] ?? true
+                            const polActividades = actividadesFiltradas.filter((a) =>
+                                a.politicas.some((ap: any) => ap.politicaId === pol.id)
+                            )
+                            if (polActividades.length === 0 && (selectedPolitica !== 'todas' || search || selectedDependencia !== 'todas')) {
+                                return null
+                            }
+
+                            const polPct = promedioSimple(polActividades.map((a) => a.resumen.cumplimientoPct))
+
+                            return (
+                                <div key={pol.id} className="bg-slate-900/40">
+                                    {/* Nivel 1: Política */}
+                                    <div
+                                        onClick={() => toggleExpand(setExpandedPoliticas, pol.id)}
+                                        className="px-6 py-4 flex items-center justify-between cursor-pointer hover:bg-slate-800/60 transition-colors select-none"
+                                    >
+                                        <div className="flex items-center space-x-3">
+                                            <button className="text-slate-400 hover:text-white transition-transform">
+                                                {isPolOpen ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+                                            </button>
+                                            <span className="font-black text-slate-100 text-base sm:text-lg tracking-tight">{pol.nombre}</span>
+                                            <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 font-semibold border border-slate-700">
+                                                {polActividades.length} actividades
+                                            </span>
+                                        </div>
+
+                                        <div className="flex items-center space-x-4">
+                                            <div className="w-32 bg-slate-800 h-2.5 rounded-full overflow-hidden hidden sm:block">
+                                                <div className="bg-emerald-400 h-full rounded-full transition-all duration-500" style={{ width: `${polPct}%` }} />
+                                            </div>
+                                            <span className="font-black text-emerald-400 text-base min-w-[50px] text-right">{polPct}%</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Nivel 2: Ejes */}
+                                    {isPolOpen && (
+                                        <div className="pl-6 sm:pl-10 pr-4 pb-3 space-y-3">
+                                            {pol.ejes.map((eje: any) => {
+                                                const isEjeOpen = expandedEjes[eje.id] ?? true
+                                                const ejeActividades = polActividades.filter((a) => a.linea?.ejeId === eje.id)
+                                                if (ejeActividades.length === 0) return null
+
+                                                const ejePct = promedioSimple(ejeActividades.map((a) => a.resumen.cumplimientoPct))
+
+                                                return (
+                                                    <div key={eje.id} className="rounded-xl bg-slate-950/70 border border-slate-800/90 overflow-hidden">
+                                                        <div
+                                                            onClick={() => toggleExpand(setExpandedEjes, eje.id)}
+                                                            className="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-slate-800/40 transition-colors select-none"
+                                                        >
+                                                            <div className="flex items-center space-x-2">
+                                                                {isEjeOpen ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
+                                                                <span className="font-bold text-slate-200 text-sm">{eje.nombre}</span>
+                                                            </div>
+                                                            <span className="text-xs font-black text-emerald-400">{ejePct}%</span>
+                                                        </div>
+
+                                                        {/* Nivel 3: Líneas */}
+                                                        {isEjeOpen && (
+                                                            <div className="px-4 pb-3 pt-1 space-y-2">
+                                                                {eje.lineas.map((linea: any) => {
+                                                                    const isLineaOpen = expandedLineas[linea.id] ?? true
+                                                                    const lineaActividades = ejeActividades.filter((a) => a.lineaId === linea.id)
+                                                                    if (lineaActividades.length === 0) return null
+
+                                                                    return (
+                                                                        <div key={linea.id} className="pl-3 border-l-2 border-slate-700/60 space-y-2 mt-2">
+                                                                            <div
+                                                                                onClick={() => toggleExpand(setExpandedLineas, linea.id)}
+                                                                                className="flex items-center justify-between text-xs font-bold text-slate-300 cursor-pointer py-1 select-none"
+                                                                            >
+                                                                                <span className="flex items-center gap-1.5">
+                                                                                    {isLineaOpen ? <ChevronDown className="w-3.5 h-3.5 text-slate-400" /> : <ChevronRight className="w-3.5 h-3.5 text-slate-400" />}
+                                                                                    {linea.nombre}
+                                                                                </span>
+                                                                                <span className="text-slate-400 font-semibold">{lineaActividades.length} metas</span>
+                                                                            </div>
+
+                                                                            {/* Nivel 4: Actividades */}
+                                                                            {isLineaOpen && (
+                                                                                <div className="space-y-2 mt-1">
+                                                                                    {lineaActividades.map((act) => (
+                                                                                        <div
+                                                                                            key={act.id}
+                                                                                            onClick={() => setSelectedActividadModal(act)}
+                                                                                            className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 transition-all duration-200 cursor-pointer active:scale-[0.99] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md"
+                                                                                        >
+                                                                                            <div className="space-y-1.5 flex-1">
+                                                                                                <div className="flex items-center gap-2 flex-wrap">
+                                                                                                    {act.codigo && (
+                                                                                                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-slate-800 text-amber-400 border border-slate-700">
+                                                                                                            {act.codigo}
+                                                                                                        </span>
+                                                                                                    )}
+                                                                                                    <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-800/80 text-slate-300 border border-slate-700/60 flex items-center gap-1">
+                                                                                                        <Building2 className="w-3 h-3 text-orange-400" />
+                                                                                                        {act.dependencia?.nombre || 'General'}
+                                                                                                    </span>
+                                                                                                    {act.avancesList.length > 0 && (
+                                                                                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center gap-1">
+                                                                                                            <Eye className="w-3 h-3" />
+                                                                                                            {act.avancesList.length} reportes
+                                                                                                        </span>
+                                                                                                    )}
+                                                                                                </div>
+                                                                                                <p className="text-sm font-semibold text-slate-100 leading-snug">
+                                                                                                    {act.nombre}
+                                                                                                </p>
+                                                                                            </div>
+
+                                                                                            <div className="flex items-center space-x-4 self-end sm:self-center">
+                                                                                                <div className="text-right">
+                                                                                                    <div className="text-xs font-bold text-slate-200">
+                                                                                                        {act.resumen.avanceTexto} / {act.resumen.metaTexto}
+                                                                                                    </div>
+                                                                                                    <div className="text-[11px] font-black text-emerald-400">
+                                                                                                        {act.resumen.cumplimientoPct}% ejecutado
+                                                                                                    </div>
+                                                                                                </div>
+
+                                                                                                <div className="flex items-center">
+                                                                                                    {act.resumen.cumplimientoPct >= 100 ? (
+                                                                                                        <span className="flex items-center gap-1 text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">
+                                                                                                            <CheckCircle2 className="w-3.5 h-3.5" />
+                                                                                                            Cumplida
+                                                                                                        </span>
+                                                                                                    ) : act.resumen.cumplimientoPct > 0 ? (
+                                                                                                        <span className="flex items-center gap-1 text-xs font-bold text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20">
+                                                                                                            <Clock className="w-3.5 h-3.5" />
+                                                                                                            En Proceso
+                                                                                                        </span>
+                                                                                                    ) : (
+                                                                                                        <span className="flex items-center gap-1 text-xs font-bold text-slate-400 bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700">
+                                                                                                            <AlertTriangle className="w-3.5 h-3.5 text-slate-500" />
+                                                                                                            Pendiente
+                                                                                                        </span>
+                                                                                                    )}
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    ))}
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    )
+                                                                })}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+                            )
+                        })}
+                    </div>
                 </div>
+            )}
 
-                <div className="divide-y divide-slate-800/80">
-                    {politicas.map((pol) => {
-                        const isPolOpen = expandedPoliticas[pol.id] ?? true
-                        const polActividades = actividadesFiltradas.filter((a) =>
-                            a.politicas.some((ap: any) => ap.politicaId === pol.id)
-                        )
-                        if (polActividades.length === 0 && (selectedPolitica !== 'todas' || search || selectedDependencia !== 'todas')) {
-                            return null
-                        }
+            {/* VISTA 2: Lista Paginada Rápida */}
+            {viewMode === 'lista' && (
+                <div className="rounded-2xl bg-slate-900/90 border border-slate-800 shadow-2xl overflow-hidden space-y-4">
+                    <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+                        <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
+                            <List className="w-5 h-5 text-orange-400" />
+                            Vista de Lista Paginada
+                        </h3>
+                        <div className="flex items-center space-x-3 text-xs text-slate-400">
+                            <span>Mostrar</span>
+                            <select
+                                value={pageSize}
+                                onChange={(e) => {
+                                    setPageSize(Number(e.target.value))
+                                    setCurrentPage(1)
+                                }}
+                                className="px-2 py-1 rounded bg-slate-950 border border-slate-800 text-slate-200 text-xs font-bold"
+                            >
+                                <option value={10}>10 por pág.</option>
+                                <option value={25}>25 por pág.</option>
+                                <option value={50}>50 por pág.</option>
+                            </select>
+                        </div>
+                    </div>
 
-                        const polPct = promedioSimple(polActividades.map((a) => a.resumen.cumplimientoPct))
-
-                        return (
-                            <div key={pol.id} className="bg-slate-900/50">
-                                {/* Nivel 1: Política */}
-                                <div
-                                    onClick={() => toggleExpand(setExpandedPoliticas, pol.id)}
-                                    className="px-6 py-4 flex items-center justify-between cursor-pointer hover:bg-slate-800/60 transition-colors select-none"
-                                >
-                                    <div className="flex items-center space-x-3">
-                                        <button className="text-slate-400 hover:text-white transition-transform active:scale-95">
-                                            {isPolOpen ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
-                                        </button>
-                                        <span className="font-black text-slate-100 text-base sm:text-lg tracking-tight">{pol.nombre}</span>
-                                        <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 font-semibold border border-slate-700">
-                                            {polActividades.length} actividades
+                    <div className="p-4 space-y-3">
+                        {actividadesPaginadas.map((act) => (
+                            <div
+                                key={act.id}
+                                onClick={() => setSelectedActividadModal(act)}
+                                className="p-4 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 transition-all duration-200 cursor-pointer active:scale-[0.99] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md"
+                            >
+                                <div className="space-y-1.5 flex-1">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        {act.codigo && (
+                                            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-slate-800 text-amber-400 border border-slate-700">
+                                                {act.codigo}
+                                            </span>
+                                        )}
+                                        <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-800/80 text-slate-300 border border-slate-700/60 flex items-center gap-1">
+                                            <Building2 className="w-3 h-3 text-orange-400" />
+                                            {act.dependencia?.nombre || 'General'}
                                         </span>
                                     </div>
-
-                                    <div className="flex items-center space-x-4">
-                                        <div className="w-32 bg-slate-800 h-2.5 rounded-full overflow-hidden hidden sm:block">
-                                            <div className="bg-emerald-400 h-full rounded-full transition-all duration-500" style={{ width: `${polPct}%` }} />
-                                        </div>
-                                        <span className="font-black text-emerald-400 text-base min-w-[50px] text-right">{polPct}%</span>
-                                    </div>
+                                    <p className="text-sm font-semibold text-slate-100 leading-snug">{act.nombre}</p>
                                 </div>
 
-                                {/* Nivel 2: Ejes */}
-                                {isPolOpen && (
-                                    <div className="pl-6 sm:pl-10 pr-4 pb-3 space-y-3">
-                                        {pol.ejes.map((eje: any) => {
-                                            const isEjeOpen = expandedEjes[eje.id] ?? true
-                                            const ejeActividades = polActividades.filter((a) => a.linea?.ejeId === eje.id)
-                                            if (ejeActividades.length === 0) return null
-
-                                            const ejePct = promedioSimple(ejeActividades.map((a) => a.resumen.cumplimientoPct))
-
-                                            return (
-                                                <div key={eje.id} className="rounded-xl bg-slate-950/70 border border-slate-800/90 overflow-hidden">
-                                                    <div
-                                                        onClick={() => toggleExpand(setExpandedEjes, eje.id)}
-                                                        className="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-slate-800/40 transition-colors select-none"
-                                                    >
-                                                        <div className="flex items-center space-x-2">
-                                                            {isEjeOpen ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
-                                                            <span className="font-bold text-slate-200 text-sm">{eje.nombre}</span>
-                                                        </div>
-                                                        <span className="text-xs font-black text-emerald-400">{ejePct}%</span>
-                                                    </div>
-
-                                                    {/* Nivel 3: Líneas */}
-                                                    {isEjeOpen && (
-                                                        <div className="px-4 pb-3 pt-1 space-y-2">
-                                                            {eje.lineas.map((linea: any) => {
-                                                                const isLineaOpen = expandedLineas[linea.id] ?? true
-                                                                const lineaActividades = ejeActividades.filter((a) => a.lineaId === linea.id)
-                                                                if (lineaActividades.length === 0) return null
-
-                                                                return (
-                                                                    <div key={linea.id} className="pl-3 border-l-2 border-slate-700/60 space-y-2 mt-2">
-                                                                        <div
-                                                                            onClick={() => toggleExpand(setExpandedLineas, linea.id)}
-                                                                            className="flex items-center justify-between text-xs font-bold text-slate-300 cursor-pointer py-1 select-none"
-                                                                        >
-                                                                            <span className="flex items-center gap-1.5">
-                                                                                {isLineaOpen ? <ChevronDown className="w-3.5 h-3.5 text-slate-400" /> : <ChevronRight className="w-3.5 h-3.5 text-slate-400" />}
-                                                                                {linea.nombre}
-                                                                            </span>
-                                                                            <span className="text-slate-400 font-semibold">{lineaActividades.length} metas</span>
-                                                                        </div>
-
-                                                                        {/* Nivel 4: Actividades */}
-                                                                        {isLineaOpen && (
-                                                                            <div className="space-y-2 mt-1">
-                                                                                {lineaActividades.map((act) => (
-                                                                                    <div
-                                                                                        key={act.id}
-                                                                                        onClick={() => setSelectedActividadModal(act)}
-                                                                                        className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 transition-all duration-200 cursor-pointer active:scale-[0.99] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md"
-                                                                                    >
-                                                                                        <div className="space-y-1.5 flex-1">
-                                                                                            <div className="flex items-center gap-2 flex-wrap">
-                                                                                                {act.codigo && (
-                                                                                                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-slate-800 text-amber-400 border border-slate-700">
-                                                                                                        {act.codigo}
-                                                                                                    </span>
-                                                                                                )}
-                                                                                                <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-800/80 text-slate-300 border border-slate-700/60 flex items-center gap-1">
-                                                                                                    <Building2 className="w-3 h-3 text-[var(--pol-primary-light)]" />
-                                                                                                    {act.dependencia?.nombre || 'General'}
-                                                                                                </span>
-                                                                                                {act.avancesList.length > 0 && (
-                                                                                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center gap-1">
-                                                                                                        <Eye className="w-3 h-3" />
-                                                                                                        {act.avancesList.length} reportes
-                                                                                                    </span>
-                                                                                                )}
-                                                                                            </div>
-                                                                                            <p className="text-sm font-semibold text-slate-100 leading-snug">
-                                                                                                {act.nombre}
-                                                                                            </p>
-                                                                                        </div>
-
-                                                                                        <div className="flex items-center space-x-4 self-end sm:self-center">
-                                                                                            <div className="text-right">
-                                                                                                <div className="text-xs font-bold text-slate-200">
-                                                                                                    {act.resumen.avanceTexto} / {act.resumen.metaTexto}
-                                                                                                </div>
-                                                                                                <div className="text-[11px] font-black text-emerald-400">
-                                                                                                    {act.resumen.cumplimientoPct}% ejecutado
-                                                                                                </div>
-                                                                                            </div>
-
-                                                                                            <div className="flex items-center">
-                                                                                                {act.resumen.cumplimientoPct >= 100 ? (
-                                                                                                    <span className="flex items-center gap-1 text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">
-                                                                                                        <CheckCircle2 className="w-3.5 h-3.5" />
-                                                                                                        Cumplida
-                                                                                                    </span>
-                                                                                                ) : act.resumen.cumplimientoPct > 0 ? (
-                                                                                                    <span className="flex items-center gap-1 text-xs font-bold text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20">
-                                                                                                        <Clock className="w-3.5 h-3.5" />
-                                                                                                        En Proceso
-                                                                                                    </span>
-                                                                                                ) : (
-                                                                                                    <span className="flex items-center gap-1 text-xs font-bold text-slate-400 bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700">
-                                                                                                        <AlertTriangle className="w-3.5 h-3.5 text-slate-500" />
-                                                                                                        Pendiente
-                                                                                                    </span>
-                                                                                                )}
-                                                                                            </div>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                ))}
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-                                                                )
-                                                            })}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )
-                                        })}
+                                <div className="flex items-center space-x-4">
+                                    <div className="text-right">
+                                        <div className="text-xs font-bold text-slate-200">
+                                            {act.resumen.avanceTexto} / {act.resumen.metaTexto}
+                                        </div>
+                                        <div className="text-[11px] font-black text-emerald-400">
+                                            {act.resumen.cumplimientoPct}% ejecutado
+                                        </div>
                                     </div>
-                                )}
+
+                                    {act.resumen.cumplimientoPct >= 100 ? (
+                                        <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">
+                                            Cumplida
+                                        </span>
+                                    ) : act.resumen.cumplimientoPct > 0 ? (
+                                        <span className="text-xs font-bold text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20">
+                                            En Proceso
+                                        </span>
+                                    ) : (
+                                        <span className="text-xs font-bold text-slate-400 bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-700">
+                                            Pendiente
+                                        </span>
+                                    )}
+                                </div>
                             </div>
-                        )
-                    })}
+                        ))}
+                    </div>
+
+                    {/* Controles de Paginación */}
+                    <div className="px-6 py-4 border-t border-slate-800 bg-slate-950/60 flex items-center justify-between text-xs text-slate-400 font-semibold">
+                        <span>
+                            Página <strong className="text-slate-100">{currentPage}</strong> de <strong className="text-slate-100">{totalPages}</strong> ({actividadesFiltradas.length} resultados)
+                        </span>
+
+                        <div className="flex items-center space-x-2">
+                            <button
+                                disabled={currentPage === 1}
+                                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                                className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 font-bold transition-all flex items-center gap-1"
+                            >
+                                <ChevronLeft className="w-4 h-4" />
+                                Anterior
+                            </button>
+
+                            <button
+                                disabled={currentPage >= totalPages}
+                                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                                className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 font-bold transition-all flex items-center gap-1"
+                            >
+                                Siguiente
+                                <ChevronRight className="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            )}
 
             {/* Modal de Detalle de Actividad y Evidencias */}
             {selectedActividadModal && (
@@ -515,7 +680,7 @@ export default function DashboardClient({
                     <div className="relative w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-6 space-y-6 max-h-[90vh] overflow-y-auto">
                         <div className="flex items-start justify-between border-b border-slate-800 pb-4">
                             <div>
-                                <span className="text-xs font-bold text-[var(--pol-primary-light)] uppercase tracking-wider">
+                                <span className="text-xs font-bold text-orange-400 uppercase tracking-wider">
                                     Detalle del Compromiso
                                 </span>
                                 <h3 className="text-lg font-bold text-slate-100 mt-1">
@@ -573,7 +738,7 @@ export default function DashboardClient({
                                                             href={ev.url}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
-                                                            className="inline-flex items-center text-xs text-[var(--pol-primary-light)] hover:underline font-bold"
+                                                            className="inline-flex items-center text-xs text-orange-400 hover:underline font-bold"
                                                         >
                                                             <ExternalLink className="w-3 h-3 mr-1" />
                                                             {ev.nombre || 'Ver archivo'}
