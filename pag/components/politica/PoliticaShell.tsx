@@ -8,6 +8,7 @@ import {
     Menu, X, Sparkles
 } from 'lucide-react'
 import DynamicIsland from './DynamicIsland'
+import MobileBottomIsland from './MobileBottomIsland'
 
 interface PoliticaShellProps {
     municipio: {
@@ -86,11 +87,15 @@ export default function PoliticaShell({
 
     return (
         <div className="min-h-screen bg-[#f0f2f5] text-slate-900 font-sans antialiased flex flex-col md:flex-row relative">
-            {/* Isla Dinámica Móvil (Apple-Style Fluid HUD) */}
-            <DynamicIsland municipio={municipio} sesion={sesion} />
+            {/* Isla Flotante de Navegación Móvil Inferior (Estilo exacto de la referencia) */}
+            <MobileBottomIsland
+                municipio={municipio}
+                sesion={sesion}
+                onOpenMenu={() => setMobileMenuOpen(!mobileMenuOpen)}
+            />
 
-            {/* Header Mobile */}
-            <header className="md:hidden sticky top-0 z-40 bg-[#f0f2f5]/95 backdrop-blur-md px-4 pt-14 pb-3 flex items-center justify-between border-b border-slate-200/80">
+            {/* Header Mobile Minimalista */}
+            <header className="md:hidden sticky top-0 z-40 bg-[#f0f2f5]/95 backdrop-blur-md px-4 py-3 flex items-center justify-between border-b border-slate-200/80">
                 <div className="flex items-center space-x-2.5">
                     <div className="w-8 h-8 rounded-2xl bg-[var(--pol-primary)] flex items-center justify-center font-extrabold text-white text-xs shadow-xs">
                         {municipio.nombre.slice(0, 2).toUpperCase()}
@@ -102,10 +107,10 @@ export default function PoliticaShell({
                 </div>
                 <button
                     onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                    className="p-2.5 rounded-2xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 shadow-xs"
+                    className="p-2 rounded-2xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 shadow-xs"
                     aria-label="Abrir menú"
                 >
-                    {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                    {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
                 </button>
             </header>
 
@@ -260,7 +265,7 @@ export default function PoliticaShell({
             </aside>
 
             {/* Main Content Area (Gran contenedor redondeado blanco idéntico a la imagen de referencia) */}
-            <main className="flex-1 min-w-0 p-2 sm:p-3 lg:p-4">
+            <main className="flex-1 min-w-0 p-2 sm:p-3 lg:p-4 pb-24 md:pb-4">
                 <div className="w-full min-h-[calc(100vh-1.5rem)] rounded-[28px] sm:rounded-[32px] bg-white border border-slate-200/80 shadow-xs p-5 sm:p-8 lg:p-9">
                     {children}
                 </div>

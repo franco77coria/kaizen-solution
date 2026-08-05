@@ -267,6 +267,62 @@ export default function DashboardClient({
                 </div>
             </div>
 
+            {/* Widget: Acciones Rápidas (Estilo exacto a la imagen de referencia) */}
+            <div className="p-5 sm:p-6 rounded-[28px] bg-[#f8fafc] sm:bg-white border border-slate-200/80 shadow-xs space-y-4">
+                <h3 className="text-base sm:text-lg font-extrabold text-slate-900 tracking-tight">
+                    Acciones rápidas
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    <Link
+                        href={`/politica/${municipio.slug}/reportar`}
+                        className="p-3.5 rounded-2xl bg-white border border-slate-200/90 hover:border-slate-300 hover:bg-slate-50 transition-all flex items-center gap-3 shadow-xs group"
+                    >
+                        <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 group-hover:scale-105 transition-transform">
+                            <FileText className="w-4 h-4" />
+                        </div>
+                        <span className="text-xs sm:text-sm font-bold text-slate-800 group-hover:text-slate-900">
+                            Reportar Avance
+                        </span>
+                    </Link>
+
+                    <Link
+                        href={`/politica/${municipio.slug}/metas`}
+                        className="p-3.5 rounded-2xl bg-white border border-slate-200/90 hover:border-slate-300 hover:bg-slate-50 transition-all flex items-center gap-3 shadow-xs group"
+                    >
+                        <div className="w-8 h-8 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-600 group-hover:scale-105 transition-transform">
+                            <CheckSquare2 className="w-4 h-4" />
+                        </div>
+                        <span className="text-xs sm:text-sm font-bold text-slate-800 group-hover:text-slate-900">
+                            Plan de Metas
+                        </span>
+                    </Link>
+
+                    <Link
+                        href={`/politica/${municipio.slug}/indicadores`}
+                        className="p-3.5 rounded-2xl bg-white border border-slate-200/90 hover:border-slate-300 hover:bg-slate-50 transition-all flex items-center gap-3 shadow-xs group"
+                    >
+                        <div className="w-8 h-8 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 group-hover:scale-105 transition-transform">
+                            <TrendingUp className="w-4 h-4" />
+                        </div>
+                        <span className="text-xs sm:text-sm font-bold text-slate-800 group-hover:text-slate-900">
+                            Indicadores KPI
+                        </span>
+                    </Link>
+
+                    <button
+                        onClick={exportarCSV}
+                        className="p-3.5 rounded-2xl bg-white border border-slate-200/90 hover:border-slate-300 hover:bg-slate-50 transition-all flex items-center gap-3 shadow-xs group cursor-pointer text-left"
+                    >
+                        <div className="w-8 h-8 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 group-hover:scale-105 transition-transform">
+                            <Download className="w-4 h-4" />
+                        </div>
+                        <span className="text-xs sm:text-sm font-bold text-slate-800 group-hover:text-slate-900">
+                            Descargar Datos CSV
+                        </span>
+                    </button>
+                </div>
+            </div>
+
             {/* Fila 1 de Widgets: Políticas Públicas (Izquierda) + Ejes Estratégicos (Derecha) */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 w-full">
                 {/* Widget 1: Políticas Públicas */}
