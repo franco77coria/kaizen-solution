@@ -7,6 +7,7 @@ import {
     LayoutDashboard, CheckSquare2, Target, FileText, Shield, LogOut, ChevronLeft, ChevronRight,
     Menu, X, Sparkles
 } from 'lucide-react'
+import DynamicIsland from './DynamicIsland'
 
 interface PoliticaShellProps {
     municipio: {
@@ -85,10 +86,13 @@ export default function PoliticaShell({
 
     return (
         <div className="min-h-screen bg-[#f0f2f5] text-slate-900 font-sans antialiased flex flex-col md:flex-row relative">
+            {/* Isla Dinámica Móvil (Apple-Style Fluid HUD) */}
+            <DynamicIsland municipio={municipio} sesion={sesion} />
+
             {/* Header Mobile */}
-            <header className="md:hidden sticky top-0 z-50 bg-[#f0f2f5]/95 backdrop-blur-md px-4 py-3 flex items-center justify-between border-b border-slate-200/80">
+            <header className="md:hidden sticky top-0 z-40 bg-[#f0f2f5]/95 backdrop-blur-md px-4 pt-14 pb-3 flex items-center justify-between border-b border-slate-200/80">
                 <div className="flex items-center space-x-2.5">
-                    <div className="w-9 h-9 rounded-2xl bg-[var(--pol-primary)] flex items-center justify-center font-extrabold text-white text-xs shadow-xs">
+                    <div className="w-8 h-8 rounded-2xl bg-[var(--pol-primary)] flex items-center justify-center font-extrabold text-white text-xs shadow-xs">
                         {municipio.nombre.slice(0, 2).toUpperCase()}
                     </div>
                     <div>
