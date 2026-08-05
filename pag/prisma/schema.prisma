@@ -123,7 +123,7 @@ model WhatsAppConfig {
   isConfigured     Boolean  @default(false)
   twilioAccountSid String?  @db.Text // encrypted
   twilioAuthToken  String?  @db.Text // encrypted
-  twilioNumber     String?           // e.g. "+15077636379"
+  twilioNumber     String? // e.g. "+15077636379"
   updatedAt        DateTime @updatedAt
 }
 
@@ -148,8 +148,8 @@ model WhatsAppContact {
   id            String    @id @default(cuid())
   phone         String    @unique
   name          String?
-  source        String?   // "CSV", "WEBHOOK", "MANUAL"
-  externalId    String?   // Para cruzar con otras bases de datos del cliente
+  source        String? // "CSV", "WEBHOOK", "MANUAL"
+  externalId    String? // Para cruzar con otras bases de datos del cliente
   tags          String    @default("[]") // JSON array
   optInStatus   Boolean   @default(true) // Si false, está en la lista de supresión
   lastMessageAt DateTime?
@@ -181,8 +181,8 @@ model ListSubscriber {
   createdAt DateTime @default(now())
 
   // Relaciones
-  list      ContactList     @relation(fields: [listId], references: [id], onDelete: Cascade)
-  contact   WhatsAppContact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  list    ContactList     @relation(fields: [listId], references: [id], onDelete: Cascade)
+  contact WhatsAppContact @relation(fields: [contactId], references: [id], onDelete: Cascade)
 
   @@unique([listId, contactId])
   @@index([listId])
@@ -191,10 +191,10 @@ model ListSubscriber {
 
 model WhatsAppTemplate {
   id          String   @id @default(cuid())
-  wabaId      String   // ID del template en Meta o ContentSid en Twilio (HX...)
+  wabaId      String // ID del template en Meta o ContentSid en Twilio (HX...)
   name        String
   language    String
-  status      String   // APPROVED, PENDING, REJECTED
+  status      String // APPROVED, PENDING, REJECTED
   category    String?
   bodyText    String   @db.Text
   components  String   @db.Text // JSON con toda la estructura (header, body, buttons)
@@ -226,30 +226,30 @@ model WhatsAppCampaign {
   updatedAt    DateTime  @updatedAt
 
   // Relaciones
-  list         ContactList?       @relation(fields: [listId], references: [id], onDelete: SetNull)
-  template     WhatsAppTemplate?  @relation(fields: [templateId], references: [id])
-  jobs         CampaignJob[]
+  list     ContactList?      @relation(fields: [listId], references: [id], onDelete: SetNull)
+  template WhatsAppTemplate? @relation(fields: [templateId], references: [id])
+  jobs     CampaignJob[]
 
   @@index([listId])
   @@index([templateId])
 }
 
 model CampaignJob {
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   campaignId   String
   phone        String
-  messageId    String?  @unique // Se llena cuando Meta nos da el ID
-  status       String   @default("pending") // pending, sent, delivered, read, failed, expired
-  errorMessage String?  @db.Text
-  senderId     String?  // ID del TwilioSender que envió este mensaje
-  cost         Float    @default(0) // Costo real del envío
+  messageId    String?   @unique // Se llena cuando Meta nos da el ID
+  status       String    @default("pending") // pending, sent, delivered, read, failed, expired
+  errorMessage String?   @db.Text
+  senderId     String? // ID del TwilioSender que envió este mensaje
+  cost         Float     @default(0) // Costo real del envío
   processedAt  DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   // Relaciones
-  campaign     WhatsAppCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  sender       TwilioSender?    @relation(fields: [senderId], references: [id], onDelete: SetNull)
+  campaign WhatsAppCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  sender   TwilioSender?    @relation(fields: [senderId], references: [id], onDelete: SetNull)
 
   @@index([campaignId])
   @@index([phone])
@@ -267,31 +267,31 @@ model WhatsAppLog {
 // ─── Multi-Sender (Twilio) ───
 
 model TwilioSender {
-  id                  String   @id @default(cuid())
-  name                String   // "Sender Principal", "Sender 2", etc.
-  accountSid          String   @db.Text  // Encrypted
-  authToken           String   @db.Text  // Encrypted
-  phoneNumber         String   // e.g. "+15077636379"
-  messagingServiceSid String?  // Si usa Messaging Service de Twilio
+  id                  String  @id @default(cuid())
+  name                String // "Sender Principal", "Sender 2", etc.
+  accountSid          String  @db.Text // Encrypted
+  authToken           String  @db.Text // Encrypted
+  phoneNumber         String // e.g. "+15077636379"
+  messagingServiceSid String? // Si usa Messaging Service de Twilio
 
   // Trust & Rate Limiting
-  trustLevel          String   @default("standard") // "new" | "standard" | "high"
-  maxMps              Float    @default(1.0) // Messages Per Second permitidos
-  sentToday           Int      @default(0)
-  dailyResetAt        DateTime @default(now()) // Fecha del último reset del contador diario
+  trustLevel   String   @default("standard") // "new" | "standard" | "high"
+  maxMps       Float    @default(1.0) // Messages Per Second permitidos
+  sentToday    Int      @default(0)
+  dailyResetAt DateTime @default(now()) // Fecha del último reset del contador diario
 
   // Estado
-  isActive            Boolean  @default(true)
-  isHealthy           Boolean  @default(true) // false si está baneado/suspendido
-  lastError           String?  @db.Text
-  lastUsedAt          DateTime?
-  totalSent           Int      @default(0) // Contador histórico total
+  isActive   Boolean   @default(true)
+  isHealthy  Boolean   @default(true) // false si está baneado/suspendido
+  lastError  String?   @db.Text
+  lastUsedAt DateTime?
+  totalSent  Int       @default(0) // Contador histórico total
 
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relaciones
-  campaignJobs        CampaignJob[]
+  campaignJobs CampaignJob[]
 
   @@index([isActive, isHealthy])
 }
@@ -312,20 +312,20 @@ model ElevenLabsConfig {
 }
 
 model AudioMessageCache {
-  id        String   @id @default(cuid())
-  hash      String   @unique // Hash sha256 de (texto + voiceId)
-  mediaUrl  String   @db.Text // URL pública de Supabase Storage (ya NO base64)
-  mediaId   String?  // ID que devuelve WhatsApp al subirlo (opcional, dura 30 días)
-  format    String   @default("mp3") // "mp3" | "ogg"
-  sizeBytes Int      @default(0)
-  createdAt DateTime @default(now())
+  id        String    @id @default(cuid())
+  hash      String    @unique // Hash sha256 de (texto + voiceId)
+  mediaUrl  String    @db.Text // URL pública de Supabase Storage (ya NO base64)
+  mediaId   String? // ID que devuelve WhatsApp al subirlo (opcional, dura 30 días)
+  format    String    @default("mp3") // "mp3" | "ogg"
+  sizeBytes Int       @default(0)
+  createdAt DateTime  @default(now())
   expiresAt DateTime? // TTL para limpieza automática
 }
 
 model MediaCache {
   id        String   @id @default(cuid())
   hash      String   @unique // SHA256 del buffer del archivo
-  mimeType  String            // e.g. "image/jpeg"
+  mimeType  String // e.g. "image/jpeg"
   data      String   @db.Text // Base64 del archivo
   createdAt DateTime @default(now())
 }
@@ -334,13 +334,354 @@ model MediaCache {
 
 model ApiUsageLog {
   id        String   @id @default(cuid())
-  service   String   // "whatsapp" | "elevenlabs" | "twilio"
-  operation String   // "send_template", "send_text", "send_audio", "tts_generate", "bulk_template"
+  service   String // "whatsapp" | "elevenlabs" | "twilio"
+  operation String // "send_template", "send_text", "send_audio", "tts_generate", "bulk_template"
   cost      Float    @default(0)
   units     Int      @default(0) // chars for ElevenLabs, messages for WA
-  metadata  String?  @db.Text    // JSON
+  metadata  String?  @db.Text // JSON
   createdAt DateTime @default(now())
 
   @@index([service])
+  @@index([createdAt])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  Tablero de Políticas Públicas Municipales — /politica/[municipio]
+//
+//  Migrado desde el Google Sheet de la Alcaldía de Anapoima. El prefijo Pol
+//  evita colisiones con los modelos del sitio y del CRM de WhatsApp.
+//
+//  Este schema usa relationMode = "prisma", así que no hay foreign keys reales
+//  en Postgres: cada campo de relación lleva su @@index a mano.
+// ═══════════════════════════════════════════════════════════════════════════
+
+enum PolTipoMeta {
+  BOOLEANO
+  NUMERO
+  SIN_DEFINIR
+}
+
+enum PolPeriodicidad {
+  ANUAL
+  CUATRIENIO
+  DECENIO
+  SIN_DEFINIR
+}
+
+enum PolRol {
+  SUPERADMIN
+  ADMIN
+  REPORTA
+  CONSULTA
+}
+
+enum PolTipoPermiso {
+  TODO
+  POLITICA
+  DEPENDENCIA
+}
+
+enum PolOrigenEvidencia {
+  DRIVE
+  STORAGE
+}
+
+model PolMunicipio {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  nombre        String
+  departamento  String?
+  lema          String?
+  periodoInicio Int
+  periodoFin    Int
+  activo        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  politicas    PolPolitica[]
+  dependencias PolDependencia[]
+  indicadores  PolIndicador[]
+  actividades  PolActividad[]
+  usuarios     PolUsuario[]
+  avances      PolAvance[]
+  auditoria    PolAuditoria[]
+}
+
+model PolPolitica {
+  id          String @id @default(cuid())
+  municipioId String
+  nombre      String
+  anioInicio  Int?
+  anioFin     Int?
+  orden       Int    @default(0)
+
+  municipio   PolMunicipio           @relation(fields: [municipioId], references: [id], onDelete: Cascade)
+  ejes        PolEje[]
+  indicadores PolIndicador[]
+  actividades PolActividadPolitica[]
+  permisos    PolPermiso[]
+
+  @@unique([municipioId, nombre])
+  @@index([municipioId])
+}
+
+model PolEje {
+  id         String  @id @default(cuid())
+  politicaId String
+  codigo     String?
+  nombre     String
+  orden      Int     @default(0)
+
+  politica PolPolitica @relation(fields: [politicaId], references: [id], onDelete: Cascade)
+  lineas   PolLinea[]
+
+  @@unique([politicaId, nombre])
+  @@index([politicaId])
+}
+
+model PolLinea {
+  id               String  @id @default(cuid())
+  ejeId            String
+  nombre           String
+  lineaEstrategica String?
+
+  eje         PolEje         @relation(fields: [ejeId], references: [id], onDelete: Cascade)
+  actividades PolActividad[]
+
+  @@unique([ejeId, nombre])
+  @@index([ejeId])
+}
+
+model PolDependencia {
+  id          String @id @default(cuid())
+  municipioId String
+  nombre      String
+
+  municipio   PolMunicipio   @relation(fields: [municipioId], references: [id], onDelete: Cascade)
+  actividades PolActividad[]
+  usuarios    PolUsuario[]
+  permisos    PolPermiso[]
+
+  @@unique([municipioId, nombre])
+  @@index([municipioId])
+}
+
+model PolIndicador {
+  id           String  @id @default(cuid())
+  municipioId  String
+  politicaId   String?
+  codigo       String // ID_INDICADOR, ej. "MEG1"
+  nombre       String  @db.Text
+  nombreOrigen String? @db.Text // "INDICADOR DEL EJE" del sheet
+  fuente       String? @db.Text
+  unidadMedida String?
+  formula      String? @db.Text
+  menorEsMejor Boolean @default(false)
+  comentarios  String? @db.Text
+
+  municipio   PolMunicipio       @relation(fields: [municipioId], references: [id], onDelete: Cascade)
+  politica    PolPolitica?       @relation(fields: [politicaId], references: [id])
+  metas       PolIndicadorMeta[]
+  actividades PolActividad[]
+
+  @@unique([municipioId, codigo])
+  @@index([municipioId])
+  @@index([politicaId])
+}
+
+// Los años vivían en los encabezados del sheet (META_NUMERICA_2024, REAL_2024...)
+// y se extraían con una regex sobre los nombres de columna. Normalizados como
+// filas, sumar 2027 es insertar datos y no tocar código.
+model PolIndicadorMeta {
+  id          String   @id @default(cuid())
+  indicadorId String
+  anio        Int
+  meta        Decimal? @db.Decimal(16, 4)
+  real        Decimal? @db.Decimal(16, 4)
+
+  indicador PolIndicador @relation(fields: [indicadorId], references: [id], onDelete: Cascade)
+
+  @@unique([indicadorId, anio])
+  @@index([indicadorId])
+}
+
+model PolActividad {
+  id            String  @id @default(cuid())
+  municipioId   String
+  lineaId       String?
+  dependenciaId String?
+  indicadorId   String?
+
+  codigo       String? // CODIGO_ACTIVIDAD: no es único, reinicia en cada política
+  nombre       String  @db.Text
+  subactividad String? @db.Text
+
+  tipoMeta     PolTipoMeta @default(SIN_DEFINIR)
+  metaNumero   Decimal?    @db.Decimal(16, 4)
+  metaBooleana Boolean?
+
+  periodicidad    PolPeriodicidad @default(SIN_DEFINIR)
+  periodicidadRaw String? // texto original: el sheet dice "Cuatrenio", sin la i
+
+  presupuestoPlaneado  Decimal? @db.Decimal(16, 2)
+  presupuestoPendiente Boolean  @default(false) // 146 filas dicen "PENDIENTE"
+
+  // Nombre normalizado + metadata de la meta. Deduplica en la importación y la
+  // hace repetible: dos filas con el mismo nombre pero distinta meta no se funden.
+  claveDedupe String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  municipio   PolMunicipio           @relation(fields: [municipioId], references: [id], onDelete: Cascade)
+  linea       PolLinea?              @relation(fields: [lineaId], references: [id])
+  dependencia PolDependencia?        @relation(fields: [dependenciaId], references: [id])
+  indicador   PolIndicador?          @relation(fields: [indicadorId], references: [id])
+  politicas   PolActividadPolitica[]
+  avances     PolAvance[]
+
+  @@unique([municipioId, claveDedupe])
+  @@index([municipioId])
+  @@index([lineaId])
+  @@index([dependenciaId])
+  @@index([indicadorId])
+}
+
+// Una misma actividad real puede servir a varias políticas. Antes eso eran filas
+// duplicadas y el avance se replicaba entre ellas porque coincidían los nombres.
+model PolActividadPolitica {
+  actividadId String
+  politicaId  String
+
+  actividad PolActividad @relation(fields: [actividadId], references: [id], onDelete: Cascade)
+  politica  PolPolitica  @relation(fields: [politicaId], references: [id], onDelete: Cascade)
+
+  @@id([actividadId, politicaId])
+  @@index([actividadId])
+  @@index([politicaId])
+}
+
+model PolAvance {
+  id          String  @id @default(cuid())
+  municipioId String
+  actividadId String?
+  usuarioId   String?
+
+  // Período: en el sheet conviven años sueltos ("2025") y rangos de fechas.
+  anio         Int?
+  fechaDesde   DateTime?
+  fechaHasta   DateTime?
+  periodoTexto String?
+
+  valorNumero   Decimal? @db.Decimal(16, 4)
+  valorBooleano Boolean?
+  valorRaw      String? // lo que vino tal cual: "3", "Realizado", ...
+
+  observaciones        String?  @db.Text
+  presupuestoEjecutado Decimal? @db.Decimal(16, 2)
+
+  // false = no cruzó con ninguna actividad. Antes se descartaban en silencio.
+  conciliado     Boolean @default(true)
+  actividadTexto String? @db.Text // nombre original, para reconciliarlo después
+
+  origenFila Int? // fila del sheet, para que reimportar no duplique
+  createdAt  DateTime @default(now())
+
+  municipio  PolMunicipio   @relation(fields: [municipioId], references: [id], onDelete: Cascade)
+  actividad  PolActividad?  @relation(fields: [actividadId], references: [id])
+  usuario    PolUsuario?    @relation(fields: [usuarioId], references: [id])
+  evidencias PolEvidencia[]
+
+  @@unique([municipioId, origenFila])
+  @@index([municipioId])
+  @@index([actividadId])
+  @@index([usuarioId])
+  @@index([anio])
+}
+
+model PolEvidencia {
+  id       String             @id @default(cuid())
+  avanceId String
+  url      String             @db.Text
+  nombre   String?
+  mime     String?
+  tamano   Int?
+  origen   PolOrigenEvidencia @default(STORAGE)
+
+  avance PolAvance @relation(fields: [avanceId], references: [id], onDelete: Cascade)
+
+  @@index([avanceId])
+}
+
+model PolUsuario {
+  id            String  @id @default(cuid())
+  municipioId   String
+  dependenciaId String?
+
+  nombre      String
+  telefono    String? // sólo dígitos
+  telefonoRaw String? // como venía en el sheet
+  correo      String?
+
+  rol    PolRol  @default(REPORTA)
+  activo Boolean @default(true)
+
+  // Reservado: hoy el login es sólo por nombre o teléfono, sin clave.
+  passwordHash String?
+
+  ultimoIngreso DateTime?
+  claveDedupe   String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  municipio   PolMunicipio    @relation(fields: [municipioId], references: [id], onDelete: Cascade)
+  dependencia PolDependencia? @relation(fields: [dependenciaId], references: [id])
+  permiso     PolPermiso?
+  avances     PolAvance[]
+  auditoria   PolAuditoria[]
+
+  @@unique([municipioId, claveDedupe])
+  @@index([municipioId])
+  @@index([dependenciaId])
+  @@index([telefono])
+}
+
+model PolPermiso {
+  id            String         @id @default(cuid())
+  usuarioId     String         @unique
+  tipo          PolTipoPermiso @default(TODO)
+  politicaId    String?
+  dependenciaId String?
+  valorRaw      String? // el texto que traía control_permisos
+  updatedAt     DateTime       @updatedAt
+
+  usuario     PolUsuario      @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  politica    PolPolitica?    @relation(fields: [politicaId], references: [id])
+  dependencia PolDependencia? @relation(fields: [dependenciaId], references: [id])
+
+  @@index([politicaId])
+  @@index([dependenciaId])
+}
+
+model PolAuditoria {
+  id          String  @id @default(cuid())
+  municipioId String
+  usuarioId   String?
+
+  accion      String // "Login" | "Modificacion" | "Permiso"
+  detalle     String? @db.Text
+  usuarioText String? // nombre tal como quedó registrado
+  ip          String?
+  userAgent   String? @db.Text
+
+  origenFila Int?
+  createdAt  DateTime @default(now())
+
+  municipio PolMunicipio @relation(fields: [municipioId], references: [id], onDelete: Cascade)
+  usuario   PolUsuario?  @relation(fields: [usuarioId], references: [id])
+
+  @@unique([municipioId, origenFila])
+  @@index([municipioId])
+  @@index([usuarioId])
   @@index([createdAt])
 }
