@@ -1,0 +1,46 @@
+name: Geodemografico
+
+on:
+  push:
+    paths:
+      - 'pag/geodemografico/**'
+      - '.github/workflows/geodemografico.yml'
+  pull_request:
+    paths:
+      - 'pag/geodemografico/**'
+      - '.github/workflows/geodemografico.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: pag/geodemografico
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pag/geodemografico/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+      - run: pnpm build
+      - name: Verificar que no haya credenciales versionadas
+        run: |
+          if git ls-files | grep -Ei '(^|/)(\.env$|api.?gemini|client_secret|service-account)' ; then
+            echo 'Hay archivos con forma de credencial versionados.'
+            exit 1
+          fi
+          if git grep -nE 'AIza[0-9A-Za-z_-]{30,}' -- . ; then
+            echo 'Hay algo con forma de clave de Google en el proyecto.'
+            exit 1
+          fi

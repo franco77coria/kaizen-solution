@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Sin permisos de escritura: el CI compila y prueba, no despliega ni etiqueta.
+permissions:
+  contents: read
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      # --frozen-lockfile: si el lockfile no coincide con los manifiestos, el
+      # CI falla en vez de resolver versiones distintas de las probadas.
+      - name: Instalar dependencias
+        run: pnpm install --frozen-lockfile
+
+      - name: Tipos
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      # Las pruebas levantan su propia base efimera (PGlite): no hace falta un
+      # servicio de PostgreSQL en el runner.
+      - name: Pruebas
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+      # Falla el CI si aparece una credencial versionada por error.
+      - name: Buscar secretos versionados
+        run: |
+          set -e
+          if git ls-files | grep -Ei '(^|/)(\.env$|api.?gemini|client_secret|service-account)' ; then
+            echo "Hay archivos con forma de credencial versionados."
+            exit 1
+          fi
+          if git grep -nE 'AIza[0-9A-Za-z_-]{30,}' -- . ; then
+            echo "Hay algo con forma de clave de API de Google en el repositorio."
+            exit 1
+          fi
+          echo "sin credenciales versionadas"

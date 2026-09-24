@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "rootDir": "./src", "outDir": "./dist" },
+  "include": ["src/**/*"],
+  "references": [
+    { "path": "../../packages/contracts" },
+    { "path": "../../packages/observability" },
+    { "path": "../../packages/authz" },
+    { "path": "../../packages/db" },
+    { "path": "../../packages/llm" },
+    { "path": "../../packages/retrieval" },
+    { "path": "../../packages/query-plans" },
+    { "path": "../../packages/geography" },
+    { "path": "../../packages/visualizations" },
+    { "path": "../../packages/connectors/google-drive" }
+  ]
+}

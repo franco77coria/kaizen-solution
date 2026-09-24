@@ -1,0 +1,28 @@
+node_modules/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# Secretos y credenciales locales. Nunca versionar.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+secrets/
+**/api*gemini*.txt
+**/client_secret*.json
+service-account*.json
+
+# Estado de base local (PGlite)
+.pgdata/
+*.sqlite
+
+# Artefactos de piloto con contenido real
+docs/pilot/raw/
+tmp/
+scripts/.tmp/
+.claude/
+.DS_Store

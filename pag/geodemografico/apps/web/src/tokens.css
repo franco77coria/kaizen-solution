@@ -1,0 +1,125 @@
+/**
+ * Sistema de diseño — Geodemográfico · Cundinamarca.
+ *
+ * Tema: el registro de personas en el territorio del altiplano. Un solo
+ * acento, el verde del frailejón del páramo, y el color reservado para el
+ * DATO: el marco es neutro para que lo único que resalte sea dónde hay gente.
+ *
+ * No hay ámbar. El sistema anterior usaba bloques ámbar para avisos y para la
+ * abstención del chat, y leían como alarma permanente. El rojo (`--senal`)
+ * aparece solo en errores y acciones destructivas.
+ */
+@import '@fontsource-variable/geist';
+
+:root {
+  color-scheme: light;
+
+  --tinta: #15171a;
+  --tinta-2: #4b5157;
+  --tinta-3: #858b90;
+
+  --lienzo: #f7f8f7;
+  --superficie: #ffffff;
+  --superficie-2: #f1f3f1;
+  --linea: #e4e7e4;
+  --linea-fuerte: #d0d6d2;
+
+  --acento: #2f6b57;
+  --acento-hover: #245545;
+  --acento-suave: #eaf2ee;
+  --acento-borde: #c9ded4;
+  --sobre-acento: #ffffff;
+
+  /* Escala de datos del mosaico: mismo tono, cinco pasos. Los dos últimos
+     llevan texto claro encima; los tres primeros, oscuro. */
+  --dato-1: #eaf2ee;
+  --dato-2: #c9ded4;
+  --dato-3: #8fbca8;
+  --dato-4: #4e8c74;
+  --dato-5: #2f6b57;
+  --sobre-dato-claro: #15171a;
+  --sobre-dato-oscuro: #ffffff;
+
+  --senal: #b42318;
+  --senal-suave: #fef3f2;
+
+  --fuente: 'Geist Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* Tipografía más chica que la versión anterior: el cuerpo es 14, no 16. */
+  --t-11: 0.6875rem;
+  --t-12: 0.75rem;
+  --t-13: 0.8125rem;
+  --t-14: 0.875rem;
+  --t-16: 1rem;
+  --t-20: 1.25rem;
+  --t-28: 1.75rem;
+  --t-48: 3rem;
+
+  --r-sm: 7px;
+  --r: 10px;
+  --r-lg: 14px;
+  --r-full: 999px;
+
+  --sombra-1: 0 1px 2px rgba(16, 24, 20, 0.04);
+  --sombra-flotante: 0 10px 32px rgba(16, 24, 20, 0.12), 0 1px 3px rgba(16, 24, 20, 0.06);
+
+  --curva: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --rapido: 120ms;
+  --medio: 200ms;
+
+  --ancho-contenido: 1120px;
+  --alto-barra: 56px;
+  --alto-real: 100dvh;
+  --z-barra: 50;
+  --z-chat: 900;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema='claro']) {
+    color-scheme: dark;
+
+    --tinta: #e8ecea;
+    --tinta-2: #a7afab;
+    --tinta-3: #6f7773;
+
+    --lienzo: #0f1211;
+    --superficie: #161a18;
+    --superficie-2: #1c211f;
+    --linea: #26302c;
+    --linea-fuerte: #35413c;
+
+    --acento: #7fc4a8;
+    --acento-hover: #9ad3bc;
+    --acento-suave: #1a2a24;
+    --acento-borde: #2d4a3f;
+    --sobre-acento: #0f1211;
+
+    /* En oscuro la escala sube en luminosidad: más gente, más luz. */
+    --dato-1: #1c2b25;
+    --dato-2: #2a4a3e;
+    --dato-3: #3f7a63;
+    --dato-4: #62a688;
+    --dato-5: #93d2b8;
+    --sobre-dato-claro: #e8ecea;
+    --sobre-dato-oscuro: #0f1211;
+
+    --senal: #f29c92;
+    --senal-suave: #2a1614;
+
+    --sombra-1: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --sombra-flotante: 0 12px 36px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* Quien pidió menos movimiento no recibe transiciones: para algunas personas
+   el movimiento marea. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

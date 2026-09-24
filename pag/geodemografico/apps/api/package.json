@@ -1,0 +1,25 @@
+{
+  "name": "@kaizen/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": { "build": "tsc -b", "start": "node dist/server.js", "dev": "tsx watch src/server.ts" },
+  "dependencies": {
+    "@fastify/cookie": "^11.0.2",
+    "@fastify/helmet": "^13.0.1",
+    "@fastify/rate-limit": "^10.2.1",
+    "@kaizen/authz": "workspace:*",
+    "@kaizen/connector-google-drive": "workspace:*",
+    "@kaizen/contracts": "workspace:*",
+    "@kaizen/db": "workspace:*",
+    "@kaizen/geography": "workspace:*",
+    "@kaizen/llm": "workspace:*",
+    "@kaizen/observability": "workspace:*",
+    "@kaizen/query-plans": "workspace:*",
+    "@kaizen/retrieval": "workspace:*",
+    "@kaizen/visualizations": "workspace:*",
+    "fastify": "^5.2.0",
+    "pg": "^8.13.1",
+    "zod": "^3.24.1"
+  }
+}
