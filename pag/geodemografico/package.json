@@ -1,0 +1,47 @@
+{
+  "name": "kaizen-asistente",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --build --force",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "build": "pnpm -r --filter \"./packages/**\" run build && pnpm -r --filter \"./apps/**\" run build",
+    "check": "pnpm run typecheck && pnpm run lint && pnpm run test",
+    "db:start": "node scripts/dev-db.mjs",
+    "db:migrate": "node --import tsx packages/db/src/cli/migrate.ts",
+    "db:reset": "node --import tsx packages/db/src/cli/reset.ts",
+    "seed": "node --import tsx evals/fixtures/src/cli/seed.ts",
+    "verify:gemini": "node --env-file=.env scripts/verify-gemini.mjs",
+    "geo:verify": "node scripts/geo-verify.mjs",
+    "geo:load": "node --env-file=.env scripts/geo-load.mjs",
+    "api": "node --env-file=.env apps/api/dist/server.js",
+    "worker": "node --env-file=.env apps/worker/dist/main.js",
+    "api:stop": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/stop-api.ps1",
+    "web": "pnpm --filter @kaizen/web dev",
+    "verify:drive": "node --env-file=.env scripts/verify-drive.mjs",
+    "acceso:plataforma": "node --env-file=.env scripts/acceso-plataforma.mjs",
+    "dev:db": "node scripts/dev-db.mjs",
+    "dev:api": "node --env-file=.env --env-file=.env.chat apps/api/dist/server.js",
+    "dev:web": "pnpm --filter @kaizen/web dev"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@types/node": "^22.10.2",
+    "eslint": "^9.17.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.18.1",
+    "vitest": "^2.1.8",
+    "@electric-sql/pglite": "^0.5.8",
+    "@electric-sql/pglite-pgvector": "^0.0.9",
+    "@electric-sql/pglite-socket": "^0.2.11",
+    "pg": "^8.13.1",
+    "@types/pg": "^8.11.10"
+  }
+}

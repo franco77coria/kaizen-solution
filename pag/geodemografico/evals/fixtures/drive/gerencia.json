@@ -1,0 +1,264 @@
+{
+  "files": [
+    {
+      "id": "doc-comite-notas",
+      "name": "Comite de obras - notas",
+      "mimeType": "application/vnd.google-apps.document",
+      "createdTime": "2026-03-04T14:00:00Z",
+      "modifiedTime": "2026-03-04T14:00:00Z",
+      "version": "3",
+      "parents": [
+        "carpeta-meet"
+      ],
+      "shortcutTargetId": null,
+      "meetingKey": "meet-0001",
+      "trashed": false,
+      "canRead": true
+    },
+    {
+      "id": "doc-comite-transcripcion",
+      "name": "Comite de obras - transcripcion",
+      "mimeType": "application/vnd.google-apps.document",
+      "createdTime": "2026-03-04T14:00:00Z",
+      "modifiedTime": "2026-03-04T14:00:00Z",
+      "version": "1",
+      "parents": [
+        "carpeta-meet"
+      ],
+      "shortcutTargetId": null,
+      "meetingKey": "meet-0001",
+      "trashed": false,
+      "canRead": true
+    },
+    {
+      "id": "shortcut-comite",
+      "name": "Comite de obras - notas (acceso directo)",
+      "mimeType": "application/vnd.google-apps.shortcut",
+      "createdTime": null,
+      "modifiedTime": null,
+      "version": "1",
+      "parents": [
+        "carpeta-vieja"
+      ],
+      "shortcutTargetId": "doc-comite-notas",
+      "meetingKey": null,
+      "trashed": false,
+      "canRead": true
+    },
+    {
+      "id": "doc-comite-abril",
+      "name": "Comite de obras - notas",
+      "mimeType": "application/vnd.google-apps.document",
+      "createdTime": "2026-04-08T14:00:00Z",
+      "modifiedTime": "2026-04-08T14:00:00Z",
+      "version": "1",
+      "parents": [
+        "carpeta-meet-2026"
+      ],
+      "shortcutTargetId": null,
+      "meetingKey": "meet-0002",
+      "trashed": false,
+      "canRead": true
+    },
+    {
+      "id": "doc-plan-multipestana",
+      "name": "Plan de desarrollo - borrador",
+      "mimeType": "application/vnd.google-apps.document",
+      "createdTime": "2026-02-10T09:00:00Z",
+      "modifiedTime": "2026-02-10T09:00:00Z",
+      "version": "1",
+      "parents": [
+        "carpeta-suelta"
+      ],
+      "shortcutTargetId": null,
+      "meetingKey": null,
+      "trashed": false,
+      "canRead": true
+    },
+    {
+      "id": "doc-en-papelera",
+      "name": "Acta vieja",
+      "mimeType": "application/vnd.google-apps.document",
+      "createdTime": null,
+      "modifiedTime": null,
+      "version": "1",
+      "parents": [
+        "carpeta-vieja"
+      ],
+      "shortcutTargetId": null,
+      "meetingKey": null,
+      "trashed": true,
+      "canRead": true
+    },
+    {
+      "id": "doc-sin-acceso",
+      "name": "Documento restringido",
+      "mimeType": "application/vnd.google-apps.document",
+      "createdTime": null,
+      "modifiedTime": null,
+      "version": "1",
+      "parents": [
+        "carpeta-meet"
+      ],
+      "shortcutTargetId": null,
+      "meetingKey": null,
+      "trashed": false,
+      "canRead": false
+    },
+    {
+      "id": "hoja-presupuesto",
+      "name": "Presupuesto 2026",
+      "mimeType": "application/vnd.google-apps.spreadsheet",
+      "createdTime": null,
+      "modifiedTime": null,
+      "version": "1",
+      "parents": [
+        "carpeta-suelta"
+      ],
+      "shortcutTargetId": null,
+      "meetingKey": null,
+      "trashed": false,
+      "canRead": true
+    }
+  ],
+  "documents": {
+    "doc-comite-notas": {
+      "fileId": "doc-comite-notas",
+      "version": "3",
+      "title": "Comite de obras - notas",
+      "complete": true,
+      "incompleteReason": null,
+      "tabs": [
+        {
+          "id": "tab-0",
+          "title": "Notas",
+          "blocks": [
+            {
+              "heading": "Asistentes",
+              "text": "Alcalde, secretaria de infraestructura, tesorera y el contratista de la obra del centro."
+            },
+            {
+              "heading": "Acuerdos",
+              "text": "Se aprobo el presupuesto de pavimentacion del barrio centro por 420 millones de pesos. Responsable: secretaria de infraestructura. Plazo de ejecucion: 30 de junio de 2026."
+            },
+            {
+              "heading": "Acuerdos",
+              "text": "Se posterga la compra de luminarias hasta el segundo semestre por falta de disponibilidad presupuestal."
+            },
+            {
+              "heading": "Pendientes",
+              "text": "La tesorera debe confirmar el certificado de disponibilidad presupuestal antes del 15 de marzo."
+            }
+          ]
+        }
+      ]
+    },
+    "doc-comite-transcripcion": {
+      "fileId": "doc-comite-transcripcion",
+      "version": "1",
+      "title": "Comite de obras - transcripcion",
+      "complete": true,
+      "incompleteReason": null,
+      "tabs": [
+        {
+          "id": "tab-0",
+          "title": "Transcripcion",
+          "blocks": [
+            {
+              "heading": "Intervenciones",
+              "text": "Alcalde: quiero saber el cronograma real de la pavimentacion. Secretaria de infraestructura: el inicio esta previsto para abril, apenas salga el certificado de disponibilidad."
+            },
+            {
+              "heading": "Intervenciones",
+              "text": "Tesorera: el certificado sale esta semana si no cambia la proyeccion de ingresos."
+            }
+          ]
+        }
+      ]
+    },
+    "doc-comite-abril": {
+      "fileId": "doc-comite-abril",
+      "version": "1",
+      "title": "Comite de obras - notas",
+      "complete": true,
+      "incompleteReason": null,
+      "tabs": [
+        {
+          "id": "tab-0",
+          "title": "Notas",
+          "blocks": [
+            {
+              "heading": "Acuerdos",
+              "text": "Se autoriza el inicio de obra de pavimentacion. El contratista entrega cronograma detallado el 15 de abril."
+            }
+          ]
+        }
+      ]
+    },
+    "doc-plan-multipestana": {
+      "fileId": "doc-plan-multipestana",
+      "version": "2",
+      "title": "Plan de desarrollo - borrador",
+      "complete": false,
+      "incompleteReason": "el proveedor no entrego el contenido de una pestana protegida",
+      "tabs": [
+        {
+          "id": "tab-diagnostico",
+          "title": "Diagnostico",
+          "blocks": [
+            {
+              "heading": "Educacion",
+              "text": "La cobertura en educacion media es del 78 por ciento segun el reporte de la secretaria."
+            }
+          ]
+        },
+        {
+          "id": "tab-metas",
+          "title": "Metas",
+          "blocks": [
+            {
+              "heading": "Metas 2026",
+              "text": "Llevar la cobertura de educacion media al 85 por ciento antes de diciembre de 2026."
+            }
+          ]
+        }
+      ]
+    },
+    "doc-en-papelera": {
+      "fileId": "doc-en-papelera",
+      "version": "1",
+      "title": "Acta vieja",
+      "complete": true,
+      "incompleteReason": null,
+      "tabs": [
+        {
+          "id": "tab-0",
+          "title": "",
+          "blocks": [
+            {
+              "heading": null,
+              "text": "Contenido que no deberia indexarse."
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "changes": [
+    {
+      "fromCursor": "cursor-0",
+      "toCursor": "cursor-1",
+      "fileIds": [
+        "doc-comite-notas"
+      ]
+    },
+    {
+      "fromCursor": "cursor-1",
+      "toCursor": "cursor-2",
+      "fileIds": [],
+      "removed": [
+        "doc-comite-abril"
+      ]
+    }
+  ]
+}
