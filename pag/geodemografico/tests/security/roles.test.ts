@@ -350,3 +350,71 @@ describe('la identidad del webhook esta acotada al minimo', () => {
     expect(rows[0]?.rolbypassrls).toBe(false)
   })
 })
+
+describe('el rol de login de produccion (kaizen_login)', () => {
+  /**
+   * En Supabase la app se conecta como kaizen_login y hace SET ROLE a cada
+   * identidad. La prueba cambia la IDENTIDAD DE SESION (no solo el rol), que
+   * es contra la que Postgres valida el SET ROLE: con el dueño superusuario
+   * como sesion, cualquier SET ROLE pasaria y la prueba no probaria nada.
+   */
+  async function comoLogin<T>(fn: () => Promise<T>): Promise<T> {
+    await env.owner.query('begin')
+    try {
+      await env.owner.query('set local session authorization kaizen_login')
+      return await fn()
+    } finally {
+      await env.owner.query('rollback')
+    }
+  }
+
+  it('no tiene atributos de mas', async () => {
+    const { rows } = await env.owner.query<Record<string, boolean>>(
+      `select rolcanlogin, rolsuper, rolbypassrls, rolcreatedb, rolcreaterole, rolinherit
+         from pg_roles where rolname = 'kaizen_login'`,
+    )
+    expect(rows[0]).toEqual({
+      rolcanlogin: true,
+      rolsuper: false,
+      rolbypassrls: false,
+      rolcreatedb: false,
+      rolcreaterole: false,
+      rolinherit: false,
+    })
+  })
+
+  it('puede asumir cada una de las cuatro identidades', async () => {
+    for (const rol of ['kaizen_app', 'kaizen_worker', 'kaizen_auth', 'kaizen_webhook']) {
+      const actual = await comoLogin(async () => {
+        await env.owner.query(`set local role ${rol}`)
+        const r = await env.owner.query<{ u: string }>('select current_user as u')
+        return r.rows[0]?.u
+      })
+      expect(actual).toBe(rol)
+    }
+  })
+
+  // Ni siquiera tiene USAGE sobre el esquema: el error es sobre el esquema.
+  it('sin asumir una identidad no puede leer nada', async () => {
+    await expect(
+      comoLogin(() => env.owner.query('select count(*) from public.person_records')),
+    ).rejects.toThrow(/permission denied/i)
+  })
+
+  it('no puede asumir el rol dueño ni el de solo lectura', async () => {
+    for (const rol of ['postgres', 'kaizen_readonly']) {
+      await expect(
+        comoLogin(() => env.owner.query(`set local role ${rol}`)),
+      ).rejects.toThrow(/permission denied/i)
+    }
+  })
+
+  it('asumiendo kaizen_app, RLS sigue filtrando: sin contexto no ve filas', async () => {
+    const filas = await comoLogin(async () => {
+      await env.owner.query('set local role kaizen_app')
+      const r = await env.owner.query<{ n: number }>('select count(*)::int as n from person_records')
+      return r.rows[0]?.n
+    })
+    expect(filas).toBe(0)
+  })
+})

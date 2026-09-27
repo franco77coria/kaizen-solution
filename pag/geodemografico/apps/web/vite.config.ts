@@ -2,12 +2,12 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 /**
- * La app vive bajo `/geodemografico`, igual en desarrollo que en produccion
- * (www.kaizensolutionscol.com/geodemografico, compartiendo dominio con la
+ * La app vive bajo `/app`, igual en desarrollo que en produccion
+ * (www.kaizensolutionscol.com/app, compartiendo dominio con la
  * landing). Servirla en la raiz en local y bajo una ruta en produccion es la
  * forma de que un link roto aparezca recien frente a quien la prueba.
  */
-const BASE = '/geodemografico'
+const BASE = '/app'
 
 /**
  * El proxy manda la peticion CON el prefijo: la API lo quita al entrar
@@ -23,6 +23,9 @@ const alBackend = { target: 'http://127.0.0.1:3001', changeOrigin: false }
 export default defineConfig({
   base: `${BASE}/`,
   plugins: [react()],
+  // Los archivos quedan en `dist/app/`: Vercel publica `dist` y la app se
+  // sirve en `/app/...`, que es donde el HTML busca sus recursos.
+  build: { outDir: `dist${BASE}`, emptyOutDir: true },
   server: {
     // Puerto propio y fijo. Con el 5173 por defecto, cualquier otro proyecto
     // del workspace que este corriendo se lo queda primero y Vite se mueve al

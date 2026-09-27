@@ -14,7 +14,7 @@ export interface AppConfig {
    */
   webOrigin: string
   /**
-   * Ruta bajo la que vive la aplicacion (`/geodemografico`), o '' en la raiz.
+   * Ruta bajo la que vive la aplicacion (`/app`), o '' en la raiz.
    * En produccion la app comparte dominio con la landing, asi que todo lo que
    * sea direccion -redirecciones, rutas de cookie- tiene que llevarla.
    */
@@ -26,7 +26,7 @@ export interface AppConfig {
   isProduction: boolean
 }
 
-/** '/geodemografico/' -> '/geodemografico'; '' o '/' -> ''. */
+/** '/app/' -> '/app'; '' o '/' -> ''. */
 export function normalizarBasePath(valor: string | undefined): string {
   const limpio = (valor ?? '').trim().replace(/\/+$/, '')
   if (limpio === '') return ''
@@ -37,10 +37,13 @@ export function loadConfig(): AppConfig {
   const appEnv = (process.env['APP_ENV'] ?? 'local') as AppConfig['appEnv']
   const isProduction = appEnv === 'production'
 
-  const requeridas = ['DATABASE_URL', 'SESSION_SECRET']
+  const requeridas = ['SESSION_SECRET']
   if (isProduction) requeridas.push('TOKEN_VAULT_KEY', 'OIDC_CLIENT_ID', 'OIDC_CLIENT_SECRET', 'OIDC_ALLOWED_HD')
 
   const faltantes = requeridas.filter((k) => !process.env[k])
+  // Ver `connectionString` en @kaizen/db: embebida en la app de Kaizen, la
+  // base de esta API llega como GEO_DATABASE_URL.
+  if (!process.env['GEO_DATABASE_URL'] && !process.env['DATABASE_URL']) faltantes.unshift('GEO_DATABASE_URL')
   if (faltantes.length > 0) {
     throw new Error(`faltan variables de entorno: ${faltantes.join(', ')}`)
   }
@@ -73,7 +76,7 @@ export function loadConfig(): AppConfig {
 /**
  * Ruta de las cookies. Se lee en un solo lugar para que sesion, CSRF y los
  * flujos de OAuth no puedan quedar con rutas distintas: si una cookie se
- * setea con `/geodemografico` y se borra con `/`, el borrado no la alcanza y la
+ * setea con `/app` y se borra con `/`, el borrado no la alcanza y la
  * sesion sobrevive al "Salir".
  */
 export function rutaCookies(): string {

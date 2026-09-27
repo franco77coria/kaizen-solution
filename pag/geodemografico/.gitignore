@@ -26,3 +26,6 @@ tmp/
 scripts/.tmp/
 .claude/
 .DS_Store
+
+# Vinculacion local con Vercel
+.vercel/

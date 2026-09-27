@@ -32,7 +32,7 @@ export async function buildApp(config: AppConfig = loadConfig()): Promise<Fastif
     // Limite de cuerpo aplicado en el SERVIDOR. El cliente no puede ampliarlo.
     bodyLimit: LIMITS.BODY_MAX_BYTES,
     disableRequestLogging: true,
-    // En produccion la API se sirve bajo la ruta base (`/geodemografico/v1/...`)
+    // En produccion la API se sirve bajo la ruta base (`/app/v1/...`)
     // porque comparte dominio con la landing. Se quita el prefijo ANTES de
     // rutear, asi ninguna ruta registrada depende de donde este montada la app.
     // Sin prefijo la peticion pasa igual: los tests y el callback directo al
@@ -42,7 +42,7 @@ export async function buildApp(config: AppConfig = loadConfig()): Promise<Fastif
       const base = config.basePath
       if (base && (url === base || url.startsWith(`${base}/`) || url.startsWith(`${base}?`))) {
         const resto = url.slice(base.length)
-        // '/geodemografico?x=1' deja '?x=1': sin la barra, Fastify no lo rutea.
+        // '/app?x=1' deja '?x=1': sin la barra, Fastify no lo rutea.
         return resto.startsWith('/') ? resto : `/${resto}`
       }
       return url

@@ -1,0 +1,2 @@
+# Las migraciones se verifican por hash: siempre LF, en cualquier sistema.
+*.sql text eol=lf

@@ -3,6 +3,7 @@ import { withAuthorizedTransaction } from '@kaizen/db'
 import { hashToken, secretsEqual } from '@kaizen/authz'
 import { logger } from '@kaizen/observability'
 import { admitir } from '../plugins/admission.js'
+import { despertarIngesta } from '../services/ingesta.js'
 
 /**
  * Ticket 07 — webhook del proveedor de documentos.
@@ -98,6 +99,7 @@ export async function webhookRoutes(app: FastifyInstance): Promise<void> {
       return { resultado: 'encolado' as const }
     })
 
+    if (encolado.resultado === 'encolado') despertarIngesta('webhook')
     if (encolado.resultado !== 'encolado') {
       logger.warn('webhook.descartado', {
         requestId: request.requestId,

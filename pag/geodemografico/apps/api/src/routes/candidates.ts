@@ -5,6 +5,7 @@ import { withAuthorizedTransaction } from '@kaizen/db'
 import { requireCsrf, resolveCorpusScope, txContext } from '../plugins/session.js'
 import { leerAmbito } from './scope.js'
 import { registrarAuditoria } from '../services/audit.js'
+import { despertarIngesta } from '../services/ingesta.js'
 
 /**
  * Seleccion de la coleccion inicial (seccion 21.2 del plan, paso 6).
@@ -144,6 +145,8 @@ export async function candidateRoutes(app: FastifyInstance): Promise<void> {
         return rowCount
       },
     )
+
+    if (decision === 'admitir') despertarIngesta('admitir')
 
     await registrarAuditoria({
       actorUserId: session.userId,

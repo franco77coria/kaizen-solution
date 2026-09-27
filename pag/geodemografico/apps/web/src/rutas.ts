@@ -3,7 +3,7 @@ import { createElement, useSyncExternalStore, type AnchorHTMLAttributes, type Mo
 /**
  * Rutas de la aplicacion.
  *
- * La app vive bajo una ruta base (`/geodemografico`) porque comparte dominio
+ * La app vive bajo una ruta base (`/app`) porque comparte dominio
  * con la landing. TODA direccion -fetch, enlaces, redirecciones- pasa por
  * `conBase`: una sola barra inicial olvidada manda al usuario a la landing.
  *
@@ -11,7 +11,7 @@ import { createElement, useSyncExternalStore, type AnchorHTMLAttributes, type Mo
  * una dependencia de ruteo agregaria mas codigo del que reemplaza.
  */
 
-/** '/geodemografico' en produccion y desarrollo; '' si se sirviera en la raiz. */
+/** '/app' en produccion y desarrollo; '' si se sirviera en la raiz. */
 export const BASE = import.meta.env.BASE_URL.replace(/\/$/, '')
 
 export function conBase(camino: string): string {
@@ -22,7 +22,7 @@ export type Ruta = 'panorama' | 'sumar' | 'suma' | 'revision' | 'lideres' | 'aju
 
 const CAMINOS: Record<Ruta, string> = {
   panorama: '/',
-  sumar: '/sumar',
+  sumar: '/persona',
   suma: '/suma',
   revision: '/revision',
   lideres: '/lideres',

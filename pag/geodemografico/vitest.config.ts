@@ -21,6 +21,8 @@ export default defineConfig({
     alias: {
       '@kaizen/contracts': src('packages/contracts/src/index.ts'),
       '@kaizen/observability': src('packages/observability/src/index.ts'),
+      // Antes que '@kaizen/db': el alias por prefijo lo capturaria.
+      '@kaizen/db/testing': src('packages/db/src/testing.ts'),
       '@kaizen/db': src('packages/db/src/index.ts'),
       '@kaizen/authz': src('packages/authz/src/index.ts'),
       '@kaizen/llm': src('packages/llm/src/index.ts'),

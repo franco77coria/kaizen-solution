@@ -9,6 +9,7 @@ export default tseslint.config(
       '**/.pgdata/**',
       'scripts/.tmp/**',
       'apps/web/dist/**',
+      '.vercel/**',
     ],
   },
   js.configs.recommended,

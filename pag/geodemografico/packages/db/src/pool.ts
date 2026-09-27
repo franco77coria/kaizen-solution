@@ -31,9 +31,15 @@ function tamanoPool(identity: ServiceIdentity): number {
   return Math.max(2, Math.round(base * PROPORCION[identity]))
 }
 
+/**
+ * `GEO_DATABASE_URL` primero: embebida en la app de Kaizen (Next), esta API
+ * comparte el proceso con Prisma, que usa `DATABASE_URL` para OTRA base (el
+ * esquema de la landing, con otro rol). Con un solo nombre, una de las dos
+ * apps terminaria hablando con la base de la otra.
+ */
 function connectionString(): string {
-  const url = process.env['DATABASE_URL']
-  if (!url) throw new Error('DATABASE_URL no esta configurada')
+  const url = process.env['GEO_DATABASE_URL'] ?? process.env['DATABASE_URL']
+  if (!url) throw new Error('GEO_DATABASE_URL (o DATABASE_URL) no esta configurada')
   return url
 }
 

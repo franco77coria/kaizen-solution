@@ -11,6 +11,7 @@ import { admitir } from '../plugins/admission.js'
 import { requireCsrf, resolveCorpusScope, txContext } from '../plugins/session.js'
 import { leerAmbito } from './scope.js'
 import { registrarAuditoria } from '../services/audit.js'
+import { despertarIngesta } from '../services/ingesta.js'
 
 export async function sourceRoutes(app: FastifyInstance): Promise<void> {
   /**
@@ -148,6 +149,8 @@ export async function sourceRoutes(app: FastifyInstance): Promise<void> {
       )
       return rows[0]?.id ?? ''
     })
+
+    despertarIngesta('sync')
 
     await registrarAuditoria({
       actorUserId: session.userId,

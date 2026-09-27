@@ -17,6 +17,7 @@ import { leerAmbito } from './scope.js'
 import { registrarAuditoria } from '../services/audit.js'
 import { guardarSecreto, leerSecreto } from '../services/vault.js'
 import { rutaCookies, type AppConfig } from '../config.js'
+import { despertarIngesta } from '../services/ingesta.js'
 
 const COOKIE_FLUJO = 'kaizen_drive_oauth'
 
@@ -396,6 +397,8 @@ export async function googleRoutes(app: FastifyInstance, config: AppConfig): Pro
         return { conexionId, generacion, reconecto: anterior }
       },
     )
+
+    despertarIngesta('connect')
 
     await registrarAuditoria({
       actorUserId: session.userId,

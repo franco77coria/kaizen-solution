@@ -135,6 +135,12 @@
 /* --- filtros -------------------------------------------------------------- */
 
 .filtros {
+  /* `relative` hace que los textos para lectores de pantalla (absolutos) se
+     ubiquen DENTRO de esta fila y queden recortados por su scroll. Sin esto se
+     ubicaban respecto del documento, se escapaban del contenedor y el ultimo
+     ensanchaba la pagina a 719 px en el telefono: lo que se veia roto era la
+     barra inferior fija, que solo copiaba ese ancho. */
+  position: relative;
   display: flex;
   gap: 6px;
   align-items: center;

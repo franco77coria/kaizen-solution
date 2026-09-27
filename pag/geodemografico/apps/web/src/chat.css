@@ -415,7 +415,7 @@
   }
 }
 
-/* --- pantalla completa (/geodemografico/suma) ------------------------------ */
+/* --- pantalla completa (/app/suma) ------------------------------ */
 
 .suma-completa {
   height: calc(var(--alto-real) - var(--alto-barra));

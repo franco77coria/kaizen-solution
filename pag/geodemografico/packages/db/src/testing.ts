@@ -1,6 +1,4 @@
-import { fileURLToPath } from 'node:url'
-import { dirname, resolve } from 'node:path'
-import { runMigrations } from './migrate.js'
+import { MIGRATIONS_DIR, runMigrations } from './migrate.js'
 import { closeAllPools } from './pool.js'
 
 /**
@@ -12,8 +10,6 @@ export interface TestDatabase {
   url: string
   stop: () => Promise<void>
 }
-
-const MIGRATIONS_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'migrations')
 
 /** Puerto base alto para no chocar con un PostgreSQL real del equipo. */
 let puertoSiguiente = 56_000
@@ -75,4 +71,3 @@ export async function startTestDatabase(): Promise<TestDatabase> {
   }
 }
 
-export { MIGRATIONS_DIR }

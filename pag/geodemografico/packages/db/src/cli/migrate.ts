@@ -1,5 +1,4 @@
-import { MIGRATIONS_DIR } from '../testing.js'
-import { runMigrations } from '../migrate.js'
+import { MIGRATIONS_DIR, runMigrations } from '../migrate.js'
 
 const url = process.env['DATABASE_MIGRATION_URL'] ?? process.env['DATABASE_URL']
 if (!url) {

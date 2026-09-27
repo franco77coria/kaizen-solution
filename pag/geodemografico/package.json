@@ -2,6 +2,7 @@
   "name": "kaizen-asistente",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "packageManager": "pnpm@9.15.9",
   "engines": {
     "node": ">=22.0.0"
@@ -28,7 +29,9 @@
     "acceso:plataforma": "node --env-file=.env scripts/acceso-plataforma.mjs",
     "dev:db": "node scripts/dev-db.mjs",
     "dev:api": "node --env-file=.env --env-file=.env.chat apps/api/dist/server.js",
-    "dev:web": "pnpm --filter @kaizen/web dev"
+    "dev:web": "pnpm --filter @kaizen/web dev",
+    "prod:migrar": "node --env-file=.env.produccion --import tsx packages/db/src/cli/migrate.ts",
+    "prod:inicializar": "node --env-file=.env.produccion scripts/prod-inicializar.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",

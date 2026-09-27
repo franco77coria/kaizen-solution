@@ -6,7 +6,7 @@ import { Icono, SimboloSuma } from './Marca'
  * SUMA — la conversación sobre las notas de reunión.
  *
  * El estado vive en `useConversacion`, que se instancia UNA vez en el shell.
- * El panel flotante y la vista a pantalla completa (`/geodemografico/suma`)
+ * El panel flotante y la vista a pantalla completa (`/app/suma`)
  * son dos pieles del mismo estado: expandir no pierde lo conversado.
  *
  * Dos decisiones que no son de estilo:

@@ -5,7 +5,7 @@ para los 116 municipios de Cundinamarca.
 
 Este proyecto vive dentro del repositorio de Kaizen, pero se instala y despliega
 por separado de la web Next.js de `pag/`. Subirlo al repositorio no publica
-automáticamente `/geodemografico`; la base, la API y el worker requieren su
+automáticamente `/app`; la base, la API y el worker requieren su
 propia configuración de despliegue.
 
 Implementación del plan técnico v1.5. Ver `docs/adr/` para las decisiones y
@@ -25,7 +25,7 @@ pnpm api               # API en :3001, en otra terminal
 pnpm web               # interfaz en :5173
 ```
 
-Entrar a `http://localhost:5273/geodemografico/`. Redirige a la pantalla de selección de cuenta
+Entrar a `http://localhost:5273/app/`. Redirige a la pantalla de selección de cuenta
 del proveedor de identidad local, que reemplaza el consentimiento de Google
 mientras `OIDC_PROVIDER=fake`.
 

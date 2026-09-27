@@ -1,5 +1,5 @@
 import pg from 'pg'
-import { startTestDatabase, type TestDatabase } from '@kaizen/db'
+import { startTestDatabase, type TestDatabase } from '@kaizen/db/testing'
 import { seedFixtures } from '@kaizen/fixtures'
 
 /**
