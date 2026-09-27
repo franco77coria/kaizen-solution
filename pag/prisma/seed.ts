@@ -6,14 +6,20 @@ const prisma = new PrismaClient()
 async function main() {
     console.log('🌱 Starting database seed...')
 
-    // Create Super Admin User
-    const hashedPassword = await bcrypt.hash('admin123', 10)
+    // Super admin. La contraseña NO va en el código (el repo es público):
+    // llega por entorno y solo se usa para crear la cuenta la primera vez.
+    const adminEmail = process.env.SEED_ADMIN_EMAIL
+    const adminPassword = process.env.SEED_ADMIN_PASSWORD
+    if (!adminEmail || !adminPassword || adminPassword.length < 16) {
+        throw new Error('Faltan SEED_ADMIN_EMAIL y SEED_ADMIN_PASSWORD (16 caracteres o más)')
+    }
+    const hashedPassword = await bcrypt.hash(adminPassword, 12)
 
     const adminUser = await prisma.user.upsert({
-        where: { email: '1133985163f@gmail.com' },
+        where: { email: adminEmail },
         update: {},
         create: {
-            email: '1133985163f@gmail.com',
+            email: adminEmail,
             name: 'Super Admin',
             password: hashedPassword,
             role: 'SUPER_ADMIN',
