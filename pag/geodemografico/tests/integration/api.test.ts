@@ -872,3 +872,87 @@ describe('chat en vivo por SSE', () => {
     expect(r.statusCode).toBe(403)
   })
 })
+
+describe('SUMA responde preguntas de datos con la consulta cerrada', () => {
+  /**
+   * Antes, ante "cuantas personas se sumaron en Chia", SUMA contestaba "usá
+   * la plantilla records.total". Ahora ejecuta la consulta: el numero sale de
+   * la base (con supresion), nunca del modelo, y queda guardado con el
+   * mensaje para mostrarse igual al recargar.
+   */
+  async function preguntar(sesion: Sesion, contenido: string, clave: string) {
+    const conversacion = await app.inject({
+      method: 'POST',
+      url: '/v1/conversations',
+      headers: cabeceras(sesion, F.tenantA, F.purposeA),
+      payload: { title: 'Datos' },
+    })
+    const id = conversacion.json().id as string
+    const respuesta = await app.inject({
+      method: 'POST',
+      url: `/v1/conversations/${id}/messages`,
+      headers: cabeceras(sesion, F.tenantA, F.purposeA),
+      payload: { content: contenido, idempotencyKey: clave },
+    })
+    return { id, respuesta }
+  }
+
+  it('cuenta las personas de un municipio nombrado, con el numero de la base', async () => {
+    const esperado = Number(
+      (
+        await env.owner.query<{ n: string }>(
+          `select count(*) n from person_records
+            where tenant_id = $1 and purpose_id = $2 and municipality_code = '25175'
+              and status in ('submitted', 'approved')`,
+          [F.tenantA, F.purposeA],
+        )
+      ).rows[0]?.n,
+    )
+
+    const sesion = await iniciarSesion('sub-a2')
+    const { id, respuesta } = await preguntar(sesion, '¿Cuántas personas se sumaron en Chía?', 'chat-datos-0001')
+
+    expect(respuesta.statusCode, respuesta.body).toBe(200)
+    const cuerpo = respuesta.json()
+    expect(cuerpo.abstained).toBe(false)
+    expect(cuerpo.modelVersion).toBe('consulta-cerrada')
+    expect(cuerpo.datos.template).toBe('records.total')
+    expect(cuerpo.datos.filtros).toEqual(['Municipio: Chía'])
+    const celda = cuerpo.datos.resultado.rows[0]
+    if (esperado >= cuerpo.datos.resultado.suppressionThreshold) {
+      expect(celda.value).toBe(esperado)
+      expect(cuerpo.answer).toContain(String(esperado))
+    } else {
+      expect(celda.value).toBeNull()
+    }
+
+    // Al recargar la conversacion, la tabla vuelve con el MISMO resultado.
+    const recarga = await app.inject({
+      method: 'GET',
+      url: `/v1/conversations/${id}`,
+      headers: cabeceras(sesion, F.tenantA, F.purposeA),
+    })
+    const asistente = recarga.json().messages.find((m: { role: string }) => m.role === 'assistant')
+    expect(asistente.datos.runId).toBe(cuerpo.datos.runId)
+    expect(asistente.datos.resultado).toEqual(cuerpo.datos.resultado)
+  })
+
+  it('agrupa por municipio con los grupos chicos como n/d, nunca como cero', async () => {
+    const sesion = await iniciarSesion('sub-a2')
+    const { respuesta } = await preguntar(sesion, '¿Cuántas personas hay por municipio?', 'chat-datos-0002')
+    const cuerpo = respuesta.json()
+    expect(cuerpo.datos.template).toBe('records.count_by_municipality')
+    for (const fila of cuerpo.datos.resultado.rows.filter((r: { suppressed: boolean }) => r.suppressed)) {
+      expect(fila.value).toBeNull()
+    }
+  })
+
+  it('sin permiso de analitica, no ejecuta y lo explica', async () => {
+    const sesion = await iniciarSesion('sub-a3')
+    const { respuesta } = await preguntar(sesion, '¿Cuántas personas se sumaron en Chía?', 'chat-datos-0003')
+    const cuerpo = respuesta.json()
+    expect(cuerpo.abstained).toBe(true)
+    expect(cuerpo.datos).toBeUndefined()
+    expect(cuerpo.abstentionReason).toMatch(/permiso de analítica/)
+  })
+})

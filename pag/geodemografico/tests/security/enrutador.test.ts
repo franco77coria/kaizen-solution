@@ -185,3 +185,63 @@ describe('turnos conversacionales', () => {
     expect(ruta.tipo).toBe('sin_ruta')
   })
 })
+
+describe('SUMA responde datos: municipio nombrado, genero y "sumadas"', () => {
+  const CATALOGO = [
+    { code: '25175', name: 'Chía' },
+    { code: '25126', name: 'Cajicá' },
+    { code: '25899', name: 'Zipaquirá' },
+    { code: '25743', name: 'Silvania' },
+    { code: '25662', name: 'San Juan de Rioseco' },
+  ]
+  const conCatalogo = { ...COMPLETO, municipios: CATALOGO }
+
+  it('"cuantas personas se sumaron en Chia" es un total filtrado por ese municipio', () => {
+    const ruta = enrutar('¿Cuántas personas se sumaron en Chía?', conCatalogo)
+    expect(ruta.tipo).toBe('analitica')
+    if (ruta.tipo !== 'analitica') return
+    expect(ruta.plan.template).toBe('records.total')
+    expect(ruta.plan.filters).toEqual([{ field: 'municipality_code', op: 'eq', values: ['25175'] }])
+    expect(ruta.motivo).toContain('Chía')
+  })
+
+  it('el nombre se reconoce sin tildes ni mayusculas', () => {
+    const ruta = enrutar('cuantas sumadas hay en chia', conCatalogo)
+    expect(ruta.tipo === 'analitica' && ruta.plan.filters[0]?.values).toEqual(['25175'])
+  })
+
+  it('"sumadas" cuenta como pregunta sobre registros', () => {
+    const ruta = enrutar('¿cuántas sumadas llevamos?', conCatalogo)
+    expect(ruta.tipo === 'analitica' && ruta.plan.template).toBe('records.total')
+  })
+
+  it('agrupa por genero', () => {
+    const ruta = enrutar('¿cuántas personas hay por género?', conCatalogo)
+    expect(ruta.tipo === 'analitica' && ruta.plan.template).toBe('records.count_by_gender')
+  })
+
+  it('municipio + agrupacion: filtra y conserva la agrupacion', () => {
+    const ruta = enrutar('¿cuántas personas por género en Zipaquirá?', conCatalogo)
+    if (ruta.tipo !== 'analitica') throw new Error('no fue analitica')
+    expect(ruta.plan.template).toBe('records.count_by_gender')
+    expect(ruta.plan.filters[0]?.values).toEqual(['25899'])
+  })
+
+  it('con dos municipios nombrados no elige ninguno', () => {
+    const ruta = enrutar('¿cuántas personas hay en Chía y Cajicá?', conCatalogo)
+    expect(ruta.tipo === 'analitica' && ruta.plan.filters).toEqual([])
+  })
+
+  it('un nombre largo gana sobre uno contenido en el', () => {
+    const ruta = enrutar('¿cuántas personas en San Juan de Rioseco?', {
+      ...COMPLETO,
+      municipios: [...CATALOGO, { code: '99999', name: 'Rioseco' }],
+    })
+    expect(ruta.tipo === 'analitica' && ruta.plan.filters[0]?.values).toEqual(['25662'])
+  })
+
+  it('una palabra que CONTIENE un nombre no lo activa', () => {
+    const ruta = enrutar('¿cuántas personas hay en Silvanias?', conCatalogo)
+    expect(ruta.tipo === 'analitica' && ruta.plan.filters).toEqual([])
+  })
+})

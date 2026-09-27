@@ -44,7 +44,19 @@ export function SimboloSuma({ className = '' }: { className?: string }): JSX.Ele
 export function Icono({
   nombre,
 }: {
-  nombre: 'cerrar' | 'expandir' | 'contraer' | 'enviar' | 'mas' | 'atras' | 'buscar'
+  nombre:
+    | 'cerrar'
+    | 'expandir'
+    | 'contraer'
+    | 'enviar'
+    | 'mas'
+    | 'atras'
+    | 'buscar'
+    | 'copiar'
+    | 'tablero'
+    | 'enlace'
+    | 'imprimir'
+    | 'listo'
 }): JSX.Element {
   const trazos: Record<typeof nombre, string> = {
     cerrar: 'M6 6l12 12M18 6L6 18',
@@ -54,6 +66,12 @@ export function Icono({
     mas: 'M12 5v14M5 12h14',
     atras: 'M15 18l-6-6 6-6',
     buscar: 'M11 18a7 7 0 1 1 0-14 7 7 0 0 1 0 14zM20 20l-4-4',
+    copiar: 'M9 9h10v10H9zM5 15V5h10',
+    tablero: 'M4 4h7v9H4zM13 4h7v5h-7zM13 11h7v9h-7zM4 15h7v5H4z',
+    enlace:
+      'M10 14a4 4 0 0 0 5.6 0l3-3a4 4 0 0 0-5.6-5.6l-1 1M14 10a4 4 0 0 0-5.6 0l-3 3a4 4 0 0 0 5.6 5.6l1-1',
+    imprimir: 'M7 9V4h10v5M7 17H5v-6h14v6h-2M7 14h10v6H7z',
+    listo: 'M5 12l5 5 9-10',
   }
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">

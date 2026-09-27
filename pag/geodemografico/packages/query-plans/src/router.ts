@@ -1,4 +1,4 @@
-import type { QueryPlan, QueryTemplate } from '@kaizen/contracts'
+import type { QueryFilter, QueryPlan, QueryTemplate } from '@kaizen/contracts'
 
 /**
  * Ticket 17f — enrutador del chat.
@@ -94,6 +94,11 @@ const AGRUPACIONES: Array<{ re: RegExp; template: QueryTemplate; etiqueta: strin
     etiqueta: 'por estado de consentimiento',
   },
   {
+    re: /\b(g[eé]nero|sexo|hombres|mujeres)\b/i,
+    template: 'records.count_by_gender',
+    etiqueta: 'por género',
+  },
+  {
     re: /\b(estado|revisi[oó]n|aprobad[oa]s?|rechazad[oa]s?|pendientes)\b/i,
     template: 'records.count_by_status',
     etiqueta: 'por estado de revision',
@@ -102,7 +107,7 @@ const AGRUPACIONES: Array<{ re: RegExp; template: QueryTemplate; etiqueta: strin
 
 /** Lo que indica que la pregunta es sobre registros de personas, no sobre notas. */
 const RE_REGISTROS =
-  /\b(registros?|personas?|referidos?|inscript[oa]s?|base de datos|padr[oó]n)\b/i
+  /\b(registros?|personas?|referidos?|inscript[oa]s?|base de datos|padr[oó]n|sumad[oa]s?|sumaron|se sum[oó])\b/i
 
 /** Temas que NUNCA se responden, venga la pregunta como venga. */
 const RE_PROHIBIDO =
@@ -112,6 +117,46 @@ export interface ContextoRuta {
   /** Permisos efectivos del usuario en el proposito activo. */
   puedeLeerNotas: boolean
   puedeAgregar: boolean
+  /**
+   * Catalogo de municipios, para reconocer uno NOMBRADO en la pregunta. Lo
+   * pasa quien llama: el enrutador no depende del paquete de geografia.
+   */
+  municipios?: ReadonlyArray<{ code: string; name: string }>
+}
+
+const normalizar = (texto: string): string =>
+  ` ${texto
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()} `
+
+/**
+ * El municipio NOMBRADO en la pregunta, si hay exactamente uno.
+ *
+ * No es adivinar un filtro: es leer un nombre propio del catalogo, completo y
+ * entre limites de palabra. Si aparecen dos municipios distintos no se elige
+ * ninguno, y el filtro aplicado se muestra siempre en la respuesta.
+ */
+export function municipioNombrado(
+  pregunta: string,
+  municipios: ReadonlyArray<{ code: string; name: string }>,
+): { code: string; name: string } | undefined {
+  const texto = normalizar(pregunta)
+  const hallados = municipios
+    .map((m) => ({ ...m, clave: normalizar(m.name) }))
+    .filter((m) => m.clave.trim().length > 0 && texto.includes(m.clave))
+  // "San Juan de Rioseco" contiene otros nombres mas cortos: gana el mas largo.
+  const finales = hallados.filter(
+    (m) =>
+      !hallados.some(
+        (o) => o.code !== m.code && o.clave.length > m.clave.length && o.clave.includes(m.clave.trim()),
+      ),
+  )
+  if (new Set(finales.map((m) => m.code)).size !== 1) return undefined
+  const [unico] = finales
+  return unico ? { code: unico.code, name: unico.name } : undefined
 }
 
 export function enrutar(pregunta: string, contexto: ContextoRuta): Ruta {
@@ -158,15 +203,23 @@ export function enrutar(pregunta: string, contexto: ContextoRuta): Ruta {
       }
     }
 
-    const template: QueryTemplate = agrupacion?.template ?? 'records.total'
+    // El unico filtro que se toma del texto es un municipio NOMBRADO (ver
+    // municipioNombrado). Cualquier otro se elige en la UI guiada: adivinar un
+    // filtro de texto libre cambia el numero sin que el usuario lo sepa.
+    const municipio = municipioNombrado(limpia, contexto.municipios ?? [])
+    const filters: QueryFilter[] = municipio
+      ? [{ field: 'municipality_code', op: 'eq', values: [municipio.code] }]
+      : []
+    // Con un municipio fijo, agrupar por municipio devolveria una sola fila.
+    const template: QueryTemplate =
+      municipio && (!agrupacion || agrupacion.template === 'records.count_by_municipality')
+        ? 'records.total'
+        : (agrupacion?.template ?? 'records.total')
+    const etiqueta = template === 'records.total' ? '' : ` ${agrupacion?.etiqueta ?? ''}`
     return {
       tipo: 'analitica',
-      // Sin filtros: se agregan desde la UI guiada, no adivinandolos del texto
-      // libre. Adivinar un filtro cambia el numero sin que el usuario lo sepa.
-      plan: { template, filters: [], limit: 200 },
-      motivo: agrupacion
-        ? `conteo de registros ${agrupacion.etiqueta}`
-        : 'conteo total de registros',
+      plan: { template, filters, limit: 200 },
+      motivo: `conteo de registros${etiqueta}${municipio ? ` en ${municipio.name}` : ''}`,
     }
   }
 

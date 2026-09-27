@@ -1,0 +1,219 @@
+/* Dashboard publicado desde SUMA (/app/suma/<id>). Prefijo `dash-`: nada
+   de clases genericas que puedan chocar con otras hojas (leccion 118). */
+
+.dash {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  max-width: 880px;
+  margin: 0 auto;
+}
+
+.dash-cabecera {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--linea);
+}
+.dash-miga {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--tinta-3);
+  font-size: var(--t-12);
+}
+.dash-miga > span::before {
+  content: '/';
+  margin-right: 8px;
+  color: var(--linea-fuerte);
+}
+.dash-volver {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--tinta-2);
+  font-size: var(--t-12);
+  cursor: pointer;
+}
+.dash-volver svg {
+  width: 14px;
+  height: 14px;
+}
+.dash-volver:hover {
+  color: var(--acento);
+}
+.dash-titulo {
+  font-size: var(--t-28);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.dash-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  align-items: center;
+  color: var(--tinta-2);
+  font-size: var(--t-12);
+}
+.dash-sello {
+  padding: 2px 9px;
+  border-radius: var(--r-full);
+  background: var(--superficie-2);
+  color: var(--tinta-2);
+  font-size: var(--t-11);
+}
+.dash-sello.compartido {
+  background: var(--acento-suave);
+  color: var(--acento);
+}
+.dash-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.dash-acciones .boton svg {
+  width: 14px;
+  height: 14px;
+}
+.dash-confirmar {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.dash-pregunta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  color: var(--tinta);
+  font-size: var(--t-14);
+  line-height: 1.5;
+}
+.dash-pregunta span {
+  color: var(--tinta-3);
+  font-size: var(--t-11);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.dash-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+.dash-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 18px;
+  border: 1px solid var(--linea);
+  border-radius: var(--r-lg);
+  background: var(--superficie);
+}
+.dash-kpi-etiqueta {
+  color: var(--tinta-2);
+  font-size: var(--t-12);
+}
+.dash-kpi strong {
+  font-size: var(--t-28);
+  font-weight: 500;
+  line-height: 1.1;
+}
+.dash-kpi-filtro {
+  color: var(--tinta-3);
+  font-size: var(--t-11);
+}
+
+.dash-resumen {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: var(--t-14);
+  line-height: 1.7;
+}
+.dash-resumen h2,
+.dash-graficos-titulo {
+  color: var(--tinta-3);
+  font-size: var(--t-11);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.dash-fuentes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 6px 0 0;
+  padding-left: 18px;
+  color: var(--tinta-2);
+  font-size: var(--t-12);
+}
+.dash-fuentes .nombre {
+  color: var(--tinta);
+}
+.dash-fuentes blockquote {
+  margin: 3px 0 0;
+  color: var(--tinta-2);
+  line-height: 1.55;
+}
+
+.dash-graficos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
+  gap: 12px;
+}
+.dash-graficos .datos {
+  margin-top: 0;
+}
+
+.dash-pie {
+  padding-top: 14px;
+  border-top: 1px solid var(--linea);
+  color: var(--tinta-3);
+  font-size: var(--t-11);
+  line-height: 1.6;
+}
+
+.dash-esqueleto-titulo,
+.dash-esqueleto-bloque {
+  border-radius: var(--r);
+  background: var(--superficie-2);
+}
+.dash-esqueleto-titulo {
+  width: 60%;
+  height: 32px;
+}
+.dash-esqueleto-bloque {
+  height: 220px;
+}
+
+/* Imprimir = guardar como PDF: solo el documento, sin la app alrededor. */
+@media print {
+  .barra,
+  .barra-inferior,
+  .lanzador,
+  .lanzador-movil,
+  .dash-acciones,
+  .dash-miga,
+  .datos-mas {
+    display: none !important;
+  }
+  .contenido {
+    max-width: none;
+    padding: 0;
+  }
+  .dash {
+    max-width: none;
+  }
+  .dash-kpi,
+  .datos {
+    break-inside: avoid;
+  }
+}

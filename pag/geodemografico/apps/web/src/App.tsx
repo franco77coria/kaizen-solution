@@ -8,7 +8,8 @@ import { Icono, SimboloGeo, SimboloSuma } from './Marca'
 import { Panorama } from './Panorama'
 import { Revision } from './Revision'
 import { Sumar } from './Sumar'
-import { Enlace, conBase, navegar, useRuta } from './rutas'
+import { Dashboard } from './Dashboard'
+import { Enlace, conBase, navegar, useIdDashboard, useRuta } from './rutas'
 
 /**
  * Shell de la aplicación: sesión, espacio activo, barra, rutas y SUMA.
@@ -33,6 +34,7 @@ function permisos(scope: Scope | null) {
 
 export function App(): JSX.Element {
   const ruta = useRuta()
+  const idDashboard = useIdDashboard()
   const [me, setMe] = useState<Me | null>(null)
   const [scope, setScope] = useState<Scope | null>(null)
   const [estado, setEstado] = useState<'cargando' | 'listo' | 'sin-sesion' | 'error'>('cargando')
@@ -142,7 +144,7 @@ export function App(): JSX.Element {
               </Enlace>
             )}
             {puede.notas && (
-              <Enlace a="suma" aria-current={ruta === 'suma' ? 'page' : undefined}>
+              <Enlace a="suma" aria-current={ruta === 'suma' || ruta === 'dashboard' ? 'page' : undefined}>
                 SUMA
               </Enlace>
             )}
@@ -198,6 +200,14 @@ export function App(): JSX.Element {
           {ruta === 'revision' && puede.revisar && <Revision scope={scope} />}
           {ruta === 'lideres' && puede.lideres && <Lideres scope={scope} />}
           {ruta === 'ajustes' && puede.administrar && <Ajustes scope={scope} />}
+          {ruta === 'dashboard' && idDashboard && puede.notas && (
+            <Dashboard key={idDashboard} scope={scope} id={idDashboard} />
+          )}
+          {ruta === 'dashboard' && !puede.notas && (
+            <div className="vacio">
+              <strong>Tu cuenta no tiene acceso a los dashboards de SUMA en este espacio.</strong>
+            </div>
+          )}
         </main>
       )}
 

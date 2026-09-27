@@ -22,6 +22,7 @@ import { candidateRoutes } from './routes/candidates.js'
 import { streamRoutes } from './routes/stream.js'
 import { formularioRoutes } from './routes/formulario.js'
 import { liderRoutes } from './routes/lideres.js'
+import { dashboardRoutes } from './routes/dashboards.js'
 
 export async function buildApp(config: AppConfig = loadConfig()): Promise<FastifyInstance> {
   const app = Fastify({
@@ -115,6 +116,7 @@ export async function buildApp(config: AppConfig = loadConfig()): Promise<Fastif
   await app.register(streamRoutes)
   await app.register(formularioRoutes)
   await app.register(liderRoutes)
+  await app.register(dashboardRoutes)
 
   return app
 }

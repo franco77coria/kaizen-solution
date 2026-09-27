@@ -18,12 +18,22 @@ export function conBase(camino: string): string {
   return `${BASE}${camino.startsWith('/') ? camino : `/${camino}`}`
 }
 
-export type Ruta = 'panorama' | 'sumar' | 'suma' | 'revision' | 'lideres' | 'ajustes' | 'entrar-local'
+export type Ruta =
+  | 'panorama'
+  | 'sumar'
+  | 'suma'
+  | 'dashboard'
+  | 'revision'
+  | 'lideres'
+  | 'ajustes'
+  | 'entrar-local'
 
 const CAMINOS: Record<Ruta, string> = {
   panorama: '/',
   sumar: '/persona',
   suma: '/suma',
+  // Con parametro: /suma/<id>. Se reconoce aparte (RE_DASHBOARD).
+  dashboard: '/suma/:id',
   revision: '/revision',
   lideres: '/lideres',
   ajustes: '/ajustes',
@@ -38,6 +48,7 @@ function rutaDeUbicacion(): Ruta {
   let camino = window.location.pathname
   if (BASE && camino.startsWith(BASE)) camino = camino.slice(BASE.length)
   camino = camino.replace(/\/+$/, '') || '/'
+  if (RE_DASHBOARD.test(camino)) return 'dashboard'
   const encontrada = (Object.entries(CAMINOS) as Array<[Ruta, string]>).find(
     ([, c]) => c === camino,
   )
@@ -46,6 +57,26 @@ function rutaDeUbicacion(): Ruta {
 }
 
 const EVENTO = 'geodemografico:navegacion'
+
+/** Un dashboard publicado: /suma/<uuid>. */
+const RE_DASHBOARD = /^\/suma\/([0-9a-f-]{36})$/i
+
+function idDeUbicacion(): string | null {
+  let camino = window.location.pathname
+  if (BASE && camino.startsWith(BASE)) camino = camino.slice(BASE.length)
+  return RE_DASHBOARD.exec(camino.replace(/\/+$/, ''))?.[1] ?? null
+}
+
+/** Direccion completa de un dashboard, para abrirlo o copiar su enlace. */
+export function caminoDashboard(id: string): string {
+  return conBase(`/suma/${id}`)
+}
+
+export function navegarADashboard(id: string): void {
+  window.history.pushState(null, '', caminoDashboard(id))
+  window.dispatchEvent(new Event(EVENTO))
+  window.scrollTo({ top: 0 })
+}
 
 function suscribir(avisar: () => void): () => void {
   window.addEventListener('popstate', avisar)
@@ -58,6 +89,11 @@ function suscribir(avisar: () => void): () => void {
 
 export function useRuta(): Ruta {
   return useSyncExternalStore(suscribir, rutaDeUbicacion)
+}
+
+/** Id del dashboard abierto (en /suma/<id>), o null. */
+export function useIdDashboard(): string | null {
+  return useSyncExternalStore(suscribir, idDeUbicacion)
 }
 
 export function navegar(ruta: Ruta, opciones: { reemplazar?: boolean } = {}): void {
