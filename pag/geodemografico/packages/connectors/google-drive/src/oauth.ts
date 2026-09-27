@@ -188,6 +188,14 @@ async function leerIdentidad(accessToken: string): Promise<{ sub: string; email:
   return { sub: payload.sub, email: payload.email ?? '' }
 }
 
+/** Google rechazo la autorizacion guardada: solo se arregla reconectando. */
+export class AutorizacionRechazadaError extends Error {
+  constructor(mensaje: string) {
+    super(mensaje)
+    this.name = 'AutorizacionRechazadaError'
+  }
+}
+
 export async function renovarAccessToken(
   rol: RolConexion,
   refreshToken: string,
@@ -207,8 +215,13 @@ export async function renovarAccessToken(
   })
 
   if (!respuesta.ok) {
-    // Un 400 con invalid_grant significa que el usuario revoco el acceso o que
-    // el refresh token caduco. Quien llama lo traduce a "hay que reconectar".
+    // `invalid_grant`: el usuario revoco el acceso o el refresh token caduco.
+    // Es lo UNICO que se arregla reconectando. Un 5xx, un corte de red o una
+    // mala configuracion propia no deben dejar la conexion "para reconectar".
+    const cuerpo = (await respuesta.json().catch(() => ({}))) as { error?: string }
+    if (cuerpo.error === 'invalid_grant') {
+      throw new AutorizacionRechazadaError(`Google rechazo la renovacion (${respuesta.status})`)
+    }
     throw new Error(`no se pudo renovar el token (${respuesta.status})`)
   }
 

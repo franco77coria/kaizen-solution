@@ -106,10 +106,17 @@ async function listarEspacios(): Promise<Espacio[]> {
   return espacios
 }
 
-async function procesarEspacio(espacio: Espacio, provider: SourceProvider): Promise<number> {
+async function procesarEspacio(
+  espacio: Espacio,
+  provider: SourceProvider,
+  hasta: number | undefined,
+): Promise<number> {
   let procesados = 0
 
   for (;;) {
+    // Pasado el plazo no se toma trabajo nuevo: queda en la cola para la
+    // pasada siguiente, en vez de que la plataforma corte la funcion.
+    if (hasta !== undefined && Date.now() > hasta) break
     const trabajo = await tomarTrabajo(espacio.tenantId, espacio.corpusId, HOLDER)
     if (!trabajo) break
 
@@ -120,6 +127,7 @@ async function procesarEspacio(espacio: Espacio, provider: SourceProvider): Prom
       connectionId: trabajo.connectionId,
       connectionGeneration: trabajo.generation,
       provider,
+      ...(hasta !== undefined ? { hasta } : {}),
     }
 
     try {
@@ -260,13 +268,17 @@ async function reconciliar(context: IngestContext): Promise<void> {
  * Recorre todos los espacios una vez y devuelve cuantos trabajos proceso. Un
  * espacio con la credencial vencida no frena a los demas.
  */
-export async function unaPasada(): Promise<number> {
+/**
+ * `hasta` (epoch ms): plazo para empezar trabajo nuevo. En Vercel la funcion
+ * tiene un tope de duracion; sin plazo, una pasada larga se cortaba a la mitad.
+ */
+export async function unaPasada(opciones: { hasta?: number } = {}): Promise<number> {
   const espacios = await listarEspacios()
   let total = 0
   for (const espacio of espacios) {
     try {
       const provider = await crearProveedor(espacio)
-      total += await procesarEspacio(espacio, provider)
+      total += await procesarEspacio(espacio, provider, opciones.hasta)
     } catch (error) {
       logger.error('worker.espacio_no_disponible', error, {
         tenantId: espacio.tenantId,

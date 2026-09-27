@@ -34,6 +34,11 @@ export interface IngestContext {
   connectionId: string
   connectionGeneration: number
   provider: SourceProvider
+  /**
+   * Hora limite (epoch ms) para EMPEZAR trabajo nuevo en esta pasada. En
+   * Vercel la funcion tiene un tope; lo que no entre sigue en la proxima.
+   */
+  hasta?: number
 }
 
 export interface IngestOutcome {
@@ -178,28 +183,11 @@ export async function ingerirArchivo(
   const identidad = resolveMeetingIdentity(file)
   const chunks = chunkDocument(parsed)
 
-  // Los embeddings se calculan FUERA de la transaccion: llamar a un proveedor
-  // externo con una transaccion abierta inmoviliza una conexion del pool.
-  // Y solo si el contenido CAMBIO: antes se vectorizaba todo en cada
-  // sincronizacion y se descartaba al ver que no habia cambios, gastando la
-  // cuota del proveedor todos los dias en documentos que no se tocaron.
-  const embeddings = createEmbeddingAdapter({ esperasMs: ESPERAS_INGESTA_MS })
-  const cambio = (await leerHashVigente(context, fileId)) !== parsed.contentHash
-  let vectores: number[][] = []
-  if (cambio && embeddings.status().enabled && chunks.length > 0) {
-    try {
-      vectores = await embeddings.embed(chunks.map((c) => c.content))
-    } catch (error) {
-      // Sin vectores el documento se publica igual: la busqueda textual
-      // sigue funcionando y es preferible a no indexar nada.
-      logger.warn('ingest.embeddings_fallaron', {
-        fileId,
-        motivo: error instanceof Error ? error.message : 'desconocido',
-      })
-    }
-  }
-
-  let versionSinCambios: string | undefined
+  // Los fragmentos se publican primero y se vectorizan DESPUES
+  // (completarVectores): la busqueda por texto queda disponible enseguida, el
+  // proveedor se llama fuera de toda transaccion, solo para lo que falta, y un
+  // documento largo no puede hacer que la pasada supere el limite de tiempo.
+  let versionVigente: string | undefined
   const resultado = await withAuthorizedTransaction('worker', ctx(context), async (client) => {
     // La generacion de la conexion se revalida DENTRO de la transaccion: si
     // hubo una reconexion mientras se extraia, este trabajo quedo obsoleto.
@@ -242,7 +230,7 @@ export async function ingerirArchivo(
     )
 
     if (vigente.rows[0]?.content_hash === parsed.contentHash) {
-      versionSinCambios = vigente.rows[0].id
+      versionVigente = vigente.rows[0].id
       return { fileId, resultado: 'sin_cambios' as const }
     }
 
@@ -283,13 +271,12 @@ export async function ingerirArchivo(
     // borran antes de escribir los nuevos.
     await client.query(`delete from chunks where version_id = $1`, [versionId])
 
-    for (const [i, chunk] of chunks.entries()) {
-      const insertado = await client.query<{ id: string }>(
+    for (const chunk of chunks) {
+      await client.query(
         `insert into chunks
            (tenant_id, corpus_id, document_id, version_id, ordinal, content, tab_id,
             heading, char_start, char_end, token_estimate)
-         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
-         returning id`,
+         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
         [
           context.tenantId,
           context.corpusId,
@@ -304,25 +291,6 @@ export async function ingerirArchivo(
           chunk.tokenEstimate,
         ],
       )
-
-      const chunkId = insertado.rows[0]?.id
-      const vector = vectores[i]
-      if (chunkId && vector) {
-        await client.query(
-          `insert into chunk_embeddings
-             (chunk_id, tenant_id, corpus_id, embedding_model, dimension, pipeline_version, embedding)
-           values ($1,$2,$3,$4,$5,$6,$7)`,
-          [
-            chunkId,
-            context.tenantId,
-            context.corpusId,
-            embeddings.model,
-            embeddings.dimension,
-            CHUNK_PIPELINE_VERSION,
-            JSON.stringify(vector),
-          ],
-        )
-      }
     }
 
     // Publicacion ATOMICA: la version pasa a publicada y el documento apunta
@@ -343,30 +311,16 @@ export async function ingerirArchivo(
 
     await vincularReunion(client, context, documentId, identidad, clasificacion.artifactType)
 
+    versionVigente = versionId
     return { fileId, resultado: 'publicado' as const }
   })
 
-  // Sin cambios de contenido, pero quizas con vectores pendientes (el
-  // proveedor fallo la vez anterior): se completan ahora. Asi el indice se
-  // repara solo en la siguiente sincronizacion.
-  if (versionSinCambios) await completarVectores(context, versionSinCambios, fileId)
+  // Vectores de la version vigente que falten: todos, si se acaba de
+  // publicar; los que quedaron pendientes de una pasada anterior, si no hubo
+  // cambios. Si no falta ninguno, no se llama al proveedor.
+  if (versionVigente) await completarVectores(context, versionVigente, fileId)
 
   return resultado
-}
-
-/** Hash del contenido de la version vigente del archivo, o null si no hay. */
-async function leerHashVigente(context: IngestContext, fileId: string): Promise<string | null> {
-  return withAuthorizedTransaction('worker', ctx(context), async (client) => {
-    const { rows } = await client.query<{ content_hash: string }>(
-      `select v.content_hash
-         from documents d
-         join document_versions v
-           on v.tenant_id = d.tenant_id and v.corpus_id = d.corpus_id and v.id = d.current_version_id
-        where d.corpus_id = $1 and d.source_file_id = $2`,
-      [context.corpusId, fileId],
-    )
-    return rows[0]?.content_hash ?? null
-  })
 }
 
 /**
@@ -408,6 +362,16 @@ async function completarVectores(
 
   let completados = 0
   for (let i = 0; i < faltantes.length; i += LOTE_VECTORES) {
+    // Se respeta el plazo de la pasada: lo que no entre queda para la
+    // siguiente, en vez de que la plataforma corte la funcion a la mitad.
+    if (context.hasta !== undefined && Date.now() > context.hasta) {
+      logger.info('ingest.vectores_pospuestos', {
+        fileId,
+        completados,
+        pendientes: faltantes.length - completados,
+      })
+      return
+    }
     const lote = faltantes.slice(i, i + LOTE_VECTORES)
     let vectores: number[][]
     try {

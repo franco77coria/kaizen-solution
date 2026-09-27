@@ -14,6 +14,13 @@ import { logger } from '../packages/observability/dist/index.js'
  * empaqueta en un solo modulo con esbuild (`pag/scripts/construir-geodemografico.mjs`).
  */
 
+/**
+ * Plazo para EMPEZAR trabajo en una pasada de ingesta. La funcion tiene un
+ * tope de 300 s; una tanda de embeddings puede tardar hasta ~2 min entre
+ * reintentos por cuota, asi que se deja ese margen.
+ */
+const PLAZO_PASADA_MS = 150_000
+
 type App = Awaited<ReturnType<typeof buildApp>>
 
 let lista: Promise<App> | undefined
@@ -59,7 +66,7 @@ export async function atenderIngesta(req: IncomingMessage, res: ServerResponse):
   if (!secretsEqual(req.headers.authorization ?? '', `Bearer ${secreto}`)) return responder(res, 401, {})
 
   try {
-    const procesados = await unaPasada()
+    const procesados = await unaPasada({ hasta: Date.now() + PLAZO_PASADA_MS })
     logger.info('ingesta.pasada', { procesados, origen: req.method === 'GET' ? 'cron' : 'api' })
     responder(res, 200, { procesados })
   } catch (error) {
