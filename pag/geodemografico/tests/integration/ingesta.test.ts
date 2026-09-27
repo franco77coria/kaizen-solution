@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { withAuthorizedTransaction } from '@kaizen/db'
+import { FakeEmbeddingAdapter } from '@kaizen/llm'
 import { FixtureSourceProvider, deduplicarPorDestino, type FixtureData } from '@kaizen/connector-google-drive'
 import { PILOTO } from '@kaizen/fixtures'
 import { seedPiloto } from '@kaizen/fixtures'
@@ -210,6 +211,78 @@ describe('extraccion, segmentacion y publicacion', () => {
     })
 
     expect(pestanas).toEqual(['tab-diagnostico', 'tab-metas'])
+  })
+})
+
+describe('vectores: solo cuando cambia el contenido, y se completan si faltan', () => {
+  /**
+   * En produccion, dos documentos de 687 y 151 fragmentos quedaron sin
+   * vectores (el proveedor rechazo el pedido) y, como su contenido no cambio,
+   * cada sincronizacion posterior los daba por "sin cambios" sin completarlos.
+   * Ademas se vectorizaba TODO en cada pasada, antes de saber si habia cambios.
+   */
+  const contar = (fileId: string) =>
+    withAuthorizedTransaction('worker', ctx, async (c) => {
+      const { rows } = await c.query<{ fragmentos: number; vectores: number }>(
+        `select count(ch.id)::int as fragmentos, count(e.chunk_id)::int as vectores
+           from documents d
+           join chunks ch on ch.version_id = d.current_version_id
+           left join chunk_embeddings e on e.chunk_id = ch.id
+          where d.source_file_id = $1`,
+        [fileId],
+      )
+      return rows[0] ?? { fragmentos: 0, vectores: 0 }
+    })
+
+  it('un documento sin cambios y con todos sus vectores NO vuelve a llamar al proveedor', async () => {
+    const espia = vi.spyOn(FakeEmbeddingAdapter.prototype, 'embed')
+    try {
+      const salida = await ingerirArchivo(context, 'doc-comite-notas')
+      expect(salida.resultado).toBe('sin_cambios')
+      expect(espia).not.toHaveBeenCalled()
+    } finally {
+      espia.mockRestore()
+    }
+  })
+
+  it('si faltan vectores, la siguiente pasada los completa sin crear otra version', async () => {
+    const antes = await contar('doc-comite-notas')
+    expect(antes.fragmentos).toBeGreaterThan(0)
+    expect(antes.vectores).toBe(antes.fragmentos)
+
+    // Simula el fallo del proveedor en la ingesta original.
+    await env.owner.query(
+      `delete from chunk_embeddings where chunk_id in (
+         select ch.id from chunks ch join documents d on ch.version_id = d.current_version_id
+          where d.source_file_id = 'doc-comite-notas')`,
+    )
+    expect((await contar('doc-comite-notas')).vectores).toBe(0)
+
+    const salida = await ingerirArchivo(context, 'doc-comite-notas')
+    expect(salida.resultado).toBe('sin_cambios')
+    expect(await contar('doc-comite-notas')).toEqual(antes)
+  })
+
+  it('si el proveedor vuelve a fallar, el documento sigue publicado y buscable por texto', async () => {
+    await env.owner.query(
+      `delete from chunk_embeddings where chunk_id in (
+         select ch.id from chunks ch join documents d on ch.version_id = d.current_version_id
+          where d.source_file_id = 'doc-comite-notas')`,
+    )
+    const espia = vi.spyOn(FakeEmbeddingAdapter.prototype, 'embed').mockRejectedValue(new Error('503'))
+    try {
+      const salida = await ingerirArchivo(context, 'doc-comite-notas')
+      expect(salida.resultado).toBe('sin_cambios')
+    } finally {
+      espia.mockRestore()
+    }
+    const estado = await contar('doc-comite-notas')
+    expect(estado.vectores).toBe(0)
+    expect(estado.fragmentos).toBeGreaterThan(0)
+
+    // Y la pasada siguiente, con el proveedor de vuelta, lo repara.
+    await ingerirArchivo(context, 'doc-comite-notas')
+    expect((await contar('doc-comite-notas')).vectores).toBe(estado.fragmentos)
   })
 })
 

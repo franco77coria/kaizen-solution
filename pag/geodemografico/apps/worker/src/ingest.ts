@@ -180,9 +180,13 @@ export async function ingerirArchivo(
 
   // Los embeddings se calculan FUERA de la transaccion: llamar a un proveedor
   // externo con una transaccion abierta inmoviliza una conexion del pool.
+  // Y solo si el contenido CAMBIO: antes se vectorizaba todo en cada
+  // sincronizacion y se descartaba al ver que no habia cambios, gastando la
+  // cuota del proveedor todos los dias en documentos que no se tocaron.
   const embeddings = createEmbeddingAdapter()
+  const cambio = (await leerHashVigente(context, fileId)) !== parsed.contentHash
   let vectores: number[][] = []
-  if (embeddings.status().enabled && chunks.length > 0) {
+  if (cambio && embeddings.status().enabled && chunks.length > 0) {
     try {
       vectores = await embeddings.embed(chunks.map((c) => c.content))
     } catch (error) {
@@ -195,7 +199,8 @@ export async function ingerirArchivo(
     }
   }
 
-  return withAuthorizedTransaction('worker', ctx(context), async (client) => {
+  let versionSinCambios: string | undefined
+  const resultado = await withAuthorizedTransaction('worker', ctx(context), async (client) => {
     // La generacion de la conexion se revalida DENTRO de la transaccion: si
     // hubo una reconexion mientras se extraia, este trabajo quedo obsoleto.
     const conexion = await client.query<{ generation: number; status: string }>(
@@ -237,6 +242,7 @@ export async function ingerirArchivo(
     )
 
     if (vigente.rows[0]?.content_hash === parsed.contentHash) {
+      versionSinCambios = vigente.rows[0].id
       return { fileId, resultado: 'sin_cambios' as const }
     }
 
@@ -339,6 +345,98 @@ export async function ingerirArchivo(
 
     return { fileId, resultado: 'publicado' as const }
   })
+
+  // Sin cambios de contenido, pero quizas con vectores pendientes (el
+  // proveedor fallo la vez anterior): se completan ahora. Asi el indice se
+  // repara solo en la siguiente sincronizacion.
+  if (versionSinCambios) await completarVectores(context, versionSinCambios, fileId)
+
+  return resultado
+}
+
+/** Hash del contenido de la version vigente del archivo, o null si no hay. */
+async function leerHashVigente(context: IngestContext, fileId: string): Promise<string | null> {
+  return withAuthorizedTransaction('worker', ctx(context), async (client) => {
+    const { rows } = await client.query<{ content_hash: string }>(
+      `select v.content_hash
+         from documents d
+         join document_versions v
+           on v.tenant_id = d.tenant_id and v.corpus_id = d.corpus_id and v.id = d.current_version_id
+        where d.corpus_id = $1 and d.source_file_id = $2`,
+      [context.corpusId, fileId],
+    )
+    return rows[0]?.content_hash ?? null
+  })
+}
+
+/** Tanda de fragmentos por pedido al proveedor, y por transaccion al guardar. */
+const LOTE_VECTORES = 100
+
+/**
+ * Vectoriza los fragmentos de una version publicada que no tengan embedding.
+ * Tanda por tanda, guardando cada una: si el proveedor corta a mitad de
+ * camino, lo avanzado queda y la sincronizacion siguiente sigue desde ahi.
+ */
+async function completarVectores(
+  context: IngestContext,
+  versionId: string,
+  fileId: string,
+): Promise<void> {
+  const embeddings = createEmbeddingAdapter()
+  if (!embeddings.status().enabled) return
+
+  const faltantes = await withAuthorizedTransaction('worker', ctx(context), async (client) => {
+    const { rows } = await client.query<{ id: string; content: string }>(
+      `select ch.id, ch.content
+         from chunks ch
+        where ch.version_id = $1
+          and not exists (select 1 from chunk_embeddings e where e.chunk_id = ch.id)
+        order by ch.ordinal`,
+      [versionId],
+    )
+    return rows
+  })
+  if (faltantes.length === 0) return
+
+  let completados = 0
+  for (let i = 0; i < faltantes.length; i += LOTE_VECTORES) {
+    const lote = faltantes.slice(i, i + LOTE_VECTORES)
+    let vectores: number[][]
+    try {
+      vectores = await embeddings.embed(lote.map((f) => f.content))
+    } catch (error) {
+      logger.warn('ingest.vectores_pendientes', {
+        fileId,
+        completados,
+        pendientes: faltantes.length - completados,
+        motivo: error instanceof Error ? error.message : 'desconocido',
+      })
+      return
+    }
+
+    await withAuthorizedTransaction('worker', ctx(context), async (client) => {
+      for (const [j, fragmento] of lote.entries()) {
+        await client.query(
+          `insert into chunk_embeddings
+             (chunk_id, tenant_id, corpus_id, embedding_model, dimension, pipeline_version, embedding)
+           values ($1,$2,$3,$4,$5,$6,$7)
+           on conflict (chunk_id) do nothing`,
+          [
+            fragmento.id,
+            context.tenantId,
+            context.corpusId,
+            embeddings.model,
+            embeddings.dimension,
+            CHUNK_PIPELINE_VERSION,
+            JSON.stringify(vectores[j]),
+          ],
+        )
+      }
+    })
+    completados += lote.length
+  }
+
+  logger.info('ingest.vectores_completados', { fileId, completados })
 }
 
 async function upsertDocumento(
