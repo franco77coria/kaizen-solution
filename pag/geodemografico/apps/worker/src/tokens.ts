@@ -1,7 +1,11 @@
 import { withAuthorizedTransaction } from '@kaizen/db'
 import { open, seal } from '@kaizen/authz'
 import { logger } from '@kaizen/observability'
-import { renovarAccessToken, type AccessTokenSource } from '@kaizen/connector-google-drive'
+import {
+  AutorizacionRechazadaError,
+  renovarAccessToken,
+  type AccessTokenSource,
+} from '@kaizen/connector-google-drive'
 
 /**
  * Fuente de access tokens para el worker de ingesta.
@@ -85,36 +89,44 @@ export class ConexionIngestor implements AccessTokenSource {
       throw new Error('la conexion de ingesta requiere reautenticacion')
     }
 
+    let renovado: { accessToken: string; expiresAt: Date }
     try {
-      const renovado = await renovarAccessToken('ingestor', guardado.secreto.refreshToken)
-
-      await withAuthorizedTransaction('worker', contexto, async (client) => {
-        const sellado = seal(
-          JSON.stringify({
-            accessToken: renovado.accessToken,
-            // El refresh token NO se reemplaza: Google no siempre devuelve uno
-            // nuevo, y pisarlo con null romperia la conexion para siempre.
-            refreshToken: guardado.secreto.refreshToken,
-            expiresAt: renovado.expiresAt.toISOString(),
-          } satisfies SecretoOAuth),
-        )
-
-        await client.query(
-          `update token_vault
-              set ciphertext = $2, iv = $3, auth_tag = $4, rotated_at = now()
-            where id = $1`,
-          [guardado.tokenRef, sellado.ciphertext, sellado.iv, sellado.authTag],
-        )
-      })
-
-      this.cache = { token: renovado.accessToken, expira: renovado.expiresAt.getTime() }
-      return renovado.accessToken
+      renovado = await renovarAccessToken('ingestor', guardado.secreto.refreshToken)
     } catch (error) {
-      await this.marcarReautenticacion(
-        error instanceof Error ? error.message : 'fallo la renovacion',
-      )
+      // Solo un rechazo de Google pide reconectar. Antes CUALQUIER fallo (un
+      // corte de red, un 503, un error propio al guardar) dejaba la conexion
+      // "para reconectar", y SUMA se quedaba sin notas hasta que alguien lo
+      // notara. Lo pasajero solo hace fallar este trabajo, que se reintenta.
+      if (error instanceof AutorizacionRechazadaError) {
+        await this.marcarReautenticacion(error.message)
+      }
       throw error
     }
+
+    await withAuthorizedTransaction('worker', contexto, async (client) => {
+      const sellado = seal(
+        JSON.stringify({
+          accessToken: renovado.accessToken,
+          // El refresh token NO se reemplaza: Google no siempre devuelve uno
+          // nuevo, y pisarlo con null romperia la conexion para siempre.
+          refreshToken: guardado.secreto.refreshToken,
+          expiresAt: renovado.expiresAt.toISOString(),
+        } satisfies SecretoOAuth),
+      )
+
+      const { rowCount } = await client.query(
+        `update token_vault
+            set ciphertext = $2, iv = $3, auth_tag = $4, key_version = $5, rotated_at = now()
+          where id = $1`,
+        [guardado.tokenRef, sellado.ciphertext, sellado.iv, sellado.authTag, sellado.keyVersion],
+      )
+      // Con RLS, un UPDATE que no alcanza la fila devuelve 0 sin error
+      // (leccion 36): hay que mirar la cuenta.
+      if (rowCount !== 1) throw new Error('no se pudo guardar el token renovado')
+    })
+
+    this.cache = { token: renovado.accessToken, expira: renovado.expiresAt.getTime() }
+    return renovado.accessToken
   }
 
   private async marcarReautenticacion(motivo: string): Promise<void> {

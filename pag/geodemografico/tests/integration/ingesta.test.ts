@@ -263,6 +263,26 @@ describe('vectores: solo cuando cambia el contenido, y se completan si faltan', 
     expect(await contar('doc-comite-notas')).toEqual(antes)
   })
 
+  it('pasado el plazo de la pasada no se vectoriza, y la siguiente sigue', async () => {
+    await env.owner.query(
+      `delete from chunk_embeddings where chunk_id in (
+         select ch.id from chunks ch join documents d on ch.version_id = d.current_version_id
+          where d.source_file_id = 'doc-comite-notas')`,
+    )
+    const espia = vi.spyOn(FakeEmbeddingAdapter.prototype, 'embed')
+    try {
+      await ingerirArchivo({ ...context, hasta: Date.now() - 1 }, 'doc-comite-notas')
+      expect(espia).not.toHaveBeenCalled()
+    } finally {
+      espia.mockRestore()
+    }
+    expect((await contar('doc-comite-notas')).vectores).toBe(0)
+
+    await ingerirArchivo(context, 'doc-comite-notas')
+    const estado = await contar('doc-comite-notas')
+    expect(estado.vectores).toBe(estado.fragmentos)
+  })
+
   it('si el proveedor vuelve a fallar, el documento sigue publicado y buscable por texto', async () => {
     await env.owner.query(
       `delete from chunk_embeddings where chunk_id in (
