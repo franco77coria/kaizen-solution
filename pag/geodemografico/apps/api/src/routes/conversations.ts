@@ -12,6 +12,7 @@ import { withAuthorizedTransaction } from '@kaizen/db'
 import { requireCsrf, resolveCorpusScope, txContext } from '../plugins/session.js'
 import { leerAmbito } from './scope.js'
 import { ask } from '../services/chat.js'
+import { leerDatosDeEjecucion } from '../services/datos-chat.js'
 
 const idParam = z.object({ id: z.string().uuid() })
 
@@ -87,8 +88,9 @@ export async function conversationRoutes(app: FastifyInstance): Promise<void> {
         summary_only: boolean
         created_at: Date
         dependencias_vigentes: boolean
+        analytics_run_id: string | null
       }>(
-        `select m.id, m.role, m.status, m.content, m.summary_only, m.created_at,
+        `select m.id, m.role, m.status, m.content, m.summary_only, m.created_at, m.analytics_run_id,
                 not exists (
                   select 1
                     from unnest(m.dependency_version_ids) as dep(version_id)
@@ -129,6 +131,13 @@ export async function conversationRoutes(app: FastifyInstance): Promise<void> {
         porMensaje.set(f.message_id, lista)
       }
 
+      // Las respuestas de datos vuelven a mostrar su tabla, con el resultado
+      // GUARDADO (el que se respondio), no con uno recalculado.
+      const datosPorMensaje = new Map<string, Awaited<ReturnType<typeof leerDatosDeEjecucion>>>()
+      for (const m of mensajes.rows) {
+        if (m.analytics_run_id) datosPorMensaje.set(m.id, await leerDatosDeEjecucion(client, m.analytics_run_id))
+      }
+
       return {
         id: conversacion.rows[0].id,
         title: conversacion.rows[0].title,
@@ -146,6 +155,7 @@ export async function conversationRoutes(app: FastifyInstance): Promise<void> {
               : m.content,
             summaryOnly: m.summary_only,
             createdAt: m.created_at,
+            ...(datosPorMensaje.get(m.id) ? { datos: datosPorMensaje.get(m.id) } : {}),
             sources: bloqueado
               ? []
               : (porMensaje.get(m.id) ?? []).map((f) => ({

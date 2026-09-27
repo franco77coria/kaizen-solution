@@ -1,6 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { preguntarEnVivo, api, type ChatAnswer, type EventoProgreso, type Scope } from './api'
+import {
+  preguntarEnVivo,
+  api,
+  type ChatAnswer,
+  type DashboardEnLista,
+  type EventoProgreso,
+  type Scope,
+} from './api'
+import { DatosRespuesta } from './DatosRespuesta'
 import { Icono, SimboloSuma } from './Marca'
+import { caminoDashboard, navegarADashboard } from './rutas'
+import { TextoSuma } from './TextoSuma'
 
 /**
  * SUMA — la conversación sobre las notas de reunión.
@@ -34,6 +44,7 @@ export interface Turno {
 const ETAPAS: Record<EventoProgreso['etapa'], (e: EventoProgreso) => string> = {
   enrutando: () => 'Entendiendo la pregunta',
   buscando: () => 'Buscando en las notas',
+  consultando: () => 'Consultando los datos',
   encontrado: (e) =>
     e.etapa === 'encontrado'
       ? `Leyendo ${e.fragmentos} fragmento${e.fragmentos === 1 ? '' : 's'} de ${e.documentos} documento${e.documentos === 1 ? '' : 's'}`
@@ -42,10 +53,15 @@ const ETAPAS: Record<EventoProgreso['etapa'], (e: EventoProgreso) => string> = {
   redactando: () => 'Redactando',
 }
 
-const SUGERENCIAS = [
-  '¿Qué notas tenés cargadas?',
-  '¿Qué se acordó en la última reunión?',
-  '¿Qué compromisos quedaron pendientes?',
+/** Sugerencias de arranque. Las de datos solo si la cuenta puede consultarlos. */
+const SUGERENCIAS_NOTAS = [
+  { titulo: 'Última reunión', pregunta: '¿Qué se acordó en la última reunión?' },
+  { titulo: 'Compromisos', pregunta: '¿Qué compromisos quedaron pendientes?' },
+  { titulo: 'Qué hay cargado', pregunta: '¿Qué notas tenés cargadas?' },
+]
+const SUGERENCIAS_DATOS = [
+  { titulo: 'Personas sumadas', pregunta: '¿Cuántas personas se sumaron por municipio?' },
+  { titulo: 'Por género', pregunta: '¿Cuántas personas hay por género?' },
 ]
 
 export interface Conversacion {
@@ -152,6 +168,7 @@ export function Chat({
   const campoRef = useRef<HTMLTextAreaElement>(null)
 
   const puedeLeer = scope.permissions.includes('notes.read')
+  const puedeDatos = scope.permissions.includes('analytics.aggregate')
 
   // Bajar al último mensaje cuando llega algo nuevo.
   useEffect(() => {
@@ -228,21 +245,38 @@ export function Chat({
             <div className="suma-bienvenida">
               <h3>¿Qué querés saber?</h3>
               <p>
-                Respondo sobre las notas de reunión y te muestro de qué documento sale cada dato.
-                Si no lo encuentro, te lo digo.
+                {puedeDatos
+                  ? 'Respondo sobre las notas de reunión y sobre las personas sumadas. Cada respuesta dice de dónde sale; si no lo encuentro, te lo digo.'
+                  : 'Respondo sobre las notas de reunión y te muestro de qué documento sale cada dato. Si no lo encuentro, te lo digo.'}
               </p>
               <div className="suma-sugerencias">
-                {SUGERENCIAS.map((s) => (
-                  <button key={s} type="button" onClick={() => mandar(s)} disabled={enviando}>
-                    {s}
-                  </button>
-                ))}
+                {[...(puedeDatos ? SUGERENCIAS_DATOS : []), ...SUGERENCIAS_NOTAS]
+                  .slice(0, modo === 'completa' ? 4 : 3)
+                  .map((s) => (
+                    <button
+                      key={s.pregunta}
+                      type="button"
+                      className="suma-sugerencia"
+                      onClick={() => mandar(s.pregunta)}
+                      disabled={enviando}
+                    >
+                      <strong>{s.titulo}</strong>
+                      <span>{s.pregunta}</span>
+                    </button>
+                  ))}
               </div>
+              <MisDashboards scope={scope} />
             </div>
           )}
 
           {turnos.map((turno) => (
-            <Mensaje key={turno.id} turno={turno} onReintentar={mandar} enviando={enviando} />
+            <Mensaje
+              key={turno.id}
+              turno={turno}
+              scope={scope}
+              onReintentar={mandar}
+              enviando={enviando}
+            />
           ))}
 
           {etapa && (
@@ -325,10 +359,12 @@ function useRevelado(texto: string, activo: boolean): string {
 
 function Mensaje({
   turno,
+  scope,
   onReintentar,
   enviando,
 }: {
   turno: Turno
+  scope: Scope
   onReintentar: (pregunta: string) => void
   enviando: boolean
 }): JSX.Element {
@@ -362,18 +398,34 @@ function Mensaje({
   // Decir "no lo encontré" es una respuesta correcta, no una alarma.
   return (
     <div className={respuesta?.abstained ? 'suma-respuesta abstencion' : 'suma-respuesta'}>
-      <p>
-        {visible}
-        {!completo && <span className="suma-cursor" />}
-      </p>
+      <div className="suma-autor" aria-hidden="true">
+        <span className="suma-autor-sello">
+          <SimboloSuma />
+        </span>
+        SUMA
+      </div>
+
+      {/* Mientras se revela, texto plano; al terminar, con formato. */}
+      {completo ? (
+        <TextoSuma texto={turno.texto} />
+      ) : (
+        <p>
+          {visible}
+          <span className="suma-cursor" />
+        </p>
+      )}
+
+      {completo && respuesta?.datos && <DatosRespuesta datos={respuesta.datos} />}
 
       {/* Las fuentes aparecen recién cuando terminó el texto: si asomaran
           antes, la respuesta parecería respaldada mientras se escribe. */}
       {completo && respuesta && respuesta.sources.length > 0 && (
         <div className="suma-fuentes">
-          {respuesta.sources.map((fuente) => (
+          <span className="suma-fuentes-titulo">Fuentes</span>
+          {respuesta.sources.map((fuente, i) => (
             <details className="suma-fuente" key={fuente.chunkId}>
               <summary>
+                <span className="numero cifra">{i + 1}</span>
                 <span className="nombre">{fuente.title}</span>
                 <span className="fecha">
                   {/* No se inventa una fecha cuando el documento no la declara. */}
@@ -396,6 +448,159 @@ function Mensaje({
           Basado en notas resumidas: no conservan necesariamente cada intervención.
         </p>
       )}
+
+      {completo && respuesta && !respuesta.abstained && (
+        <AccionesRespuesta scope={scope} texto={turno.texto} respuesta={respuesta} />
+      )}
     </div>
   )
+}
+
+type EstadoExportar =
+  | { tipo: 'libre' }
+  | { tipo: 'creando' }
+  | { tipo: 'listo'; id: string }
+  | { tipo: 'error'; mensaje: string }
+
+/** Copiar y exportar a dashboard. Aparecen solo cuando la respuesta terminó. */
+function AccionesRespuesta({
+  scope,
+  texto,
+  respuesta,
+}: {
+  scope: Scope
+  texto: string
+  respuesta: ChatAnswer
+}): JSX.Element {
+  const [copiado, setCopiado] = useState(false)
+  const [exportar, setExportar] = useState<EstadoExportar>({ tipo: 'libre' })
+  const [enlaceCopiado, setEnlaceCopiado] = useState(false)
+
+  async function copiar(): Promise<void> {
+    const fuentes = respuesta.sources.map((f, i) => `[${i + 1}] ${f.title}`).join('\n')
+    try {
+      await navigator.clipboard.writeText(fuentes ? `${texto}\n\nFuentes:\n${fuentes}` : texto)
+      setCopiado(true)
+      setTimeout(() => setCopiado(false), 1800)
+    } catch {
+      // Sin permiso de portapapeles no hay nada que avisar: el texto está a la vista.
+    }
+  }
+
+  async function crearDashboard(): Promise<void> {
+    if (!respuesta.messageId) return
+    setExportar({ tipo: 'creando' })
+    try {
+      const { id } = await api.crearDashboard(scope, respuesta.messageId)
+      setExportar({ tipo: 'listo', id })
+    } catch {
+      setExportar({
+        tipo: 'error',
+        mensaje: 'No se pudo armar el dashboard. Probá de nuevo en unos segundos.',
+      })
+    }
+  }
+
+  if (exportar.tipo === 'listo') {
+    const enlace = `${window.location.origin}${caminoDashboard(exportar.id)}`
+    return (
+      <div className="suma-dashboard-listo" role="status">
+        <span className="icono-listo">
+          <Icono nombre="tablero" />
+        </span>
+        <div>
+          <strong>Dashboard listo</strong>
+          <span>Privado · vence en 5 días</span>
+        </div>
+        <button type="button" className="boton" onClick={() => navegarADashboard(exportar.id)}>
+          Abrir
+        </button>
+        <button
+          type="button"
+          className="boton fantasma"
+          onClick={() => {
+            void navigator.clipboard.writeText(enlace).then(() => setEnlaceCopiado(true))
+          }}
+        >
+          {enlaceCopiado ? 'Copiado' : 'Copiar enlace'}
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="suma-acciones-respuesta">
+      <button type="button" className="suma-accion" onClick={() => void copiar()}>
+        <Icono nombre={copiado ? 'listo' : 'copiar'} />
+        {copiado ? 'Copiado' : 'Copiar'}
+      </button>
+      {respuesta.messageId && (
+        <button
+          type="button"
+          className="suma-accion"
+          onClick={() => void crearDashboard()}
+          disabled={exportar.tipo === 'creando'}
+        >
+          <Icono nombre="tablero" />
+          {exportar.tipo === 'creando' ? 'Armando el dashboard…' : 'Exportar a dashboard'}
+        </button>
+      )}
+      {exportar.tipo === 'error' && <span className="suma-accion-error">{exportar.mensaje}</span>}
+    </div>
+  )
+}
+
+/** Dashboards vigentes: los propios y los que otros compartieron con el espacio. */
+export function MisDashboards({ scope }: { scope: Scope }): JSX.Element | null {
+  const [lista, setLista] = useState<DashboardEnLista[] | null>(null)
+
+  useEffect(() => {
+    let vigente = true
+    api
+      .dashboards(scope)
+      .then((r) => {
+        if (vigente) setLista(r.dashboards)
+      })
+      .catch(() => {
+        if (vigente) setLista([])
+      })
+    return () => {
+      vigente = false
+    }
+  }, [scope])
+
+  if (!lista || lista.length === 0) return null
+
+  return (
+    <nav className="mis-dashboards" aria-label="Tus dashboards">
+      <span className="mis-dashboards-titulo">Dashboards</span>
+      <ul>
+        {lista.slice(0, 6).map((d) => (
+          <li key={d.id}>
+            <a
+              href={caminoDashboard(d.id)}
+              onClick={(e) => {
+                if (e.metaKey || e.ctrlKey || e.button !== 0) return
+                e.preventDefault()
+                navegarADashboard(d.id)
+              }}
+            >
+              <span className="nombre">{d.titulo}</span>
+              <span className="meta">
+                {d.esMio ? (d.visibilidad === 'espacio' ? 'Compartido' : 'Privado') : `De ${d.autor}`}
+                {' · '}
+                {diasRestantes(d.venceEn)}
+              </span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  )
+}
+
+export function diasRestantes(venceEn: string): string {
+  const dias = Math.ceil((Date.parse(venceEn) - Date.now()) / 86_400_000)
+  if (dias <= 0) return 'vence hoy'
+  return dias === 1 ? 'vence mañana' : `vence en ${dias} días`
 }

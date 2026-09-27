@@ -273,6 +273,7 @@ async function reconciliar(context: IngestContext): Promise<void> {
  * tiene un tope de duracion; sin plazo, una pasada larga se cortaba a la mitad.
  */
 export async function unaPasada(opciones: { hasta?: number } = {}): Promise<number> {
+  await purgarDashboardsVencidos()
   const espacios = await listarEspacios()
   let total = 0
   for (const espacio of espacios) {
@@ -286,4 +287,20 @@ export async function unaPasada(opciones: { hasta?: number } = {}): Promise<numb
     }
   }
   return total
+}
+
+/**
+ * Borra los dashboards vencidos. Ya no se muestran (la vigencia se deriva al
+ * leer); esto solo evita que se acumulen. Un fallo aca no frena la ingesta.
+ */
+async function purgarDashboardsVencidos(): Promise<void> {
+  try {
+    const borrados = await withAuthorizedTransaction('worker', {}, async (client) => {
+      const { rowCount } = await client.query(`delete from dashboards where expires_at < now()`)
+      return rowCount ?? 0
+    })
+    if (borrados > 0) logger.info('worker.dashboards_purgados', { borrados })
+  } catch (error) {
+    logger.error('worker.purga_dashboards_fallida', error)
+  }
 }

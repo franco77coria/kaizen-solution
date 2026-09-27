@@ -44,6 +44,41 @@ export interface ChatAnswer {
   summaryOnly: boolean
   modelVersion: string
   promptVersion: string
+  /** Presente cuando SUMA respondio con una consulta analitica. */
+  datos?: RespuestaDatos
+  /** Id del mensaje guardado: sirve para exportarlo a un dashboard. */
+  messageId?: string
+}
+
+/** Datos de una respuesta de conteo. Los numeros salen de la base, no del modelo. */
+export interface RespuestaDatos {
+  runId: string
+  template: string
+  titulo: string
+  filtros: string[]
+  resultado: ResultadoAnalitico
+}
+
+export type Visibilidad = 'privado' | 'espacio'
+
+export interface DashboardEnLista {
+  id: string
+  titulo: string
+  visibilidad: Visibilidad
+  esMio: boolean
+  autor: string
+  creadoEn: string
+  venceEn: string
+}
+
+export interface DashboardCompleto extends DashboardEnLista {
+  documento: {
+    version: 1
+    pregunta: string
+    resumen: { texto: string; fuentes: Source[]; generado: boolean } | null
+    datos: RespuestaDatos[]
+  }
+  desactualizado: boolean
 }
 
 export class ApiError extends Error {
@@ -129,6 +164,7 @@ export interface Candidato {
 export type EventoProgreso =
   | { etapa: 'enrutando' }
   | { etapa: 'buscando' }
+  | { etapa: 'consultando' }
   | { etapa: 'encontrado'; fragmentos: number; documentos: number }
   | { etapa: 'sin_evidencia' }
   | { etapa: 'redactando' }
@@ -389,6 +425,24 @@ export const api = {
       body: { mode: 'incremental', idempotencyKey: crypto.randomUUID() },
       scope,
     }),
+
+  crearDashboard: (scope: Scope, messageId: string) =>
+    request<{ id: string }>('/v1/dashboards', { method: 'POST', body: { messageId }, scope }),
+
+  dashboards: (scope: Scope) => request<{ dashboards: DashboardEnLista[] }>('/v1/dashboards', { scope }),
+
+  dashboard: (scope: Scope, id: string) =>
+    request<DashboardCompleto>(`/v1/dashboards/${encodeURIComponent(id)}`, { scope }),
+
+  cambiarVisibilidad: (scope: Scope, id: string, visibilidad: Visibilidad) =>
+    request<{ ok: boolean }>(`/v1/dashboards/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      body: { visibilidad },
+      scope,
+    }),
+
+  borrarDashboard: (scope: Scope, id: string) =>
+    request<{ ok: boolean }>(`/v1/dashboards/${encodeURIComponent(id)}`, { method: 'DELETE', scope }),
 
   crearConversacion: (scope: Scope) =>
     request<{ id: string }>('/v1/conversations', { method: 'POST', body: {}, scope }),

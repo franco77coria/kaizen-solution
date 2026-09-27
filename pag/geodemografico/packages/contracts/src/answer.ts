@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import type { AnalyticsResult, QueryTemplate } from './query-plan.js'
 
 /**
  * Contrato de respuesta del modelo. El modelo devuelve JSON que cumple este
@@ -43,6 +44,21 @@ export interface AnswerSource {
   quote: string
 }
 
+/**
+ * Datos que respaldan una respuesta de conteo. El resultado es el de una
+ * consulta cerrada ya suprimida (un grupo chico es n/d, no cero): el modelo
+ * no escribe ninguno de estos numeros.
+ */
+export interface RespuestaDatos {
+  runId: string
+  template: QueryTemplate
+  /** Titulo legible, por ejemplo "Personas sumadas por municipio". */
+  titulo: string
+  /** Filtros aplicados, en palabras. Se muestran siempre junto al numero. */
+  filtros: string[]
+  resultado: AnalyticsResult
+}
+
 export interface ChatAnswer {
   abstained: boolean
   answer: string
@@ -52,4 +68,8 @@ export interface ChatAnswer {
   summaryOnly: boolean
   modelVersion: string
   promptVersion: string
+  /** Presente cuando la respuesta sale de una consulta analitica. */
+  datos?: RespuestaDatos
+  /** Id del mensaje guardado: con el se exporta la respuesta a un dashboard. */
+  messageId?: string
 }

@@ -7,7 +7,9 @@ import {
   type AnswerSource,
   type ChatAnswer,
   type CorpusScopedSession,
+  type RespuestaDatos,
 } from '@kaizen/contracts'
+import { CUNDINAMARCA_MUNICIPALITIES, displayName } from '@kaizen/geography'
 import { withAuthorizedTransaction } from '@kaizen/db'
 import { createEmbeddingAdapter, createLlmAdapter, validateAnswer } from '@kaizen/llm'
 import { filtrarVigentes, hybridSearch, type RetrievalCandidate } from '@kaizen/retrieval'
@@ -17,6 +19,11 @@ import { logger } from '@kaizen/observability'
 import { admitir, breakers } from '../plugins/admission.js'
 import { registrarAuditoria } from './audit.js'
 import { txContext } from '../plugins/session.js'
+import { ejecutarAnalitica } from './analytics.js'
+import { describirPlan, leerDatosDeEjecucion, redactarDatos } from './datos-chat.js'
+
+/** Catalogo para que el enrutador reconozca un municipio NOMBRADO. */
+const MUNICIPIOS = CUNDINAMARCA_MUNICIPALITIES.map((m) => ({ code: m.code, name: displayName(m.code) }))
 
 /**
  * Orquestacion de una pregunta.
@@ -43,6 +50,7 @@ import { txContext } from '../plugins/session.js'
 export type EventoProgreso =
   | { etapa: 'enrutando' }
   | { etapa: 'buscando' }
+  | { etapa: 'consultando' }
   | { etapa: 'encontrado'; fragmentos: number; documentos: number }
   | { etapa: 'sin_evidencia' }
   | { etapa: 'redactando' }
@@ -137,13 +145,13 @@ export async function ask(input: AskInput): Promise<ChatAnswer> {
 
   try {
     const respuesta = await generar(input)
-    await persistir(input, reserva.requestId, respuesta)
+    const messageId = await persistir(input, reserva.requestId, respuesta)
     // `evidencia` es plomeria interna: contiene el texto COMPLETO de todos los
     // fragmentos recuperados, incluidos los que el modelo no cito. Devolverlo
     // saltearia el contrato de citas y entregaria contenido que no respalda
     // ninguna afirmacion. Solo sale lo que esta en ChatAnswer.
     const { evidencia: _evidencia, ...publica } = respuesta
-    return publica
+    return { ...publica, messageId }
   } catch (error) {
     await marcarFallo(session, reserva.requestId, error)
     throw error
@@ -169,6 +177,7 @@ async function generar(input: AskInput): Promise<RespuestaGenerada> {
   const ruta = enrutar(input.content, {
     puedeLeerNotas: session.permissions.has('notes.read'),
     puedeAgregar: session.permissions.has('analytics.aggregate'),
+    municipios: MUNICIPIOS,
   })
 
   logger.info('chat.ruta', { tipo: ruta.tipo, motivo: ruta.motivo })
@@ -184,20 +193,37 @@ async function generar(input: AskInput): Promise<RespuestaGenerada> {
     return { ...responderConversacional(ruta.intencion, estado), evidencia: [] }
   }
 
-  if (ruta.tipo !== 'notas') {
-    // Una consulta agregada NO se responde por este camino: se le indica al
-    // usuario que use la analitica, con la plantilla ya resuelta. Asi el
-    // numero nunca sale de un parrafo de un acta.
-    const explicacion =
-      ruta.tipo === 'analitica'
-        ? `Esa pregunta es un ${ruta.motivo} y se responde con una consulta agregada, no leyendo notas. ` +
-          `Podés usar la analítica con la plantilla "${ruta.plan.template}" para obtener el número exacto.`
-        : ruta.motivo
+  if (ruta.tipo === 'analitica') {
+    // Un conteo se responde EJECUTANDO la consulta cerrada, con la misma
+    // validacion, supresion y auditoria que la pantalla de analitica. El
+    // numero sale de la base, nunca de un parrafo de un acta ni del modelo.
+    avisar({ etapa: 'consultando' })
+    const { runId, result } = await ejecutarAnalitica({
+      session,
+      plan: ruta.plan,
+      idempotencyKey: `${input.idempotencyKey}:datos`,
+      requestId: input.idempotencyKey,
+    })
+    const { titulo, filtros } = describirPlan(ruta.plan)
+    const datos: RespuestaDatos = { runId, template: ruta.plan.template, titulo, filtros, resultado: result }
+    return {
+      abstained: false,
+      answer: redactarDatos(datos),
+      abstentionReason: '',
+      sources: [],
+      summaryOnly: false,
+      modelVersion: 'consulta-cerrada',
+      promptVersion: 'datos-sin-modelo',
+      datos,
+      evidencia: [],
+    }
+  }
 
+  if (ruta.tipo !== 'notas') {
     return {
       abstained: true,
       answer: '',
-      abstentionReason: explicacion,
+      abstentionReason: ruta.motivo,
       sources: [],
       summaryOnly: false,
       modelVersion: llm.status().model,
@@ -359,17 +385,17 @@ async function persistir(
   input: AskInput,
   requestId: string,
   respuesta: RespuestaGenerada,
-): Promise<void> {
+): Promise<string> {
   const { session } = input
 
-  await withAuthorizedTransaction('app', txContext(session), async (client) => {
+  const guardado = await withAuthorizedTransaction('app', txContext(session), async (client) => {
     const versiones = [...new Set(respuesta.evidencia.map((c) => c.documentVersionId))]
 
     const mensaje = await client.query<{ id: string }>(
       `insert into messages
          (tenant_id, corpus_id, conversation_id, role, status, content,
-          dependency_version_ids, model_version, prompt_version, summary_only)
-       values ($1,$2,$3,'assistant',$4,$5,$6,$7,$8,$9)
+          dependency_version_ids, model_version, prompt_version, summary_only, analytics_run_id)
+       values ($1,$2,$3,'assistant',$4,$5,$6,$7,$8,$9,$10)
        returning id`,
       [
         session.tenantId,
@@ -381,6 +407,7 @@ async function persistir(
         respuesta.modelVersion,
         respuesta.promptVersion,
         respuesta.summaryOnly,
+        respuesta.datos?.runId ?? null,
       ],
     )
 
@@ -412,6 +439,7 @@ async function persistir(
         where id = $1`,
       [requestId, messageId],
     )
+    return messageId
   })
 
   await registrarAuditoria({
@@ -429,6 +457,7 @@ async function persistir(
       solo_resumen: respuesta.summaryOnly,
     },
   })
+  return guardado
 }
 
 async function marcarFallo(
@@ -451,7 +480,7 @@ async function marcarFallo(
   }
 }
 
-async function leerRespuestaGuardada(
+export async function leerRespuestaGuardada(
   session: CorpusScopedSession,
   messageId: string,
 ): Promise<ChatAnswer> {
@@ -462,8 +491,9 @@ async function leerRespuestaGuardada(
       model_version: string | null
       prompt_version: string | null
       summary_only: boolean
+      analytics_run_id: string | null
     }>(
-      `select content, status, model_version, prompt_version, summary_only
+      `select content, status, model_version, prompt_version, summary_only, analytics_run_id
          from messages where id = $1`,
       [messageId],
     )
@@ -499,8 +529,11 @@ async function leerRespuestaGuardada(
     )
 
     const abstained = fila.status === 'abstained'
+    const datos = await leerDatosDeEjecucion(client, fila.analytics_run_id)
 
     return {
+      messageId,
+      ...(datos ? { datos } : {}),
       abstained,
       answer: abstained ? '' : fila.content,
       abstentionReason: abstained ? fila.content : '',
