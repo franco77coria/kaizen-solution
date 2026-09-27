@@ -562,3 +562,33 @@ describe('la curaduria sobrevive a la reconexion', () => {
     expect(Number(despues.rows[0]?.n ?? 0)).toBe(admitidosAntes)
   })
 })
+
+describe('sincronizar ahora', () => {
+  /**
+   * El boton "Sincronizar ahora" de Ajustes fallaba SIEMPRE en produccion: el
+   * alta del trabajo usaba `on conflict ... do update`, que exige UPDATE sobre
+   * ingestion_jobs aunque no haya conflicto, y la identidad de la app solo
+   * tiene INSERT (a proposito). Ninguna prueba llamaba a esta ruta.
+   */
+  const sincronizar = (idempotencyKey: string) =>
+    app.inject({
+      method: 'POST',
+      url: '/v1/sources/sync',
+      headers: cabeceras(como('sub-admin')),
+      payload: { mode: 'incremental', idempotencyKey },
+    })
+
+  it('encola un trabajo', async () => {
+    const r = await sincronizar('clave-sync-uno')
+    expect(r.statusCode, r.body).toBe(200)
+    expect(r.json()).toMatchObject({ status: 'queued' })
+    expect(r.json().jobId).toMatch(/^[0-9a-f-]{36}$/)
+  })
+
+  it('repetir la misma clave devuelve el MISMO trabajo, sin duplicarlo', async () => {
+    const primero = (await sincronizar('clave-sync-dos')).json().jobId
+    const segundo = await sincronizar('clave-sync-dos')
+    expect(segundo.statusCode, segundo.body).toBe(200)
+    expect(segundo.json().jobId).toBe(primero)
+  })
+})
