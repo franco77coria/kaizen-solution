@@ -183,7 +183,7 @@ export async function ingerirArchivo(
   // Y solo si el contenido CAMBIO: antes se vectorizaba todo en cada
   // sincronizacion y se descartaba al ver que no habia cambios, gastando la
   // cuota del proveedor todos los dias en documentos que no se tocaron.
-  const embeddings = createEmbeddingAdapter()
+  const embeddings = createEmbeddingAdapter({ esperasMs: ESPERAS_INGESTA_MS })
   const cambio = (await leerHashVigente(context, fileId)) !== parsed.contentHash
   let vectores: number[][] = []
   if (cambio && embeddings.status().enabled && chunks.length > 0) {
@@ -369,6 +369,14 @@ async function leerHashVigente(context: IngestContext, fileId: string): Promise<
   })
 }
 
+/**
+ * Esperas entre reintentos del proveedor de embeddings durante la ingesta.
+ * La cuota gratuita de Gemini se mide por minuto y una tanda de 100 textos
+ * la consume entera: con esperas cortas la segunda tanda siempre fallaba.
+ * Lo que no alcance en una pasada queda guardado y sigue en la siguiente.
+ */
+const ESPERAS_INGESTA_MS = [20_000, 40_000, 60_000]
+
 /** Tanda de fragmentos por pedido al proveedor, y por transaccion al guardar. */
 const LOTE_VECTORES = 100
 
@@ -382,7 +390,7 @@ async function completarVectores(
   versionId: string,
   fileId: string,
 ): Promise<void> {
-  const embeddings = createEmbeddingAdapter()
+  const embeddings = createEmbeddingAdapter({ esperasMs: ESPERAS_INGESTA_MS })
   if (!embeddings.status().enabled) return
 
   const faltantes = await withAuthorizedTransaction('worker', ctx(context), async (client) => {
