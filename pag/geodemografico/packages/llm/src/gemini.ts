@@ -271,15 +271,23 @@ function extraerJson(texto: string): unknown {
   }
 }
 
+/** Maximo de textos por pedido que acepta `batchEmbedContents`. */
+const EMBED_LOTE = 100
+
+/** Esperas entre reintentos ante 429/5xx: el nivel gratuito se satura seguido. */
+const EMBED_ESPERAS_MS = [2_000, 8_000, 20_000]
+
 /** Embeddings de Gemini. Modelo separado del de generacion, por decision del plan. */
 export class GeminiEmbeddingAdapter implements EmbeddingAdapter {
   readonly name = 'gemini_developer'
   readonly model: string
   readonly dimension: number
+  private readonly esperasMs: readonly number[]
 
-  constructor() {
+  constructor(opciones: { esperasMs?: readonly number[] } = {}) {
     this.model = process.env['EMBEDDINGS_MODEL'] ?? 'gemini-embedding-001'
     this.dimension = Number(process.env['EMBEDDINGS_DIMENSION'] ?? 768)
+    this.esperasMs = opciones.esperasMs ?? EMBED_ESPERAS_MS
   }
 
   status(): { enabled: boolean; reason: string | null } {
@@ -296,47 +304,70 @@ export class GeminiEmbeddingAdapter implements EmbeddingAdapter {
     }
   }
 
+  /**
+   * Vectoriza en tandas de EMBED_LOTE. Sin partir, un documento de mas de 100
+   * fragmentos se rechazaba entero y quedaba sin busqueda por significado.
+   */
   async embed(texts: string[]): Promise<number[][]> {
     const apiKey = loadGeminiApiKey()
     if (!apiKey) throw new AppError('PROVIDER_UNAVAILABLE', 'credencial de Gemini no configurada')
 
-    const response = await fetch(`${BASE_URL}/models/${this.model}:batchEmbedContents`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
-      body: JSON.stringify({
-        requests: texts.map((text) => ({
-          model: `models/${this.model}`,
-          content: { parts: [{ text }] },
-          outputDimensionality: this.dimension,
-        })),
-      }),
-      signal: AbortSignal.timeout(30_000),
-    })
-
-    if (!response.ok) {
-      logError('llm.embeddings_error', new Error(`status ${response.status}`), {
-        status: response.status,
-        model: this.model,
-      })
-      throw new AppError(
-        response.status === 429 ? 'RATE_LIMITED' : 'PROVIDER_UNAVAILABLE',
-        `embeddings: respuesta ${response.status}`,
-      )
+    const vectores: number[][] = []
+    for (let i = 0; i < texts.length; i += EMBED_LOTE) {
+      vectores.push(...(await this.embedLote(apiKey, texts.slice(i, i + EMBED_LOTE))))
     }
-
-    const payload = (await response.json()) as { embeddings?: Array<{ values?: number[] }> }
-    const vectores = payload.embeddings?.map((e) => e.values ?? []) ?? []
-
-    if (vectores.length !== texts.length) {
-      throw new AppError('PROVIDER_UNAVAILABLE', 'el proveedor devolvio menos vectores que textos')
-    }
-    for (const v of vectores) {
-      if (v.length !== this.dimension) {
-        // Una dimension distinta a la declarada corrompe el indice entero.
-        throw new AppError('PROVIDER_UNAVAILABLE', `dimension inesperada: ${v.length}`)
-      }
-    }
-
     return vectores
+  }
+
+  private async embedLote(apiKey: string, texts: string[]): Promise<number[][]> {
+    for (let intento = 0; ; intento++) {
+      const response = await fetch(`${BASE_URL}/models/${this.model}:batchEmbedContents`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
+        body: JSON.stringify({
+          requests: texts.map((text) => ({
+            model: `models/${this.model}`,
+            content: { parts: [{ text }] },
+            outputDimensionality: this.dimension,
+          })),
+        }),
+        signal: AbortSignal.timeout(30_000),
+      })
+
+      if (!response.ok) {
+        // 429 (cuota) y 5xx (sobrecarga) son pasajeros: se reintenta con
+        // espera. Un 400 no se arregla reintentando.
+        const reintentable = response.status === 429 || response.status >= 500
+        const espera = this.esperasMs[intento]
+        if (reintentable && espera !== undefined) {
+          await new Promise((r) => setTimeout(r, espera))
+          continue
+        }
+        logError('llm.embeddings_error', new Error(`status ${response.status}`), {
+          status: response.status,
+          model: this.model,
+          intentos: intento + 1,
+        })
+        throw new AppError(
+          response.status === 429 ? 'RATE_LIMITED' : 'PROVIDER_UNAVAILABLE',
+          `embeddings: respuesta ${response.status}`,
+        )
+      }
+
+      const payload = (await response.json()) as { embeddings?: Array<{ values?: number[] }> }
+      const vectores = payload.embeddings?.map((e) => e.values ?? []) ?? []
+
+      if (vectores.length !== texts.length) {
+        throw new AppError('PROVIDER_UNAVAILABLE', 'el proveedor devolvio menos vectores que textos')
+      }
+      for (const v of vectores) {
+        if (v.length !== this.dimension) {
+          // Una dimension distinta a la declarada corrompe el indice entero.
+          throw new AppError('PROVIDER_UNAVAILABLE', `dimension inesperada: ${v.length}`)
+        }
+      }
+
+      return vectores
+    }
   }
 }
