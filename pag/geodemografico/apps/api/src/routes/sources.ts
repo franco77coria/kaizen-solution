@@ -136,7 +136,7 @@ export async function sourceRoutes(app: FastifyInstance): Promise<void> {
            (tenant_id, corpus_id, connection_id, connection_generation, provider_file_id,
             job_kind, pipeline_version, dedupe_key)
          values ($1,$2,$3,$4,'',$5,'api-1',$6)
-         on conflict (tenant_id, dedupe_key) do update set updated_at = now()
+         on conflict (tenant_id, dedupe_key) do nothing
          returning id`,
         [
           session.tenantId,
@@ -147,7 +147,16 @@ export async function sourceRoutes(app: FastifyInstance): Promise<void> {
           dedupeKey,
         ],
       )
-      return rows[0]?.id ?? ''
+      if (rows[0]) return rows[0].id
+
+      // La clave ya existia (el mismo pedido reintentado): se devuelve ese
+      // trabajo. No `do update`: exigiria UPDATE sobre ingestion_jobs, que la
+      // identidad de la app no tiene a proposito.
+      const existente = await client.query<{ id: string }>(
+        `select id from ingestion_jobs where tenant_id = $1 and dedupe_key = $2`,
+        [session.tenantId, dedupeKey],
+      )
+      return existente.rows[0]?.id ?? ''
     })
 
     despertarIngesta('sync')
