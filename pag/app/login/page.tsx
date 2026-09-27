@@ -10,7 +10,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 function LoginForm() {
     const router = useRouter()
     const searchParams = useSearchParams()
-    const callbackUrl = searchParams.get('callbackUrl') || '/admin'
+    const callbackUrl = destinoSeguro(searchParams?.get('callbackUrl'))
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [error, setError] = useState('')
@@ -110,4 +110,20 @@ export default function LoginPage() {
             <LoginForm />
         </Suspense>
     )
+}
+
+/**
+ * Solo destinos de ESTE sitio. El middleware manda `callbackUrl` absoluto
+ * (https://www.kaizensolutionscol.com/admin/leads); uno de otro origen
+ * mandaria al usuario afuera justo despues de loguearse (redireccion abierta).
+ */
+function destinoSeguro(pedido: string | null | undefined): string {
+    if (!pedido || typeof window === 'undefined') return '/admin'
+    try {
+        const url = new URL(pedido, window.location.origin)
+        if (url.origin !== window.location.origin) return '/admin'
+        return `${url.pathname}${url.search}${url.hash}`
+    } catch {
+        return '/admin'
+    }
 }

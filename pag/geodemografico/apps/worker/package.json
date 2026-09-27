@@ -1,0 +1,20 @@
+{
+  "name": "@kaizen/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -b",
+    "start": "node dist/main.js",
+    "dev": "tsx watch src/main.ts"
+  },
+  "dependencies": {
+    "@kaizen/connector-google-drive": "workspace:*",
+    "@kaizen/contracts": "workspace:*",
+    "@kaizen/db": "workspace:*",
+    "@kaizen/llm": "workspace:*",
+    "@kaizen/observability": "workspace:*",
+    "pg": "^8.13.1",
+    "@kaizen/authz": "workspace:*"
+  }
+}

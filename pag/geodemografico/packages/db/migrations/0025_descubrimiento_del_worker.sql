@@ -1,0 +1,19 @@
+-- 0025 — El worker descubre los espacios con su propia identidad.
+--
+-- Hasta aca el worker listaba los espacios con la conexion "a secas", sin
+-- asumir ningun rol. En local anda porque ese usuario es el dueño y es
+-- superusuario. En produccion la app se conecta como `kaizen_login` (0024),
+-- que sin asumir un rol no puede leer nada: el worker veria CERO espacios y
+-- no procesaria nunca un archivo, sin un solo error. Es la leccion 75: una
+-- lectura que vuelve vacia por permisos se lee como "no hay trabajo".
+--
+-- Lo unico que hace falta para descubrir es la lista de corpus activos
+-- (identificadores y estado, sin datos de nadie), exactamente lo que
+-- `kaizen_auth` ya lee sin contexto (`corpora_auth`, 0010). El resto -la
+-- conexion de cada corpus, sus trabajos, sus archivos- se lee despues CON el
+-- contexto de ese espacio, como hasta ahora.
+--
+-- Ojo: las politicas se combinan con OR. Esta vale solo para `corpora`; en el
+-- codigo del worker ninguna consulta sobre `corpora` depende de RLS para
+-- filtrar por espacio.
+create policy corpora_worker on corpora for select to kaizen_worker using (true);

@@ -1,0 +1,508 @@
+/**
+ * Base, primitivas y shell.
+ *
+ * Mobile-first: las reglas base son las del teléfono y los `min-width` suman
+ * lo que sobra en pantallas grandes.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--lienzo);
+  color: var(--tinta);
+  font-family: var(--fuente);
+  font-size: var(--t-14);
+  line-height: 1.5;
+  font-feature-settings: 'ss01', 'cv11';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+p {
+  margin: 0;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+a {
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: 2px;
+}
+
+.cifra {
+  /* Geist con números tabulares, no la mono: Geist Mono dibuja el cero con
+     barra, y alguien no técnico lo lee como un símbolo y no como cero. */
+  font-variant-numeric: tabular-nums;
+}
+
+.tenue {
+  color: var(--tinta-2);
+}
+
+.mas-tenue {
+  color: var(--tinta-3);
+}
+
+.solo-lectores {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* --- botones ------------------------------------------------------------ */
+
+.boton {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--linea);
+  border-radius: var(--r-full);
+  background: var(--superficie);
+  color: var(--tinta);
+  font-size: var(--t-13);
+  font-weight: 500;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background var(--rapido) var(--curva),
+    border-color var(--rapido) var(--curva),
+    color var(--rapido) var(--curva);
+}
+.boton:hover:not(:disabled) {
+  border-color: var(--linea-fuerte);
+  background: var(--superficie-2);
+}
+/* Un SVG sin tamaño se estira al ancho disponible: en la barra inferior del
+   teléfono el "+" medía 441 px y hacía scrollear toda la página de lado. */
+.boton svg {
+  flex: 0 0 auto;
+  width: 15px;
+  height: 15px;
+}
+.boton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.boton.primario {
+  border-color: transparent;
+  background: var(--acento);
+  color: var(--sobre-acento);
+}
+.boton.primario:hover:not(:disabled) {
+  background: var(--acento-hover);
+}
+
+.boton.fantasma {
+  border-color: transparent;
+  background: transparent;
+  color: var(--tinta-2);
+}
+.boton.fantasma:hover:not(:disabled) {
+  background: var(--superficie-2);
+  color: var(--tinta);
+}
+
+.boton.peligro {
+  color: var(--senal);
+}
+.boton.peligro:hover:not(:disabled) {
+  border-color: var(--senal);
+  background: var(--senal-suave);
+}
+
+.boton.grande {
+  height: 42px;
+  padding: 0 20px;
+  font-size: var(--t-14);
+}
+
+.boton-icono {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-full);
+  background: transparent;
+  color: var(--tinta-2);
+  cursor: pointer;
+  transition: background var(--rapido) var(--curva);
+}
+.boton-icono:hover {
+  background: var(--superficie-2);
+  color: var(--tinta);
+}
+.boton-icono svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* --- campos ------------------------------------------------------------- */
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.campo > span,
+.etiqueta {
+  color: var(--tinta-2);
+  font-size: var(--t-12);
+  font-weight: 500;
+}
+.campo em {
+  color: var(--tinta-3);
+  font-style: normal;
+  font-weight: 400;
+}
+
+.entrada {
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--linea);
+  border-radius: var(--r);
+  background: var(--superficie);
+  /* 16 px en el teléfono: con menos, iOS hace zoom al enfocar. */
+  font-size: 16px;
+  transition:
+    border-color var(--rapido) var(--curva),
+    box-shadow var(--rapido) var(--curva);
+}
+.entrada::placeholder {
+  color: var(--tinta-3);
+}
+.entrada:focus {
+  border-color: var(--acento);
+  box-shadow: 0 0 0 3px var(--acento-suave);
+  outline: none;
+}
+select.entrada {
+  appearance: none;
+  padding-right: 32px;
+  background-image: linear-gradient(45deg, transparent 50%, var(--tinta-3) 50%),
+    linear-gradient(135deg, var(--tinta-3) 50%, transparent 50%);
+  background-position:
+    calc(100% - 16px) 50%,
+    calc(100% - 11px) 50%;
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+}
+
+@media (min-width: 720px) {
+  .entrada {
+    height: 36px;
+    font-size: var(--t-14);
+  }
+}
+
+/* --- superficies -------------------------------------------------------- */
+
+.tarjeta {
+  border: 1px solid var(--linea);
+  border-radius: var(--r-lg);
+  background: var(--superficie);
+  padding: 20px;
+}
+
+.tarjeta-titulo {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.tarjeta-titulo h2 {
+  font-size: var(--t-14);
+}
+.tarjeta-titulo span {
+  color: var(--tinta-3);
+  font-size: var(--t-12);
+}
+
+/* Aviso: texto con un filete a la izquierda. Sin fondo de color: un bloque
+   ámbar o rojo lleno se lee como alarma aunque diga algo neutro. */
+.aviso {
+  padding: 2px 0 2px 12px;
+  border-left: 2px solid var(--linea-fuerte);
+  color: var(--tinta-2);
+  font-size: var(--t-13);
+}
+.aviso.error {
+  border-left-color: var(--senal);
+  color: var(--senal);
+}
+.aviso.ok {
+  border-left-color: var(--acento);
+  color: var(--tinta);
+}
+
+.vacio {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  padding: 40px 16px;
+  color: var(--tinta-2);
+  text-align: center;
+}
+.vacio strong {
+  color: var(--tinta);
+  font-weight: 500;
+}
+
+.cargando {
+  display: grid;
+  place-items: center;
+  min-height: 40vh;
+  color: var(--tinta-3);
+  font-size: var(--t-13);
+}
+
+/* --- shell -------------------------------------------------------------- */
+
+.barra {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-barra);
+  border-bottom: 1px solid var(--linea);
+  background: color-mix(in srgb, var(--lienzo) 88%, transparent);
+  backdrop-filter: saturate(1.4) blur(12px);
+  -webkit-backdrop-filter: saturate(1.4) blur(12px);
+}
+
+.barra-interior {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  max-width: var(--ancho-contenido);
+  height: var(--alto-barra);
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.marca {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+  color: var(--tinta);
+  text-decoration: none;
+}
+.marca-simbolo {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  color: var(--acento);
+}
+.marca-nombre {
+  overflow: hidden;
+  font-size: var(--t-14);
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.marca-nombre span {
+  color: var(--tinta-3);
+  font-weight: 400;
+}
+
+.navegacion {
+  display: none;
+  gap: 2px;
+  margin-left: 12px;
+}
+.navegacion a {
+  padding: 6px 10px;
+  border-radius: var(--r-full);
+  color: var(--tinta-2);
+  font-size: var(--t-13);
+  text-decoration: none;
+  transition:
+    background var(--rapido) var(--curva),
+    color var(--rapido) var(--curva);
+}
+.navegacion a:hover {
+  color: var(--tinta);
+}
+.navegacion a[aria-current='page'] {
+  background: var(--superficie-2);
+  color: var(--tinta);
+}
+.insignia {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  margin-left: 4px;
+  padding: 0 5px;
+  border-radius: var(--r-full);
+  background: var(--acento);
+  color: var(--sobre-acento);
+  font-size: var(--t-11);
+  font-variant-numeric: tabular-nums;
+}
+
+.barra-acciones {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-left: auto;
+}
+.barra-acciones .boton.primario {
+  display: none;
+}
+
+.cuenta {
+  position: relative;
+}
+.cuenta-boton {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--linea);
+  border-radius: var(--r-full);
+  background: var(--superficie-2);
+  color: var(--tinta-2);
+  font-size: var(--t-12);
+  font-weight: 500;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.cuenta-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 240px;
+  padding: 6px;
+  border: 1px solid var(--linea);
+  border-radius: var(--r);
+  background: var(--superficie);
+  box-shadow: var(--sombra-flotante);
+  animation: aparecer var(--medio) var(--curva);
+}
+.cuenta-menu .quien {
+  padding: 8px 10px 10px;
+  border-bottom: 1px solid var(--linea);
+  margin-bottom: 4px;
+  overflow: hidden;
+  color: var(--tinta-2);
+  font-size: var(--t-12);
+  text-overflow: ellipsis;
+}
+.cuenta-menu a,
+.cuenta-menu button {
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  font-size: var(--t-13);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.cuenta-menu a:hover,
+.cuenta-menu button:hover {
+  background: var(--superficie-2);
+}
+.cuenta-menu label {
+  display: grid;
+  gap: 6px;
+  padding: 8px 10px;
+}
+
+.contenido {
+  max-width: var(--ancho-contenido);
+  margin: 0 auto;
+  /* Lugar para la barra inferior fija del teléfono. */
+  padding: 24px 16px 112px;
+  animation: aparecer var(--medio) var(--curva);
+}
+
+/* Barra inferior: en el teléfono la acción principal va donde llega el
+   pulgar, no arriba a la derecha. */
+.barra-inferior {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: var(--z-barra);
+  display: flex;
+  gap: 10px;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--linea);
+  background: color-mix(in srgb, var(--lienzo) 92%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.barra-inferior .boton.primario {
+  flex: 1;
+  height: 44px;
+  font-size: var(--t-14);
+}
+
+@media (min-width: 900px) {
+  .navegacion {
+    display: flex;
+  }
+  .barra-acciones .boton.primario {
+    display: inline-flex;
+  }
+  .barra-inferior {
+    display: none;
+  }
+  .contenido {
+    padding: 32px 24px 96px;
+  }
+}
+
+@keyframes aparecer {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

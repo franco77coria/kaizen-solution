@@ -59,3 +59,7 @@ Thumbs.db
 .claude/skills/
 # estado local del CLI de supabase
 supabase/.temp/
+
+# Geodemografico embebido: se genera en el build (scripts/construir-geodemografico.mjs)
+/.geo/
+/public/app/
