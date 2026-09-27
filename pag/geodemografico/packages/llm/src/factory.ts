@@ -22,13 +22,18 @@ export function createLlmAdapter(): LlmAdapter {
   }
 }
 
-export function createEmbeddingAdapter(): EmbeddingAdapter {
+/**
+ * `esperasMs`: pausas entre reintentos ante 429/5xx. El chat usa las cortas
+ * por defecto (una pregunta no puede quedar un minuto esperando); la ingesta
+ * pasa esperas largas, que cubren la ventana por minuto de la cuota.
+ */
+export function createEmbeddingAdapter(opciones: { esperasMs?: readonly number[] } = {}): EmbeddingAdapter {
   const provider = process.env['EMBEDDINGS_PROVIDER'] ?? process.env['LLM_PROVIDER'] ?? 'fake'
   switch (provider) {
     case 'fake':
       return new FakeEmbeddingAdapter()
     case 'gemini_developer':
-      return new GeminiEmbeddingAdapter()
+      return new GeminiEmbeddingAdapter(opciones)
     default:
       throw new Error(`EMBEDDINGS_PROVIDER desconocido: ${provider}`)
   }
