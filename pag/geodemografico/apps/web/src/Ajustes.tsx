@@ -9,6 +9,9 @@ import { Candidatos } from './Candidatos'
  * Antes esto estaba en la pantalla principal y era lo primero que veía
  * cualquiera que entraba. Es configuración que se hace una vez; vive acá.
  */
+/** Cuantas consultas de 5 segundos se espera la sincronizacion: 2 minutos. */
+const ESPERA_MAXIMA = 24
+
 export function Ajustes({ scope }: { scope: Scope }): JSX.Element {
   const [fuentes, setFuentes] = useState<EstadoFuentes | null>(null)
   const [refresco, setRefresco] = useState(0)
@@ -34,6 +37,37 @@ export function Ajustes({ scope }: { scope: Scope }): JSX.Element {
 
   const refrescar = (): void => setRefresco((n) => n + 1)
 
+  // La sincronizacion corre en segundo plano (tarda de segundos a un par de
+  // minutos). Sin esperarla, la lista de candidatos se carga ANTES de que
+  // termine y queda vacia, como si Drive no tuviera nada. Se consulta el
+  // estado hasta que cambia la fecha de la ultima sincronizacion.
+  // `undefined` = no se espera nada; si no, la fecha que habia al empezar.
+  const [esperandoDesde, setEsperandoDesde] = useState<string | null | undefined>(
+    regreso === 'conectada' ? null : undefined,
+  )
+
+  useEffect(() => {
+    if (esperandoDesde === undefined) return
+    let intentos = 0
+    const reloj = setInterval(() => {
+      intentos++
+      void api
+        .sourcesStatus(scope)
+        .then((estado) => {
+          setFuentes(estado)
+          const termino = estado.lastSyncAt !== null && estado.lastSyncAt !== esperandoDesde
+          if (termino || intentos >= ESPERA_MAXIMA) {
+            setEsperandoDesde(undefined)
+            refrescar()
+          }
+        })
+        .catch(() => {
+          if (intentos >= ESPERA_MAXIMA) setEsperandoDesde(undefined)
+        })
+    }, 5_000)
+    return () => clearInterval(reloj)
+  }, [esperandoDesde, scope])
+
   return (
     <div className="pagina-angosta">
       <header className="pagina-cabecera">
@@ -57,7 +91,19 @@ export function Ajustes({ scope }: { scope: Scope }): JSX.Element {
       )}
 
       <div className="ajustes">
-        <ConexionGoogle scope={scope} fuentes={fuentes} onCambio={refrescar} />
+        <ConexionGoogle
+          scope={scope}
+          fuentes={fuentes}
+          onCambio={() => {
+            setEsperandoDesde(fuentes?.lastSyncAt ?? null)
+            refrescar()
+          }}
+        />
+        {esperandoDesde !== undefined && (
+          <p className="tenue" role="status">
+            Buscando notas de reunión en Drive…
+          </p>
+        )}
         <Candidatos key={`candidatos-${refresco}`} scope={scope} onCambio={refrescar} />
       </div>
     </div>
