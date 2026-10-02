@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-02T15:35:50Z",
+  "generatedAt": "2026-10-02T19:02:00.646Z",
   "title": "Design System: Geodemográfico · Kaizen",
   "extensions": {
     "documentation": {
@@ -15,17 +15,25 @@
         "apps/web/src/mapa.css",
         "apps/web/src/Panorama.tsx",
         "PRODUCT.md",
-        ".impeccable/mapa-territorial.md"
+        ".impeccable/mapa-territorial.md",
+        "apps/web/src/MapaEntorno.tsx",
+        "apps/web/src/Chat.tsx"
       ],
       "evidence": [
         ".impeccable/review/desktop.png",
         ".impeccable/review/anapoima.png",
         ".impeccable/review/mobile.png",
         ".impeccable/review/multi-desktop.png",
-        ".impeccable/review/multi-mobile.png"
+        ".impeccable/review/multi-mobile.png",
+        ".impeccable/review/infra-desktop.png",
+        ".impeccable/review/infra-mobile.png",
+        ".impeccable/review/infra-referidos-desktop.png",
+        ".impeccable/review/infra-referidos-mobile.png",
+        ".impeccable/review/infra-satelite-desktop.png"
       ],
       "evidenceScope": "Capturas de prueba con datos sintéticos, incluidos selectores múltiples en escritorio y teléfono. Tema oscuro revisado por fuente; no existe captura oscura.",
-      "rampScope": "Las rampas de ocho pasos se sintetizan en OKLCH para el panel; no sustituyen las escalas de datos implementadas."
+      "rampScope": "Las rampas de ocho pasos se sintetizan en OKLCH para el panel; no sustituyen las escalas de datos implementadas.",
+      "infrastructureEvidenceScope": "Capturas infra-* con cifras sintéticas de personas y cartografía/infraestructura pública real. Calles final: consulta puntual de 754 tramos, listado férreo y ficha; satélite: consulta previa de 391 tramos. Referidos conserva el diseño anterior. Los conteos son evidencia de esas consultas, no tokens ni totales normativos."
     },
     "colorMeta": {
       "tinta": {
@@ -391,6 +399,76 @@
           "oklch(83.6% 0.0658 166.53)",
           "oklch(95% 0.0658 166.53)"
         ]
+      },
+      "via-pavimentada": {
+        "role": "semantic",
+        "displayName": "Azul vial",
+        "tonalRamp": [
+          "oklch(15% 0.0919 237.69)",
+          "oklch(26.4% 0.0919 237.69)",
+          "oklch(37.9% 0.0919 237.69)",
+          "oklch(49.3% 0.0919 237.69)",
+          "oklch(60.7% 0.0919 237.69)",
+          "oklch(72.1% 0.0919 237.69)",
+          "oklch(83.6% 0.0919 237.69)",
+          "oklch(95% 0.0919 237.69)"
+        ]
+      },
+      "via-afirmado": {
+        "role": "semantic",
+        "displayName": "Tierra vial",
+        "tonalRamp": [
+          "oklch(15% 0.1129 56.70)",
+          "oklch(26.4% 0.1129 56.70)",
+          "oklch(37.9% 0.1129 56.70)",
+          "oklch(49.3% 0.1129 56.70)",
+          "oklch(60.7% 0.1129 56.70)",
+          "oklch(72.1% 0.1129 56.70)",
+          "oklch(83.6% 0.1129 56.70)",
+          "oklch(95% 0.1129 56.70)"
+        ]
+      },
+      "via-otra": {
+        "role": "semantic",
+        "displayName": "Violeta vial",
+        "tonalRamp": [
+          "oklch(15% 0.0818 303.77)",
+          "oklch(26.4% 0.0818 303.77)",
+          "oklch(37.9% 0.0818 303.77)",
+          "oklch(49.3% 0.0818 303.77)",
+          "oklch(60.7% 0.0818 303.77)",
+          "oklch(72.1% 0.0818 303.77)",
+          "oklch(83.6% 0.0818 303.77)",
+          "oklch(95% 0.0818 303.77)"
+        ]
+      },
+      "via-desconocida": {
+        "role": "semantic",
+        "displayName": "Gris vial",
+        "tonalRamp": [
+          "oklch(15% 0.0185 233.35)",
+          "oklch(26.4% 0.0185 233.35)",
+          "oklch(37.9% 0.0185 233.35)",
+          "oklch(49.3% 0.0185 233.35)",
+          "oklch(60.7% 0.0185 233.35)",
+          "oklch(72.1% 0.0185 233.35)",
+          "oklch(83.6% 0.0185 233.35)",
+          "oklch(95% 0.0185 233.35)"
+        ]
+      },
+      "red-ferrea": {
+        "role": "semantic",
+        "displayName": "Violeta férreo",
+        "tonalRamp": [
+          "oklch(15% 0.0423 299.49)",
+          "oklch(26.4% 0.0423 299.49)",
+          "oklch(37.9% 0.0423 299.49)",
+          "oklch(49.3% 0.0423 299.49)",
+          "oklch(60.7% 0.0423 299.49)",
+          "oklch(72.1% 0.0423 299.49)",
+          "oklch(83.6% 0.0423 299.49)",
+          "oklch(95% 0.0423 299.49)"
+        ]
       }
     },
     "typographyMeta": {
@@ -523,6 +601,67 @@
         "Medidas exige mínimo una; totales separados y botones aria-pressed de mínimo 42px eligen la medida cartográfica."
       ],
       "previewScope": "Muestra visual abierta con valores sintéticos; HTML/CSS del panel no reproduce la lógica React de búsqueda ni Aplicar."
+    },
+    "infrastructure": {
+      "source": [
+        "apps/web/src/MapaEntorno.tsx",
+        "apps/web/src/MapaTerritorial.tsx",
+        "apps/web/src/mapa.css",
+        "apps/web/src/Chat.tsx"
+      ],
+      "visualAuthority": "Extensión aditiva del diseño Kaizen confirmado; Geist, neutros y verde forestal. Apps Script sólo aporta referencias funcionales y de fuentes.",
+      "defaults": {
+        "view": "referidos",
+        "base": "calles",
+        "boundaries": true,
+        "names": true,
+        "railway": false
+      },
+      "layout": {
+        "mapHeightDesktop": "540px",
+        "mapHeightMobile": "420px",
+        "mobileMaxWidth": "760px",
+        "listMaxHeight": "220px",
+        "rowMinHeight": "44px",
+        "checkboxSize": "16px",
+        "globalSearchMaxWidth": "380px",
+        "globalResultsMaxHeight": "320px",
+        "panelPadding": "20px 24px",
+        "mobilePanelPadding": "16px"
+      },
+      "mapBehavior": {
+        "permanentNamesMinZoom": 12,
+        "permanentNamesMaxAreas": 60,
+        "roadQueryMinZoom": 13,
+        "roadQueryMaxSpanDegrees": 0.16,
+        "queryBounds": [
+          -75,
+          3.6,
+          -73,
+          6
+        ],
+        "railwayStroke": "3px; dashArray:8 5",
+        "roadStroke": "3px; selected:6px",
+        "wheelZoom": false
+      },
+      "accessibility": [
+        "Botones de vista/base y filas usan aria-pressed; casillas nativas con etiquetas y cantidades.",
+        "Foco de acento 2px con separación 3px, filas de altura mínima 44px.",
+        "Listado férreo departamental y ficha ofrecen selección por teclado fuera del mapa.",
+        "Carga, errores y ficha se anuncian por status/alert/aria-live según su estado."
+      ],
+      "behavior": [
+        "Referidos conserva su escala de cantidad y semántica de cero/protegido.",
+        "Búsqueda global desde dos caracteres, hasta ocho coincidencias por vereda/municipio/código sin mayúsculas ni tildes.",
+        "Ficha territorial añade código, municipio, área aproximada en hectáreas y vigencia de referencia.",
+        "Consulta vial manual sobre caja pequeña visible; marco discontinuo conserva el alcance de la consulta.",
+        "Categorías y búsqueda por nombre filtran los tramos consultados; selección vial enfoca geometría y abre ficha.",
+        "Corredores férreos de fuente departamental no implican presencia en el municipio seleccionado.",
+        "Ficha distingue atributos desconocidos; no infiere obras pendientes ni operación de trenes.",
+        "Fuentes/licencias en desplegable; GeoJSON sólo con geometría, propiedades, vigencias, atribución y licencia públicas.",
+        "Copy es-CO también en SUMA: Pregúntale a SUMA…; rutas e identificadores conservados."
+      ],
+      "previewScope": "Muestras autónomas HTML/CSS del estado capturado. Casillas nativas y estilos de foco/hover funcionan; no reproducen Leaflet, consulta API, búsqueda ni estado React. Cantidades y atributos ilustran la evidencia puntual, no producción."
     }
   },
   "components": [
@@ -531,7 +670,7 @@
       "kind": "button",
       "refersTo": "button-primary",
       "description": "Acción principal del sistema.",
-      "html": "<button class=\"ds-btn ds-primary\">Sumar persona</button>",
+      "html": "<button class=\"ds-btn ds-primary\">Registrar persona</button>",
       "css": ".ds-btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; height:34px; padding:0 14px; border:1px solid var(--linea,#e4e7e4); border-radius:var(--r-full,999px); background:var(--superficie,#fff); color:var(--tinta,#15171a); font-family:var(--fuente,'Geist Variable',sans-serif); font-size:13px; font-weight:500; cursor:pointer; transition:background var(--rapido,120ms) var(--curva,cubic-bezier(.2,.8,.2,1)),border-color var(--rapido,120ms) var(--curva,cubic-bezier(.2,.8,.2,1)),color var(--rapido,120ms) var(--curva,cubic-bezier(.2,.8,.2,1)); } .ds-btn:hover:not(:disabled) { background:var(--superficie-2,#f1f3f1); border-color:var(--linea-fuerte,#d0d6d2); } .ds-btn:focus-visible { outline:2px solid var(--acento,#2f6b57); outline-offset:2px; } .ds-btn:disabled { opacity:.45; cursor:not-allowed; } @media(prefers-reduced-motion:reduce) { .ds-btn { transition-duration:.01ms; } }.ds-primary { border-color:transparent; background:var(--acento,#2f6b57); color:var(--sobre-acento,#fff); } .ds-primary:hover:not(:disabled) { background:var(--acento-hover,#245545); border-color:transparent; }"
     },
     {
@@ -555,7 +694,7 @@
       "kind": "input",
       "refersTo": "input",
       "description": "Primitiva de campo etiquetado del sistema existente.",
-      "html": "<label class=\"ds-field\"><span>Nombre</span><input class=\"ds-input\" placeholder=\"Ingresá un nombre\" /></label>",
+      "html": "<label class=\"ds-field\"><span>Nombre</span><input class=\"ds-input\" placeholder=\"Ingresa un nombre\" /></label>",
       "css": ".ds-field { display:flex; flex-direction:column; gap:6px; font-family:var(--fuente,'Geist Variable',sans-serif); } .ds-field>span { color:var(--tinta-2,#4b5157); font-size:12px; font-weight:500; } .ds-input { min-width:0; height:40px; padding:0 12px; border:1px solid var(--linea,#e4e7e4); border-radius:var(--r,10px); background:var(--superficie,#fff); color:var(--tinta,#15171a); font:16px var(--fuente,'Geist Variable',sans-serif); transition:border-color var(--rapido,120ms) var(--curva,cubic-bezier(.2,.8,.2,1)),box-shadow var(--rapido,120ms) var(--curva,cubic-bezier(.2,.8,.2,1)); } .ds-input::placeholder { color:var(--tinta-3,#858b90); } .ds-input:focus { border-color:var(--acento,#2f6b57); box-shadow:0 0 0 3px var(--acento-suave,#eaf2ee); outline:none; } @media(min-width:720px) { .ds-input { height:36px; font-size:14px; } } @media(prefers-reduced-motion:reduce) { .ds-input { transition-duration:.01ms; } }"
     },
     {
@@ -595,11 +734,42 @@
       "description": "Filtro con búsqueda, borrador, casillas nativas y etiquetas; muestra visual abierta. Lógica completa en SelectorMultiple.tsx.",
       "html": "<div class=\"ds-selector-multiple\"><span class=\"ds-selector-label\" id=\"ds-multi-label\">Municipios / alcaldías</span><button class=\"ds-selector-trigger\" aria-labelledby=\"ds-multi-label ds-multi-value\" aria-haspopup=\"dialog\" aria-expanded=\"true\" aria-controls=\"ds-multi-panel\"><span id=\"ds-multi-value\">2 seleccionados</span><span class=\"ds-selector-count\" aria-hidden=\"true\">2</span><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" aria-hidden=\"true\"><path d=\"m6 9 6 6 6-6\"/></svg></button><div class=\"ds-selector-etiquetas\"><span class=\"ds-selector-etiqueta\"><span title=\"Funza\">Funza</span><button aria-label=\"Quitar Funza\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" aria-hidden=\"true\"><path d=\"m6 6 12 12M6 18 18 6\"/></svg></button></span><span class=\"ds-selector-etiqueta\"><span title=\"Anapoima\">Anapoima</span><button aria-label=\"Quitar Anapoima\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" aria-hidden=\"true\"><path d=\"m6 6 12 12M6 18 18 6\"/></svg></button></span></div><div class=\"ds-selector-panel\" id=\"ds-multi-panel\" role=\"dialog\" aria-label=\"Elegir municipios / alcaldías\"><div class=\"ds-selector-search\"><svg width=\"17\" height=\"17\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" aria-hidden=\"true\"><circle cx=\"10\" cy=\"10\" r=\"6\"/><path d=\"m15 15 5 5\"/></svg><input type=\"search\" placeholder=\"Buscar…\" aria-label=\"Buscar municipios / alcaldías\"/></div><div class=\"ds-selector-acciones\"><button>Seleccionar todos</button><button>Limpiar</button></div><div class=\"ds-selector-options\"><label class=\"ds-selector-option\"><input type=\"checkbox\" checked/><span><span>Funza</span><small>Sabana Occidente</small></span></label><label class=\"ds-selector-option\"><input type=\"checkbox\" checked/><span><span>Anapoima</span><small>Tequendama</small></span></label><label class=\"ds-selector-option\"><input type=\"checkbox\"/><span><span>Bojacá</span><small>Sabana Occidente</small></span></label></div><div class=\"ds-selector-footer\"><span aria-live=\"polite\">2 seleccionados</span><button class=\"ds-selector-apply\">Aplicar</button></div></div></div>",
       "css": ".ds-selector-multiple { min-width: 0; position: relative; }\n.ds-selector-multiple.abierto { z-index: 50; }\n.ds-selector-label { display: block; margin-bottom: 8px; font-size: 12px; font-weight: 550; color: var(--tinta-2); }\n.ds-selector-trigger { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid var(--linea-fuerte); border-radius: 8px; background: var(--superficie); color: var(--tinta); font: inherit; font-size: 13px; cursor: pointer; text-align: left; }\n.ds-selector-trigger > span:first-child { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }\n.ds-selector-trigger > svg { color: var(--tinta-2); flex-shrink: 0; transition: transform 160ms ease-out; }\n.ds-selector-trigger:hover { border-color: var(--acento); background: var(--superficie-2); }\n.ds-selector-trigger[aria-expanded=\"true\"] { border-color: var(--acento); }\n.ds-selector-trigger[aria-expanded=\"true\"] > svg { transform: rotate(180deg); }\n.ds-selector-count { padding: 1px 6px; border-radius: 4px; color: var(--acento); background: var(--acento-suave); font-size: 11px; font-variant-numeric: tabular-nums; }\n.ds-selector-etiquetas { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }\n.ds-selector-etiqueta { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; min-width: 0; border-radius: 5px; padding: 3px 6px 3px 8px; background: var(--acento-suave); color: var(--acento); font-size: 11px; }\n.ds-selector-etiqueta > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }\n.ds-selector-etiqueta button { display: grid; place-items: center; flex-shrink: 0; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 4px; background: transparent; color: currentColor; cursor: pointer; }\n.ds-selector-etiqueta button:hover { background: var(--acento-borde); }\n.ds-selector-etiqueta svg { width: 12px; height: 12px; }\n.ds-selector-resto { align-self: center; padding: 3px 5px; color: var(--tinta-2); font-size: 11px; }\n.ds-selector-panel { position: fixed; display: flex; flex-direction: column; width: 340px; max-height: calc(100dvh - 128px); border-radius: 12px; background: var(--superficie); color: var(--tinta); box-shadow: var(--sombra-flotante); overflow: hidden; z-index: 50; }\n.ds-selector-search { display: flex; align-items: center; gap: 9px; padding: 14px 16px; border-bottom: 1px solid var(--linea); color: var(--tinta-2); }\n.ds-selector-search input { border: 0; min-width: 0; width: 100%; padding: 0; outline: none; background: transparent; color: var(--tinta); font: inherit; font-size: 13px; }\n.ds-selector-search:focus-within { box-shadow: inset 0 -2px var(--acento); }\n.ds-selector-search input::placeholder { color: var(--tinta-2); }\n.ds-selector-acciones { display: flex; justify-content: space-between; gap: 12px; padding: 9px 16px; }\n.ds-selector-options { overflow-y: auto; min-height: 0; max-height: 280px; padding: 2px 8px 8px; scrollbar-width: thin; scrollbar-color: var(--linea-fuerte) transparent; }\n.ds-selector-option { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 10px 9px; border-radius: 6px; cursor: pointer; }\n.ds-selector-option:hover, .ds-selector-option:focus-within { background: var(--superficie-2); }\n.ds-selector-option:has(input:checked) { background: var(--acento-suave); }\n.ds-selector-option input { width: 16px; height: 16px; flex-shrink: 0; margin: 0; accent-color: var(--acento); cursor: pointer; }\n.ds-selector-option > span { display: grid; gap: 3px; font-size: 13px; }\n.ds-selector-option small { font-size: 11px; color: var(--tinta-2); }\n.ds-selector-empty { color: var(--tinta-2); font-size: 12px; padding: 12px 9px; }\n.ds-selector-month { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 16px; border-top: 1px solid var(--linea); font-size: 11px; color: var(--tinta-2); }\n.ds-selector-month input { min-width: 0; max-width: 170px; border: 1px solid var(--linea); padding: 6px; border-radius: 5px; font: inherit; color: var(--tinta); background: var(--superficie); }\n.ds-selector-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-top: 1px solid var(--linea); }\n.ds-selector-footer > span { color: var(--tinta-2); font-size: 11px; }\n.ds-selector-apply { min-height: 36px; padding: 8px 15px; border: 0; border-radius: 6px; background: var(--acento); color: var(--sobre-acento); font: inherit; font-size: 12px; font-weight: 550; cursor: pointer; }\n.ds-selector-apply:disabled { opacity: .5; cursor: default; }\n.ds-selector-apply:hover:enabled { background: var(--acento-hover); }\n.ds-selector-multiple { font-family:var(--fuente,'Geist Variable',sans-serif); max-width:340px; } .ds-selector-panel { position:relative; width:100%; margin-top:8px; } .ds-selector-acciones button { padding:3px 0; border:0; color:var(--acento); background:transparent; font:inherit; font-size:11px; cursor:pointer; } .ds-selector-acciones button:hover { text-decoration:underline; text-underline-offset:3px; } .ds-selector-multiple button:focus-visible,.ds-selector-multiple input:focus-visible { outline:2px solid var(--acento); outline-offset:3px; } .ds-selector-search input:focus-visible { outline:none; caret-color:var(--acento); } @media(prefers-reduced-motion:reduce) { .ds-selector-trigger > svg { transition:none; } }"
+    },
+    {
+      "name": "Vista cartográfica",
+      "kind": "custom",
+      "refersTo": "territorio-vista",
+      "description": "Selector segmentado de Referidos / Vías y entorno; muestra Referidos predeterminado.",
+      "html": "<div class=\"ds-infra-view\" aria-label=\"Vista del mapa\"><button aria-pressed=\"true\">Referidos</button><button aria-pressed=\"false\">Vías y entorno</button></div>",
+      "css": ".ds-infra-view{display:inline-flex;gap:3px;padding:3px;border:1px solid var(--linea,#e4e7e4);border-radius:8px;background:var(--superficie,#fff);font-family:var(--fuente,'Geist Variable',ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif);}.ds-infra-view button{min-height:38px;padding:8px 16px;border:0;border-radius:5px;background:transparent;color:var(--tinta-2,#4b5157);font:inherit;font-size:12px;cursor:pointer;}.ds-infra-view button[aria-pressed='true']{background:var(--acento-suave,#eaf2ee);color:var(--acento,#2f6b57);font-weight:600;}.ds-infra-view button:focus-visible,.ds-infra-categories input:focus-visible,.ds-infra-rail button:focus-visible,.ds-infra-detail button:focus-visible{outline:2px solid var(--acento,#2f6b57);outline-offset:3px;}"
+    },
+    {
+      "name": "Categorías de superficie vial",
+      "kind": "custom",
+      "description": "Casillas nativas con trazo categórico, nombre y cifra tabular; valores de la captura final de 754 tramos.",
+      "html": "<div class=\"ds-infra-categories\"><label><input type=\"checkbox\" checked/><i class=\"ds-road-paved\" aria-hidden=\"true\"></i><span>Pavimentada <b>26</b></span></label><label><input type=\"checkbox\" checked/><i class=\"ds-road-earth\" aria-hidden=\"true\"></i><span>Sin pavimentar / afirmado <b>40</b></span></label><label><input type=\"checkbox\" checked/><i class=\"ds-road-other\" aria-hidden=\"true\"></i><span>Otra superficie <b>1</b></span></label><label><input type=\"checkbox\" checked/><i class=\"ds-road-unknown\" aria-hidden=\"true\"></i><span>Sin información <b>687</b></span></label></div>",
+      "css": ".ds-infra-categories{display:flex;flex-wrap:wrap;gap:6px 18px;color:var(--tinta,#15171a);font-family:var(--fuente,'Geist Variable',ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif);}.ds-infra-categories label{display:flex;align-items:center;gap:7px;font-size:11px;min-height:36px;cursor:pointer;}.ds-infra-categories input{accent-color:var(--acento,#2f6b57);width:16px;height:16px;margin:0;flex-shrink:0;}.ds-infra-categories i{width:14px;height:3px;flex-shrink:0;}.ds-infra-categories b{margin-left:5px;font-weight:600;font-variant-numeric:tabular-nums;}.ds-road-paved{background:#256a91;}.ds-road-earth{background:#a15d24;}.ds-road-other{background:#6b5587;}.ds-road-unknown{background:#58646b;}.ds-infra-view button:focus-visible,.ds-infra-categories input:focus-visible,.ds-infra-rail button:focus-visible,.ds-infra-detail button:focus-visible{outline:2px solid var(--acento,#2f6b57);outline-offset:3px;}"
+    },
+    {
+      "name": "Corredores férreos por teclado",
+      "kind": "custom",
+      "refersTo": "entorno-tramo",
+      "description": "Lista departamental de la fuente IDEC; botones con selección y estado textual, sin afirmar presencia local u operación.",
+      "html": "<section class=\"ds-infra-rail\"><h3>Corredores férreos de referencia</h3><p>Listado departamental de la fuente IDEC; no indica que existan estos trazados en el municipio seleccionado.</p><div class=\"ds-infra-rail-list\" aria-label=\"Corredores férreos\"><button aria-pressed=\"false\"><span>Corredor Bogotá, D.C. - Belencito</span><small>ANI - En Recuperacion</small></button><button aria-pressed=\"true\"><span>Bogotá - Ferreo Central</span><small>Sin información de operación</small></button></div></section>",
+      "css": ".ds-infra-rail{padding:16px 24px;background:var(--superficie,#fff);color:var(--tinta,#15171a);border-bottom:1px solid var(--linea,#e4e7e4);font-family:var(--fuente,'Geist Variable',ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif);}.ds-infra-rail h3{font-size:13px;font-weight:600;margin:0 0 10px;}.ds-infra-rail p{margin:0 0 14px;font-size:12px;line-height:1.65;color:var(--tinta-2,#4b5157);}.ds-infra-rail-list{max-height:220px;overflow-y:auto;scrollbar-width:thin;}.ds-infra-rail button{width:100%;display:flex;justify-content:space-between;gap:12px;min-height:44px;padding:10px 8px;border:0;border-bottom:1px solid var(--linea,#e4e7e4);background:transparent;font:inherit;color:var(--tinta,#15171a);font-size:12px;cursor:pointer;text-align:left;}.ds-infra-rail button:hover,.ds-infra-rail button[aria-pressed='true']{background:var(--acento-suave,#eaf2ee);}.ds-infra-rail small{color:var(--tinta-2,#4b5157);font-size:11px;}.ds-infra-view button:focus-visible,.ds-infra-categories input:focus-visible,.ds-infra-rail button:focus-visible,.ds-infra-detail button:focus-visible{outline:2px solid var(--acento,#2f6b57);outline-offset:3px;}@media(max-width:760px){.ds-infra-rail{padding:16px;}}"
+    },
+    {
+      "name": "Ficha de infraestructura",
+      "kind": "custom",
+      "refersTo": "entorno-ficha",
+      "description": "Atributos públicos de un corredor de referencia; estado de operación desconocido y fuente explícita.",
+      "html": "<section class=\"ds-infra-detail\" aria-live=\"polite\"><h3>Bogotá - Ferreo Central</h3><dl><div><dt>Tipo</dt><dd>Vía férrea</dd></div><div><dt>Superficie registrada</dt><dd>No aplica</dd></div><div><dt>Estado reportado en la fuente</dt><dd>Sin información de operación</dd></div><div><dt>Referencia</dt><dd>Ferrocarril del Norte</dd></div><div><dt>Fuente</dt><dd>IDEC · red férrea 2024</dd></div></dl><button>Cerrar ficha</button></section>",
+      "css": ".ds-infra-detail{border-top:1px solid var(--linea,#e4e7e4);padding:20px 24px;background:var(--superficie,#fff);color:var(--tinta,#15171a);font-family:var(--fuente,'Geist Variable',ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif);}.ds-infra-detail h3{margin:0 0 16px;font-size:17px;font-weight:600;}.ds-infra-detail dl{margin:0 0 18px;font-size:12px;}.ds-infra-detail dl>div{display:grid;grid-template-columns:minmax(140px,1fr) 2fr;gap:16px;padding:8px 0;border-bottom:1px solid var(--linea,#e4e7e4);}.ds-infra-detail dt{color:var(--tinta-2,#4b5157);}.ds-infra-detail dd{margin:0;overflow-wrap:anywhere;}.ds-infra-detail button{height:34px;padding:0 14px;border:1px solid var(--linea,#e4e7e4);border-radius:var(--r-full,999px);background:var(--superficie,#fff);color:var(--tinta,#15171a);font:inherit;font-size:12px;font-weight:500;cursor:pointer;}.ds-infra-detail button:hover{background:var(--superficie-2,#f1f3f1);border-color:var(--linea-fuerte,#d0d6d2);}.ds-infra-view button:focus-visible,.ds-infra-categories input:focus-visible,.ds-infra-rail button:focus-visible,.ds-infra-detail button:focus-visible{outline:2px solid var(--acento,#2f6b57);outline-offset:3px;}@media(max-width:760px){.ds-infra-detail{padding:16px;}.ds-infra-detail dl>div{grid-template-columns:1fr 1fr;gap:10px;}}"
     }
   ],
   "narrative": {
     "northStar": "Personas en el territorio del altiplano",
-    "overview": "Este nombre descriptivo proviene del comentario del sistema de tokens; no constituye una identidad nueva ni una metáfora aprobada por entrevista. La app usa un marco neutro, tipografía Geist y un acento verde forestal para que la información territorial conserve la prioridad. Su carácter es sobrio, compacto y legible, adecuado para consultar y operar datos agregados.\n\nEste documento registra el sistema implementado de la app en modo **Operate**. La autoridad visual es el código existente y su extensión territorial, sin una comp aprobada. Las capturas de revisión usan datos sintéticos. El alcance visual es la app; la landing y `politica` conservan sus sistemas existentes. La composición particular del mapa y su contrato de datos viven en [.impeccable/mapa-territorial.md](.impeccable/mapa-territorial.md).",
+    "overview": "Este nombre descriptivo proviene del comentario del sistema de tokens; no constituye una identidad nueva ni una metáfora aprobada por entrevista. La app usa un marco neutro, tipografía Geist y un acento verde forestal para que la información territorial conserve la prioridad. Su carácter es sobrio, compacto y legible, adecuado para consultar y operar datos agregados.\n\nEste documento registra el sistema implementado de la app en modo **Operate**. La autoridad visual es el código existente y su extensión territorial, sin una comp aprobada. Las capturas de revisión usan datos sintéticos. El alcance visual es la app; la landing y `politica` conservan sus sistemas existentes. La composición particular del mapa y su contrato de datos viven en [.impeccable/mapa-territorial.md](.impeccable/mapa-territorial.md).\n\nLa ampliación de **Vías y entorno** conserva el diseño Kaizen confirmado por el usuario. Apps Script aporta referencias funcionales y de fuentes, sin autoridad visual. En las capturas `infra-*`, las cifras de personas siguen siendo sintéticas; la cartografía y la consulta de infraestructura proceden de fuentes públicas reales. Las capturas finales de calles registran 754 tramos y una ficha férrea; ese número documenta una consulta puntual y no un total territorial permanente.\r",
     "keyCharacteristics": [
       "Superficies neutras, filetes finos y verde asociado a datos y acciones.",
       "Una sola familia sans, con cifras tabulares.",
@@ -627,13 +797,17 @@
       "Do extender Geist, las superficies neutras y el acento existente en nuevas vistas de la app.",
       "Do conservar foco visible, cifras tabulares y texto que explique estados reservados.",
       "Do mantener la escala de cantidad y su leyenda consistentes entre mapa y lista.",
-      "Do mostrar procedencia y alcance consultables en la superficie territorial."
+      "Do mostrar procedencia y alcance consultables en la superficie territorial.",
+      "Do mantener nombres, cantidades y filas accesibles junto a los colores y trazos de infraestructura.",
+      "Do conservar la vista Referidos predeterminada y extender sus primitivas en Vías y entorno."
     ],
     "donts": [
       "Don't mostrar una cifra protegida o faltante como cero.",
       "Don't aplicar fondos de alarma a avisos informativos.",
       "Don't introducir otra identidad visual en la landing o en politica mediante este documento.",
-      "Don't presentar datos sintéticos de las capturas como contenido de producción."
+      "Don't presentar datos sintéticos de las capturas como contenido de producción.",
+      "Don't interpretar una categoría de superficie o un trazado férreo como necesidad de obra u operación actual.",
+      "Don't tomar el diseño de Apps Script como autoridad visual para la app Kaizen."
     ]
   }
 }

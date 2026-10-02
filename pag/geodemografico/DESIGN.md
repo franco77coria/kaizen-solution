@@ -28,6 +28,11 @@ colors:
   dato-dos: "#78af91"
   dato-tres: "#418264"
   dato-cuatro: "#1b513e"
+  via-pavimentada: "#256a91"
+  via-afirmado: "#a15d24"
+  via-otra: "#6b5587"
+  via-desconocida: "#58646b"
+  red-ferrea: "#3d354d"
 typography:
   display:
     fontFamily: "'Geist Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif"
@@ -124,6 +129,27 @@ components:
     textColor: "{colors.acento}"
     rounded: "{rounded.selector-chip}"
     padding: "3px 6px 3px 8px"
+  territorio-vista:
+    backgroundColor: "{colors.superficie}"
+    textColor: "{colors.tinta-2}"
+    rounded: "{rounded.selector-trigger}"
+    padding: "3px"
+  territorio-vista-activa:
+    backgroundColor: "{colors.acento-suave}"
+    textColor: "{colors.acento}"
+    rounded: "{rounded.selector-chip}"
+    padding: "8px 16px"
+  entorno-tramo:
+    backgroundColor: "transparent"
+    textColor: "{colors.tinta}"
+    padding: "10px 8px"
+    width: "100%"
+  entorno-tramo-seleccionado:
+    backgroundColor: "{colors.acento-suave}"
+  entorno-ficha:
+    backgroundColor: "{colors.superficie}"
+    textColor: "{colors.tinta}"
+    padding: "20px 24px"
 ---
 
 # Design System: Geodemográfico · Kaizen
@@ -135,6 +161,8 @@ components:
 Este nombre descriptivo proviene del comentario del sistema de tokens; no constituye una identidad nueva ni una metáfora aprobada por entrevista. La app usa un marco neutro, tipografía Geist y un acento verde forestal para que la información territorial conserve la prioridad. Su carácter es sobrio, compacto y legible, adecuado para consultar y operar datos agregados.
 
 Este documento registra el sistema implementado de la app en modo **Operate**. La autoridad visual es el código existente y su extensión territorial, sin una comp aprobada. Las capturas de revisión usan datos sintéticos. El alcance visual es la app; la landing y `politica` conservan sus sistemas existentes. La composición particular del mapa y su contrato de datos viven en [.impeccable/mapa-territorial.md](.impeccable/mapa-territorial.md).
+
+La ampliación de **Vías y entorno** conserva el diseño Kaizen confirmado por el usuario. Apps Script aporta referencias funcionales y de fuentes, sin autoridad visual. En las capturas `infra-*`, las cifras de personas siguen siendo sintéticas; la cartografía y la consulta de infraestructura proceden de fuentes públicas reales. Las capturas finales de calles registran 754 tramos y una ficha férrea; ese número documenta una consulta puntual y no un total territorial permanente.
 
 **Key Characteristics:**
 
@@ -152,6 +180,16 @@ El verde es apagado y forestal; la mayor parte de la pantalla se compone de blan
 - **Verde forestal — acento:** acciones principales, identidad y cobertura. Su variante hover oscurece la acción en el tema claro; suave y borde forman fondos de apoyo.
 - **Verde de cantidad — dato-1 a dato-5:** escala de cinco pasos del mosaico del sistema existente.
 - **Verde territorial — dato-uno a dato-cuatro:** escala específica del coroplético, desde menor hasta mayor cantidad. La leyenda muestra los intervalos implementados y no representa densidad de población.
+
+### Categorías de infraestructura
+
+- **Azul vial — via-pavimentada:** tramos con superficie pavimentada registrada.
+- **Tierra vial — via-afirmado:** superficie sin pavimentar o afirmado según la fuente.
+- **Violeta vial — via-otra:** otras superficies registradas.
+- **Gris vial — via-desconocida:** ausencia de información de superficie; nunca equivale a una obra pendiente.
+- **Violeta férreo — red-ferrea:** trazados de referencia con línea discontinua; el trazo no confirma operación actual.
+
+Estos colores, extraídos de `MapaEntorno.tsx`, identifican categorías, no cantidades de personas. Las casillas repiten cada categoría por nombre y cantidad; conservar esa lectura textual en calles y satélite. No sustituir con ellos la escala verde de Referidos.
 
 ### Neutral
 
@@ -195,6 +233,10 @@ La superficie territorial amplía el máximo a 1480px. En escritorio usa cartogr
 Los selectores múltiples conservan la grilla de cuatro columnas en escritorio y dos en teléfono; sus etiquetas seleccionadas se envuelven debajo del disparador. El desplegable es fijo: mide como máximo 340px de ancho, deja 16px a los lados y se desplaza hacia arriba cuando falta espacio inferior, reservando 96px bajo el panel. Su altura máxima es `calc(100dvh - 128px)`; la lista interna desplaza hasta 280px y la acción Aplicar queda al pie del panel. Estos valores proceden de `SelectorMultiple.tsx` y `mapa.css`; las capturas `multi-desktop.png` y `multi-mobile.png` registran la misma selección en ambos tamaños.
 
 Los grupos reutilizan separaciones pequeñas en controles y padding mayor en paneles. Evitar imponer una grilla nueva a todas las pantallas: la vista territorial es una extensión más amplia, mientras Panorama conserva el contenedor y las primitivas comunes.
+
+Vías y entorno ocupa el mismo marco territorial. Su mapa Leaflet mide 540px en escritorio y 420px hasta 760px; son alturas propias de esa vista, independientes de las de Referidos. La barra de capas se envuelve; la consulta y los inventarios usan padding de 24px a los lados, reducido a 16px en teléfono. Las listas viales y férreas desplazan internamente hasta 220px, con filas de altura mínima 44px. Las fichas muestran atributo y valor en dos columnas; en teléfono usan columnas iguales y valores que permiten envolver palabras largas.
+
+La búsqueda global mide hasta 380px en escritorio y ocupa el ancho disponible en teléfono; los resultados flotantes desplazan hasta 320px. Las capturas de evidencia son [.impeccable/review/infra-desktop.png](.impeccable/review/infra-desktop.png), [infra-mobile.png](.impeccable/review/infra-mobile.png), [infra-referidos-desktop.png](.impeccable/review/infra-referidos-desktop.png), [infra-referidos-mobile.png](.impeccable/review/infra-referidos-mobile.png) e [infra-satelite-desktop.png](.impeccable/review/infra-satelite-desktop.png). La captura de satélite registra una consulta previa de 391 tramos; las dos capturas finales de calles incluyen el listado férreo y su ficha.
 
 ## Elevation & Depth
 
@@ -248,6 +290,24 @@ Una superficie compartida reúne mapa y detalle equivalente. La lista ofrece las
 
 Cero se muestra con tono neutro y `0`; el dato protegido usa rayado y `Protegido`. `—` expresa una cifra todavía no disponible. El bloque `Sin vereda asignada` separa datos históricos o faltantes sin afirmar que sean urbanos. Esta semántica es parte del componente y debe mantenerse en todos sus estados.
 
+### Vista cartográfica y búsqueda global
+
+Referidos es la vista inicial. Los botones Referidos / Vías y entorno y Calles / Satélite comparten el selector segmentado existente: contenedor blanco con filete y radio de 8px, botones de altura mínima 38px y radio de 5px, texto de 12px y estado activo en acento suave con peso 600. La selección se comunica con `aria-pressed`; el foco conserva el contorno de acento de 2px y separación de 3px.
+
+La búsqueda de veredas acepta nombre, municipio o código desde dos caracteres, sin distinguir mayúsculas ni tildes, y ofrece hasta ocho resultados. Cada resultado muestra vereda, municipio y código y abre su territorio. La ficha territorial conserva cifra y estado protegido, y añade código, municipio, área aproximada en hectáreas y vigencia de referencia, con filas compactas de 11px. Los nombres de ruta y los identificadores no cambian por adaptar el texto visible al español de Colombia; SUMA mantiene la misma voz y el campo «Pregúntale a SUMA…».
+
+### Vías y entorno
+
+La base inicial es Calles. Límites y Nombres parten activos; Red férrea parte desactivada. Las casillas nativas usan acento forestal y tamaño de 16px. Los nombres permanentes aparecen desde zoom 12 cuando hay hasta 60 áreas; etiquetas blancas con tinta verde y tamaño de 10px mantienen su contraste sobre ambas bases.
+
+Consultar zona visible se habilita desde zoom 13, dentro del ámbito cartográfico y para una caja de hasta 0,16° por eje. El botón conserva la cápsula neutra del sistema; durante la consulta muestra progreso y queda deshabilitado. Un recuadro discontinuo delimita la consulta completada. Los estados de carga, falla de imágenes, error de consulta y cobertura parcial se explican por texto, sin alterar la identidad visual.
+
+Las categorías viales combinan casilla, trazo de color, nombre y cantidad tabular de 11px. Buscar vía filtra los nombres del conjunto consultado; seleccionar una fila enfoca el tramo y abre su ficha. Las filas de corredores férreos son botones equivalentes disponibles por teclado, con `aria-pressed`, fondo de acento suave al seleccionar y detalle accesible fuera del mapa. El listado es departamental: no implica presencia de ambos corredores en el municipio seleccionado.
+
+La ficha de tramo usa superficie blanca, filete superior, título de 17px y atributos de 12px: tipo, superficie, estado reportado, regularidad, puente, túnel, ancho, referencia y fuente cuando existen. Su aparición se anuncia con `aria-live`; Cerrar ficha mantiene el botón neutro. Los valores desconocidos permanecen explícitos, sin inferir pavimentación necesaria ni operación de trenes.
+
+Fuentes de infraestructura y descarga conserva el patrón desplegable de procedencia: enlaces de acento, atribución cartográfica legible, licencia y alcance consultables. Descargar límites GeoJSON exporta exclusivamente geometrías y propiedades públicas, atribución, licencia y vigencias; no incluye cifras ni registros de personas.
+
 ## Do's and Don'ts
 
 ### Do:
@@ -256,6 +316,8 @@ Cero se muestra con tono neutro y `0`; el dato protegido usa rayado y `Protegido
 - **Do** conservar foco visible, cifras tabulares y texto que explique estados reservados.
 - **Do** mantener la escala de cantidad y su leyenda consistentes entre mapa y lista.
 - **Do** mostrar procedencia y alcance consultables en la superficie territorial.
+- **Do** mantener nombres, cantidades y filas accesibles junto a los colores y trazos de infraestructura.
+- **Do** conservar la vista Referidos predeterminada y extender sus primitivas en Vías y entorno.
 
 ### Don't:
 
@@ -263,3 +325,5 @@ Cero se muestra con tono neutro y `0`; el dato protegido usa rayado y `Protegido
 - **Don't** aplicar fondos de alarma a avisos informativos.
 - **Don't** introducir otra identidad visual en la landing o en politica mediante este documento.
 - **Don't** presentar datos sintéticos de las capturas como contenido de producción.
+- **Don't** interpretar una categoría de superficie o un trazado férreo como necesidad de obra u operación actual.
+- **Don't** tomar el diseño de Apps Script como autoridad visual para la app Kaizen.
