@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { FastifyInstance } from 'fastify'
 import { F, seedRegistros, CONSENT_TEXT_VERSION } from '@kaizen/fixtures'
 import { veredasOf } from '@kaizen/geography'
@@ -54,6 +54,33 @@ beforeAll(async () => {
 afterAll(async () => { await app?.close(); await env?.close() })
 
 describe('mapa territorial, permisos y agregados', () => {
+  it('la infraestructura exige sesión, finalidad y analítica antes de consultar una fuente pública', async () => {
+    const upstream = vi.fn()
+    vi.stubGlobal('fetch', upstream)
+    try {
+      const path = '/v1/geography/infrastructure?layer=ferrea'
+      expect((await app.inject({ method: 'GET', url: path, headers: { 'x-tenant-id': F.tenantA, 'x-purpose-id': F.purposeA } })).statusCode).toBe(401)
+      expect((await app.inject({ method: 'GET', url: path, headers: headers('sub-a3') })).statusCode).toBe(403)
+      expect((await app.inject({ method: 'GET', url: path, headers: headers('sub-a2', F.tenantB, F.purposeB) })).statusCode).toBe(403)
+      for (const query of ['layer=vias', 'layer=vias&bbox=-75,4,-74,5', 'layer=vias&bbox=-74.6,NaN,-74.5,4.6', 'layer=ferrea&bbox=-74.6,4.5,-74.5,4.6', 'layer=ferrea&url=https://example.com']) expect((await app.inject({ method: 'GET', url: `/v1/geography/infrastructure?${query}`, headers: headers() })).statusCode).toBe(400)
+      expect(upstream).not.toHaveBeenCalled()
+    } finally { vi.unstubAllGlobals() }
+  })
+  it('las capas públicas no reciben cookies, identificadores del espacio ni personas; los errores de fuente son recuperables', async () => {
+    const upstream = vi.fn(async () => ({ ok: true, json: async () => ({ type: 'FeatureCollection', features: [{ type: 'Feature', geometry: { type: 'LineString', coordinates: [[-74.5, 4.5], [-74.4, 4.6]] }, properties: { FID: 1, Nombre: 'Corredor sintético', ESTADO: 'Referencia' } }] }) }))
+    vi.stubGlobal('fetch', upstream)
+    try {
+      const result = await app.inject({ method: 'GET', url: '/v1/geography/infrastructure?layer=ferrea', headers: headers() })
+      expect(result.statusCode).toBe(200)
+      expect(result.headers['cache-control']).toBe('private, no-store')
+      expect(result.json().features[0].properties.nombre).toBe('Corredor sintético')
+      const [url, options] = upstream.mock.calls[0]! as unknown as [string, Record<string, unknown>]
+      expect(url).not.toContain(F.tenantA); expect(url).not.toContain(F.purposeA)
+      expect(options).not.toHaveProperty('headers'); expect(options).not.toHaveProperty('body')
+      upstream.mockRejectedValueOnce(new Error('fallo de prueba'))
+      expect((await app.inject({ method: 'GET', url: '/v1/geography/infrastructure?layer=vias&bbox=-74.6,4.5,-74.5,4.6', headers: headers() })).statusCode).toBe(503)
+    } finally { vi.unstubAllGlobals() }
+  })
   it('exige sesión y analítica, aunque el usuario pueda capturar', async () => {
     expect((await app.inject({ method: 'GET', url: '/v1/geography/territory', headers: { 'x-tenant-id': F.tenantA, 'x-purpose-id': F.purposeA } })).statusCode).toBe(401)
     expect((await consulta('level=province', 'sub-a3')).statusCode).toBe(403)

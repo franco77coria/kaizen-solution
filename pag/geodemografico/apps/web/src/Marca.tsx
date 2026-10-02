@@ -1,7 +1,7 @@
 /**
  * Símbolos en SVG, con `currentColor` para que sigan el tema.
  *
- * El del producto repite la idea central del dashboard: un mosaico de celdas
+ * El del producto repite la idea central del tablero: un mosaico de celdas
  * que se van llenando. El de SUMA es un "+", que es literalmente lo que hace
  * la herramienta: sumar personas al territorio.
  */

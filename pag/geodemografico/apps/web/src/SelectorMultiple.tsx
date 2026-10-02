@@ -82,7 +82,7 @@ export function SelectorMultiple({ label, emptyLabel, options, value, onChange, 
       <div className="selector-acciones"><button onClick={() => setDraft(d => [...new Set([...d, ...available.map(o => o.value)])])}>Seleccionar {query ? 'resultados' : 'todos'}</button>{minimum === 0 && <button onClick={() => setDraft([])}>Limpiar</button>}</div>
       <div className="selector-options">{!available.length ? <p className="selector-empty">Sin coincidencias para “{query}”.</p> : available.map(o => <label className="selector-option" key={o.value}><input type="checkbox" checked={draft.includes(o.value)} onChange={() => toggle(o.value)} /><span><span>{o.label}</span>{o.group && <small>{o.group}</small>}</span></label>)}</div>
       {customMonth && <label className="selector-month"><span>Añadir otro mes</span><input type="month" aria-label="Añadir otro mes" onChange={e => { const v = e.target.value; if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(v)) return; setExtras(old => old.some(o => o.value === v) ? old : [...old, { value: v, label: formatValue(v) }]); setDraft(d => d.includes(v) ? d : [...d, v]) }} /></label>}
-      <div className="selector-footer"><span aria-live="polite">{draft.length ? cantidad(draft.length) : minimum ? 'Elegí al menos uno' : emptyLabel}</span><button className="selector-apply" disabled={draft.length < minimum} onClick={() => { onChange([...draft].sort()); close() }}>Aplicar</button></div>
+      <div className="selector-footer"><span aria-live="polite">{draft.length ? cantidad(draft.length) : minimum ? 'Elige al menos uno' : emptyLabel}</span><button className="selector-apply" disabled={draft.length < minimum} onClick={() => { onChange([...draft].sort()); close() }}>Aplicar</button></div>
     </div>}
   </div>
 }

@@ -44,7 +44,7 @@ const cabecerasApp = [
             "default-src 'self'",
             "script-src 'self'",
             "style-src 'self' 'unsafe-inline'",
-            "img-src 'self' data:",
+            "img-src 'self' data: https://tile.openstreetmap.org https://server.arcgisonline.com",
             "font-src 'self'",
             "connect-src 'self'",
             "object-src 'none'",

@@ -236,7 +236,7 @@ export function Sumar({ scope }: { scope: Scope }): JSX.Element {
   if (!form) {
     return (
       <div className="pagina-angosta">
-        <h1 className="pagina-titulo">Sumar persona</h1>
+        <h1 className="pagina-titulo">Registrar persona</h1>
         <p className="aviso error">{error ?? 'El formulario no está disponible.'}</p>
       </div>
     )
@@ -247,9 +247,9 @@ export function Sumar({ scope }: { scope: Scope }): JSX.Element {
   return (
     <div className="pagina-angosta">
       <header className="pagina-cabecera">
-        <h1 className="pagina-titulo">Sumar persona</h1>
+        <h1 className="pagina-titulo">Registrar persona</h1>
         <p className="tenue">
-          Aparece en el panorama apenas la sumás. Queda a tu nombre.
+          Aparece en el panorama cuando la registras. El registro queda a tu nombre.
         </p>
       </header>
 
@@ -302,7 +302,7 @@ export function Sumar({ scope }: { scope: Scope }): JSX.Element {
             <label className="campo">
               <span>Género</span>
               <select className="entrada" value={campos.gender} onChange={set('gender')} required>
-                <option value="">Elegí</option>
+                <option value="">Elige</option>
                 {GENEROS.map(([v, etiqueta]) => (
                   <option key={v} value={v}>
                     {etiqueta}
@@ -365,7 +365,7 @@ export function Sumar({ scope }: { scope: Scope }): JSX.Element {
               onChange={set('relationship')}
               required
             >
-              <option value="">Elegí</option>
+              <option value="">Elige</option>
               {RELACIONES.map(([v, etiqueta]) => (
                 <option key={v} value={v}>
                   {etiqueta}
@@ -385,7 +385,7 @@ export function Sumar({ scope }: { scope: Scope }): JSX.Element {
               onChange={e => setCampos(c => ({ ...c, municipalityCode: e.target.value, veredaCode: '' }))}
               required
             >
-              <option value="">Elegí un municipio</option>
+              <option value="">Elige un municipio</option>
               {PROVINCIAS.map((p) => (
                 <optgroup key={p.id} label={p.name}>
                   {[...p.municipalityCodes]
@@ -408,8 +408,8 @@ export function Sumar({ scope }: { scope: Scope }): JSX.Element {
               {veredas.map(v => <option key={v.code} value={v.code}>{v.name}</option>)}
             </select>
           </label>
-          <p className="mas-tenue pista">Si vive en el casco urbano o no conocés la vereda, dejalo sin asignar.</p>
-          {errorVeredas && <p className="error" role="status">No se pudo cargar el catálogo de veredas. Podés guardar la persona sin asignar una.</p>}
+          <p className="mas-tenue pista">Si vive en el casco urbano o no conoces la vereda, déjala sin asignar.</p>
+          {errorVeredas && <p className="error" role="status">No se pudo cargar el catálogo de veredas. Puedes guardar la persona sin asignar una.</p>}
         </fieldset>
 
         <fieldset className="bloque">
@@ -430,7 +430,7 @@ export function Sumar({ scope }: { scope: Scope }): JSX.Element {
                 onChange={set('evidenceKind')}
                 required
               >
-                <option value="">Elegí</option>
+                <option value="">Elige</option>
                 {form.evidencias.map((ev) => (
                   <option key={ev.valor} value={ev.valor}>
                     {ev.etiqueta}
@@ -462,7 +462,7 @@ export function Sumar({ scope }: { scope: Scope }): JSX.Element {
 
         <div className="formulario-pie">
           <button type="submit" className="boton primario grande" disabled={!completo || enviando}>
-            {enviando ? 'Sumando…' : 'Sumar persona'}
+            {enviando ? 'Registrando…' : 'Registrar persona'}
           </button>
           {!completo && (
             <span className="mas-tenue">

@@ -16,7 +16,7 @@ export function Entrar({ error }: { error?: string | null }): JSX.Element {
         <SimboloGeo className="entrar-simbolo" />
         <h1>Geodemográfico</h1>
         <p className="tenue">
-          Las personas que se suman, en cada uno de los 116 municipios de Cundinamarca.
+          Las personas registradas, en cada uno de los 116 municipios de Cundinamarca.
         </p>
 
         {error && <p className="aviso error">{error}</p>}

@@ -1,4 +1,6 @@
 import { conBase } from './rutas'
+import type { Caja, ConsultaVias, Tramo } from '@kaizen/geography'
+import type { FeatureCollection, LineString, MultiLineString } from 'geojson'
 /**
  * Cliente HTTP. Todo pasa por aqui para que el token CSRF y el ambito se
  * adjunten siempre: si cada componente armara su propio fetch, tarde o
@@ -102,7 +104,7 @@ function leerCookie(nombre: string): string | null {
 
 async function request<T>(
   path: string,
-  options: { method?: string; body?: unknown; scope?: Scope } = {},
+  options: { method?: string; body?: unknown; scope?: Scope; signal?: AbortSignal } = {},
 ): Promise<T> {
   const headers: Record<string, string> = {}
 
@@ -121,6 +123,7 @@ async function request<T>(
     headers,
     // Imprescindible: sin esto la cookie de sesion no viaja.
     credentials: 'same-origin',
+    ...(options.signal ? { signal: options.signal } : {}),
     ...(options.body !== undefined ? { body: JSON.stringify(options.body) } : {}),
   })
 
@@ -336,6 +339,10 @@ export interface ResultadoAnalitico {
 }
 
 export const api = {
+  infraestructuraVias: (scope: Scope, caja: Caja, signal: AbortSignal) =>
+    request<ConsultaVias>(`/v1/geography/infrastructure?${new URLSearchParams({ layer: 'vias', bbox: caja.join(',') })}`, { scope, signal }),
+  infraestructuraFerrea: (scope: Scope, signal: AbortSignal) =>
+    request<FeatureCollection<LineString | MultiLineString, Tramo>>('/v1/geography/infrastructure?layer=ferrea', { scope, signal }),
   territorio: (scope: Scope, filtros: FiltrosTerritoriales) =>
     request<ResumenTerritorial>(`/v1/geography/territory?${new URLSearchParams({ ...filtros })}`, { scope }),
   veredas: (scope: Scope, municipalityCode: string) =>

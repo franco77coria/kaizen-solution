@@ -7,7 +7,7 @@ import { Candidatos } from './Candidatos'
  * Ajustes del espacio: de dónde lee SUMA las notas de reunión.
  *
  * Antes esto estaba en la pantalla principal y era lo primero que veía
- * cualquiera que entraba. Es configuración que se hace una vez; vive acá.
+ * cualquiera que entraba. Es configuración que se hace una vez; vive aquí.
  */
 /** Cuantas consultas de 5 segundos se espera la sincronizacion: 2 minutos. */
 const ESPERA_MAXIMA = 24

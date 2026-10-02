@@ -75,7 +75,7 @@ export function Candidatos({ scope, onCambio }: { scope: Scope; onCambio: () => 
         <>
           <p className="metrica-etiqueta">
             Estos archivos <strong>no</strong> los confirmó Google como notas de reunión, así que no
-            entran solos. Elegí cuáles querés que el asistente pueda leer.
+            entran solos. Elige cuáles quieres que el asistente pueda leer.
           </p>
 
           <div style={{ display: 'grid', gap: 6, margin: '12px 0' }}>

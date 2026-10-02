@@ -32,8 +32,8 @@ export function Dashboard({ scope, id }: { scope: Scope; id: string }): JSX.Elem
     } catch (e) {
       setError(
         e instanceof ApiError && e.code === 'NOT_FOUND'
-          ? 'Este dashboard no existe, venció o no está compartido con vos.'
-          : 'No se pudo cargar el dashboard.',
+          ? 'Este tablero no existe, venció o no está compartido contigo.'
+          : 'No se pudo cargar el tablero.',
       )
     }
   }, [scope, id])
@@ -48,7 +48,7 @@ export function Dashboard({ scope, id }: { scope: Scope; id: string }): JSX.Elem
       setAviso(
         visibilidad === 'espacio'
           ? 'Ahora lo ven los miembros de este espacio que tienen acceso a SUMA.'
-          : 'Ahora es privado: solo lo ves vos.',
+          : 'Ahora es privado: solo lo ves tú.',
       )
       await cargar()
     } catch {
@@ -61,7 +61,7 @@ export function Dashboard({ scope, id }: { scope: Scope; id: string }): JSX.Elem
       await api.borrarDashboard(scope, id)
       navegar('suma')
     } catch {
-      setAviso('No se pudo borrar el dashboard.')
+      setAviso('No se pudo borrar el tablero.')
     }
   }
 
@@ -112,12 +112,12 @@ export function Dashboard({ scope, id }: { scope: Scope; id: string }): JSX.Elem
             <Icono nombre="atras" />
             SUMA
           </button>
-          <span>Dashboard</span>
+          <span>Tablero</span>
         </div>
 
         <h1 className="dash-titulo">{dash.titulo}</h1>
         <p className="dash-meta">
-          {dash.esMio ? 'Creado por vos' : `Creado por ${dash.autor}`} · {fecha(dash.creadoEn)} ·{' '}
+          {dash.esMio ? 'Creado por ti' : `Creado por ${dash.autor}`} · {fecha(dash.creadoEn)} ·{' '}
           {diasRestantes(dash.venceEn)}
           <span className={dash.visibilidad === 'espacio' ? 'dash-sello compartido' : 'dash-sello'}>
             {dash.visibilidad === 'espacio' ? 'Compartido con el espacio' : 'Privado'}
@@ -166,8 +166,8 @@ export function Dashboard({ scope, id }: { scope: Scope; id: string }): JSX.Elem
         )}
         {dash.desactualizado && (
           <p className="aviso" role="status">
-            Alguien retiró su consentimiento después de crear este dashboard: sus números pueden no
-            reflejar el estado actual. Generá uno nuevo desde SUMA.
+            Alguien retiró su consentimiento después de crear este tablero: sus números pueden no
+            reflejar el estado actual. Genera uno nuevo desde SUMA.
           </p>
         )}
       </header>

@@ -98,7 +98,7 @@ export function DatosRespuesta({ datos }: { datos: RespuestaDatos }): JSX.Elemen
     <section className="datos" aria-label={datos.titulo}>
       {encabezado}
       {filas.length === 0 ? (
-        <p className="datos-nota">Todavía no hay personas sumadas.</p>
+        <p className="datos-nota">Todavía no hay personas registradas.</p>
       ) : (
         <ol className="datos-barras">
           {mostradas.map((f) => (

@@ -158,7 +158,7 @@ export function App(): JSX.Element {
             {puede.sumar && ruta !== 'sumar' && (
               <Enlace a="sumar" className="boton primario">
                 <Icono nombre="mas" />
-                Sumar persona
+                Registrar persona
               </Enlace>
             )}
             <MenuCuenta
@@ -210,7 +210,7 @@ export function App(): JSX.Element {
           )}
           {ruta === 'dashboard' && !puede.notas && (
             <div className="vacio">
-              <strong>Tu cuenta no tiene acceso a los dashboards de SUMA en este espacio.</strong>
+              <strong>Tu cuenta no tiene acceso a los tableros de SUMA en este espacio.</strong>
             </div>
           )}
         </main>
@@ -222,7 +222,7 @@ export function App(): JSX.Element {
           {puede.sumar && ruta !== 'sumar' && (
             <Enlace a="sumar" className="boton primario">
               <Icono nombre="mas" />
-              Sumar persona
+              Registrar persona
             </Enlace>
           )}
           {puede.notas && (

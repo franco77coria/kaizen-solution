@@ -156,7 +156,7 @@ export function Mosaico({
             </>
           ) : (
             <span className="mas-tenue">
-              Pasá por encima de un municipio para ver cuántas personas tiene. Tocalo para filtrar.
+              Pasa por encima de un municipio para ver cuántas personas tiene. Tócalo para filtrar.
             </span>
           )}
         </p>

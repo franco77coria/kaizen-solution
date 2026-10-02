@@ -34,7 +34,7 @@ const STATUS: Record<ErrorCode, number> = {
 /** Mensajes fijos. No se interpolan datos: interpolar filtra existencia. */
 const PUBLIC_MESSAGE: Record<ErrorCode, string> = {
   UNAUTHENTICATED: 'Necesitas iniciar sesion.',
-  FORBIDDEN: 'No tenes permiso para esta operacion.',
+  FORBIDDEN: 'No tienes permiso para esta operación.',
   NOT_FOUND: 'No encontramos ese recurso.',
   VALIDATION_FAILED: 'La solicitud no es valida.',
   CONFLICT: 'La operacion no pudo completarse por un conflicto de estado.',

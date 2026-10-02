@@ -1,8 +1,8 @@
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
-import { forbidden, LIMITS, validationFailed } from '@kaizen/contracts'
+import { AppError, forbidden, LIMITS, validationFailed } from '@kaizen/contracts'
 import { withAuthorizedTransaction } from '@kaizen/db'
-import { CUNDINAMARCA_PROVINCES, CUNDINAMARCA_MUNICIPALITIES, displayName, findMunicipality, veredasOf } from '@kaizen/geography'
+import { CUNDINAMARCA_PROVINCES, CUNDINAMARCA_MUNICIPALITIES, displayName, findMunicipality, veredasOf, consultarVias, consultarFerrea, validarCaja, type Caja } from '@kaizen/geography'
 import { aplicarSupresion } from '@kaizen/query-plans'
 import { resolveScope, txContext } from '../plugins/session.js'
 import { leerAmbito } from './scope.js'
@@ -22,6 +22,33 @@ const filters = z.object({
 
 /** Agregados territoriales: ninguna fila nominal ni coordenada de personas. */
 export async function territoryRoutes(app: FastifyInstance): Promise<void> {
+  // Sólo capas públicas, con fuentes fijas. Nunca se reenvían datos del espacio a IDEC.
+  const infrastructureCache = new Map<string, { until: number; data: unknown }>()
+  app.get('/v1/geography/infrastructure', async (request, reply) => {
+    const session = await resolveScope(request, leerAmbito(request), ['analytics.aggregate'])
+    const parsed = z.object({ layer: z.enum(['vias', 'ferrea']), bbox: z.string().max(100).optional() }).strict().safeParse(request.query)
+    if (!parsed.success) throw validationFailed('capa de infraestructura inválida')
+    let caja: Caja | undefined
+    if (parsed.data.layer === 'vias') {
+      const parts = parsed.data.bbox?.split(',') ?? []
+      if (parts.length !== 4 || parts.some(p => !p.trim())) throw validationFailed('zona inválida')
+      caja = parts.map(Number) as Caja
+      try { validarCaja(caja) } catch { throw validationFailed('zona inválida o demasiado amplia') }
+    } else if (parsed.data.bbox) throw validationFailed('la capa férrea no admite zona')
+    await admitir('lookup', `${session.tenantId}:${session.userId}:infrastructure`)
+    reply.header('Cache-Control', 'private, no-store')
+    const key = `${parsed.data.layer}:${caja?.map(v => v.toFixed(6)).join(',') ?? ''}`
+    const cached = infrastructureCache.get(key)
+    if (cached && cached.until > Date.now()) return cached.data
+    try {
+      const signal = AbortSignal.timeout(22000)
+      const data = caja ? await consultarVias(caja, signal) : await consultarFerrea(signal)
+      infrastructureCache.set(key, { data, until: Date.now() + 15 * 60_000 })
+      if (infrastructureCache.size > 4) infrastructureCache.delete(infrastructureCache.keys().next().value!)
+      return data
+    } catch { throw new AppError('PROVIDER_UNAVAILABLE', 'la capa pública de infraestructura no respondió') }
+  })
+
   app.get('/v1/geography/veredas', async request => {
     const session = await resolveScope(request, leerAmbito(request), [])
     if (!session.permissions.has('analytics.aggregate') && !session.permissions.has('records.capture')) throw forbidden('sin acceso al catálogo territorial')
@@ -42,7 +69,7 @@ export async function territoryRoutes(app: FastifyInstance): Promise<void> {
     const selectedProvinces = CUNDINAMARCA_PROVINCES.filter(p => provinceIds.includes(p.id))
     if (selectedProvinces.length !== provinceIds.length) throw validationFailed('provincia inválida')
     if (municipalityCodes.some(code => !findMunicipality(code) || (provinceIds.length && !selectedProvinces.some(p => p.municipalityCodes.includes(code))))) throw validationFailed('municipio fuera de las provincias seleccionadas')
-    if (f.level === 'vereda' && !municipalityCodes.length) throw validationFailed('elegí un municipio para consultar sus veredas')
+    if (f.level === 'vereda' && !municipalityCodes.length) throw validationFailed('elige un municipio para consultar sus veredas')
     if (f.level === 'province' && municipalityCodes.length) throw validationFailed('el nivel provincia no admite municipios')
     await admitir('analytics', `${session.tenantId}:${session.userId}`)
     const catalog = f.level === 'province'
