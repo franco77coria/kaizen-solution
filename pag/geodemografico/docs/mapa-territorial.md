@@ -5,12 +5,15 @@ Ruta: `/app/mapa`. Accesible desde la navegación y Panorama para cuentas con `a
 ## Lectura
 
 - Cundinamarca: cifras por las 15 provincias del catálogo, dibujadas sobre los 116 municipios.
-- Provincia: municipios; elegir uno abre su referencia de veredas.
+- Provincia: municipios; seleccionar uno muestra sus cifras y una acción explícita abre sus veredas.
 - Municipio: polígonos rurales, detalle buscable y personas sin vereda asignada por separado.
 - Medidas: personas enviadas/aprobadas; o receptores únicos con referente enviado/aprobado de la misma finalidad. No es un recuento de enlaces ni del operador que capturó.
 - Mes: fecha de creación del registro en `America/Bogota`.
 - Los filtros usan búsqueda, casillas, etiquetas removibles y aplicación en bloque. Selección múltiple de provincias, municipios y meses: OR dentro de cada dimensión, AND entre dimensiones; duplicados se normalizan. Sin selección territorial significa todo Cundinamarca. Al cambiar provincias se retiran únicamente municipios que quedaron fuera.
-- Varios municipios se comparan por municipio; uno solo abre sus veredas. Se pueden elegir ambas medidas: cifras independientes y un botón por medida para decidir cuál colorea el mapa. Nunca se suman personas registradas y personas con referente, porque se superponen.
+- Varios municipios se comparan por municipio; uno solo abre sus veredas. Ambas medidas se consultan siempre con los mismos filtros y se muestran en columnas separadas. Un botón por medida decide cuál colorea el mapa sin nuevas consultas. Nunca se suman personas registradas y personas referidas, porque se superponen.
+- Cuatro indicadores muestran registros, personas referidas, presencia territorial y territorios sin registros. En nivel vereda, el último muestra personas sin vereda asignada, incluidas en el total municipal. La presencia y los territorios sin registros usan los recuentos de áreas ya autorizados del servidor, sin calcular cantidades personales por diferencia.
+- Pasar el cursor muestra un resumen breve de ambas cifras, conservando “Protegido”. Hacer clic selecciona sin cambiar de nivel; una acción explícita permite entrar al siguiente. La tabla permite ordenar por nombre o cualquiera de las cifras, buscar y filtrar territorios sin registros o con cifras protegidas. Valores protegidos o pendientes quedan al final sin convertirlos a cero. El inspector muestra ambas cifras y los atributos geográficos disponibles.
+- La tabla de celular muestra nombre y ambas medidas en tres columnas; seleccionar lleva el foco al inspector, desde donde se puede explorar el siguiente nivel. La fila mantiene una acción de navegación directa adicional en escritorio.
 - Cero: ausencia de registros. Protegido: supresión por umbral y complemento según las reglas existentes. Ningún número reservado llega al cliente.
 
 La captura permite informar una vereda opcional. El servidor y una clave foránea compuesta exigen que corresponda al municipio. Los registros anteriores conservan `NULL`; no se deduce su ubicación ni se confunde ausencia de vereda con casco urbano. El formulario no crea relaciones de referido nuevas: la métrica consulta las relaciones ya registradas en la base.
