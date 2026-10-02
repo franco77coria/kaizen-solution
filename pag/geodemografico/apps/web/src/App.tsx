@@ -6,6 +6,7 @@ import { Entrar } from './Entrar'
 import { Lideres } from './Lideres'
 import { Icono, SimboloGeo, SimboloSuma } from './Marca'
 import { Panorama } from './Panorama'
+import { MapaTerritorial } from './MapaTerritorial'
 import { Revision } from './Revision'
 import { Sumar } from './Sumar'
 import { Dashboard } from './Dashboard'
@@ -132,6 +133,9 @@ export function App(): JSX.Element {
             <Enlace a="panorama" aria-current={ruta === 'panorama' ? 'page' : undefined}>
               Panorama
             </Enlace>
+            {scope.permissions.includes('analytics.aggregate') && (
+              <Enlace a="mapa" aria-current={ruta === 'mapa' ? 'page' : undefined}>Mapa</Enlace>
+            )}
             {puede.revisar && (
               <Enlace a="revision" aria-current={ruta === 'revision' ? 'page' : undefined}>
                 Revisión
@@ -184,8 +188,9 @@ export function App(): JSX.Element {
           }}
         />
       ) : (
-        <main className="contenido">
+        <main className={ruta === 'mapa' ? 'contenido contenido-mapa' : 'contenido'}>
           {ruta === 'panorama' && <Panorama scope={scope} />}
+          {ruta === 'mapa' && <MapaTerritorial key={`${scope.tenantId}:${scope.purposeId}`} scope={scope} />}
           {ruta === 'sumar' && <Sumar scope={scope} />}
           {ruta === 'suma' && !puede.notas && (
             <div className="vacio">

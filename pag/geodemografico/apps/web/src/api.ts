@@ -291,6 +291,27 @@ export interface CeldaAnalitica {
   suppressed: boolean
 }
 
+export type NivelTerritorial = 'province' | 'municipality' | 'vereda'
+export interface FiltrosTerritoriales {
+  level: NivelTerritorial
+  provinceId?: string
+  municipalityCode?: string
+  month?: string
+  metric: 'records' | 'referrals'
+}
+export interface ResumenTerritorial {
+  level: NivelTerritorial
+  metric: 'records' | 'referrals'
+  rows: CeldaAnalitica[]
+  total: CeldaAnalitica
+  unassigned: CeldaAnalitica
+  coveredAreas: number
+  areaCount: number
+  suppressionThreshold: number
+  executedAt: string
+}
+export interface VeredaCatalogo { code: string; municipalityCode: string; name: string; vintage: string }
+
 /**
  * Filtro analitico. El servidor solo acepta estos campos (lista blanca) y
  * enlaza los valores como parametros: no hay texto libre que pueda llegar al
@@ -312,6 +333,10 @@ export interface ResultadoAnalitico {
 }
 
 export const api = {
+  territorio: (scope: Scope, filtros: FiltrosTerritoriales) =>
+    request<ResumenTerritorial>(`/v1/geography/territory?${new URLSearchParams({ ...filtros })}`, { scope }),
+  veredas: (scope: Scope, municipalityCode: string) =>
+    request<{ veredas: VeredaCatalogo[] }>(`/v1/geography/veredas?${new URLSearchParams({ municipalityCode })}`, { scope }),
   me: () => request<Me>('/v1/me'),
   csrf: () => request<{ csrfToken: string }>('/auth/csrf'),
   logout: () => request<{ ok: boolean }>('/auth/logout', { method: 'POST' }),
@@ -356,6 +381,7 @@ export const api = {
       fullName: string
       documentNumber: string
       municipalityCode: string
+      veredaCode?: string
       birthYear?: number
       phone?: string
       gender: string

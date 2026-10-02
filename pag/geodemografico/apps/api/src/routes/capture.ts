@@ -10,6 +10,7 @@ import {
   validationFailed,
 } from '@kaizen/contracts'
 import { withAuthorizedTransaction } from '@kaizen/db'
+import { findVereda } from '@kaizen/geography'
 import { admitir } from '../plugins/admission.js'
 import { requireCsrf, resolveScope, txContext } from '../plugins/session.js'
 import { leerAmbito } from './scope.js'
@@ -40,6 +41,9 @@ export async function captureRoutes(app: FastifyInstance): Promise<void> {
       )
     }
     const datos = parsed.data
+    if (datos.veredaCode && findVereda(datos.veredaCode)?.municipalityCode !== datos.municipalityCode) {
+      throw validationFailed('la vereda no pertenece al municipio indicado')
+    }
 
     const id = await withAuthorizedTransaction('app', txContext(session), async (client) => {
       // El texto de consentimiento tiene que existir y estar vigente para esta
@@ -60,8 +64,8 @@ export async function captureRoutes(app: FastifyInstance): Promise<void> {
           `insert into person_records
              (tenant_id, purpose_id, full_name, document_number, municipality_code,
               birth_year, phone, gender, relationship, uses_whatsapp, occupation,
-              captured_by, status)
-           values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,'draft')
+              captured_by, vereda_code, status)
+           values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'draft')
            returning id`,
           [
             session.tenantId,
@@ -78,6 +82,7 @@ export async function captureRoutes(app: FastifyInstance): Promise<void> {
             // El lider es la cuenta que carga: no se elige ni se tipea, asi que
             // nadie puede sumar personas a nombre de otro.
             session.userId,
+            datos.veredaCode ?? null,
           ],
         )
         const creado = rows[0]?.id

@@ -66,6 +66,7 @@ export const captureRecordSchema = z
     fullName: z.string().min(2).max(160),
     documentNumber: z.string().min(3).max(40),
     municipalityCode: z.string().regex(/^\d{5}$/),
+    veredaCode: z.string().regex(/^25\d{6}$/).optional(),
     birthYear: z.number().int().min(1900).max(2026).optional(),
     phone: z.string().max(40).optional(),
     /** Datos del formulario de lideres. Genero admite "prefiere no decirlo". */

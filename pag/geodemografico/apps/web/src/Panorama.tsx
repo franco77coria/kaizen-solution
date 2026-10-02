@@ -113,6 +113,7 @@ export function Panorama({ scope }: { scope: Scope }): JSX.Element {
           <p className="eyebrow">Cundinamarca · 15 provincias · 116 municipios</p>
           <h1>Panorama</h1>
         </div>
+        <Enlace a="mapa" className="boton">Explorar el mapa</Enlace>
       </header>
 
       <section className="resumen" aria-label="Resumen">

@@ -8,6 +8,7 @@ import './styles.css'
 import './paginas.css'
 import './chat.css'
 import './dashboard.css'
+import './mapa.css'
 
 const contenedor = document.getElementById('root')
 if (!contenedor) throw new Error('falta el contenedor raiz')

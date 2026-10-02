@@ -20,6 +20,7 @@ export function conBase(camino: string): string {
 
 export type Ruta =
   | 'panorama'
+  | 'mapa'
   | 'sumar'
   | 'suma'
   | 'dashboard'
@@ -30,6 +31,7 @@ export type Ruta =
 
 const CAMINOS: Record<Ruta, string> = {
   panorama: '/',
+  mapa: '/mapa',
   sumar: '/persona',
   suma: '/suma',
   // Con parametro: /suma/<id>. Se reconoce aparte (RE_DASHBOARD).
