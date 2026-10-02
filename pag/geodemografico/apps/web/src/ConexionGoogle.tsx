@@ -70,7 +70,7 @@ export function ConexionGoogle({
       </div>
 
       {fuentes?.needsReauth && (
-        <p className="aviso error">Google pidió volver a autorizar. Reconectá para que SUMA siga leyendo.</p>
+        <p className="aviso error">Google pidió volver a autorizar. Vuelve a conectar para que SUMA siga leyendo.</p>
       )}
 
       {aviso && <p className="aviso">{aviso}</p>}
@@ -78,7 +78,7 @@ export function ConexionGoogle({
       <p className="tenue">
         {fuentes?.connected
           ? `SUMA lee ${fuentes.documentos} documento${fuentes.documentos === 1 ? '' : 's'} de notas de reunión.`
-          : 'Conectá el Drive donde quedan las notas de reunión para que SUMA pueda responder sobre ellas.'}
+          : 'Conecta el Drive donde quedan las notas de reunión para que SUMA pueda responder sobre ellas.'}
       </p>
 
       <div className="acciones-fila">

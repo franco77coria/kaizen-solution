@@ -15,6 +15,7 @@ import { visualizationRoutes } from './routes/visualizations.js'
 import { analysisRoutes } from './routes/analyses.js'
 import { captureRoutes } from './routes/capture.js'
 import { geographyRoutes } from './routes/geography.js'
+import { territoryRoutes } from './routes/territory.js'
 import { privacyRoutes } from './routes/privacy.js'
 import { webhookRoutes } from './routes/webhooks.js'
 import { googleRoutes } from './routes/google.js'
@@ -109,6 +110,7 @@ export async function buildApp(config: AppConfig = loadConfig()): Promise<Fastif
   await app.register(analysisRoutes)
   await app.register(captureRoutes)
   await app.register(geographyRoutes)
+  await app.register(territoryRoutes)
   await app.register(privacyRoutes)
   await app.register(webhookRoutes)
   await app.register(async (instance) => googleRoutes(instance, config))

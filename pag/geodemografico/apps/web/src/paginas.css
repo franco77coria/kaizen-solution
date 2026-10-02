@@ -92,7 +92,7 @@
   height: 100%;
   border-radius: inherit;
   background: var(--acento);
-  transition: width 600ms var(--curva);
+  transition: none;
 }
 
 @media (min-width: 720px) {
@@ -369,7 +369,7 @@ button.celda[aria-pressed='true'] {
   height: 100%;
   border-radius: inherit;
   background: var(--acento);
-  transition: width 500ms var(--curva);
+  transition: none;
 }
 .barras-h-valor {
   text-align: right;
@@ -405,7 +405,7 @@ button.celda[aria-pressed='true'] {
   width: 100%;
   border-radius: 5px 5px 2px 2px;
   background: var(--acento);
-  transition: height 500ms var(--curva);
+  transition: none;
 }
 .columnas-valor {
   font-size: var(--t-11);
@@ -871,7 +871,7 @@ button.celda[aria-pressed='true'] {
   height: 100%;
   border-radius: inherit;
   background: var(--acento);
-  transition: width 500ms var(--curva);
+  transition: none;
 }
 
 .alta-lider {

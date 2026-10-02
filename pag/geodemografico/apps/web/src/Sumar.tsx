@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { CUNDINAMARCA_PROVINCES, displayName, provinceOf } from '@kaizen/geography'
-import { ApiError, api, type DatosFormulario, type Scope } from './api'
+import { ApiError, api, type DatosFormulario, type Scope, type VeredaCatalogo } from './api'
 import { GENEROS, RELACIONES } from './etiquetas'
 import { SimboloSuma } from './Marca'
 import { Enlace } from './rutas'
@@ -32,6 +32,7 @@ interface Campos {
   fullName: string
   documentNumber: string
   municipalityCode: string
+  veredaCode: string
   birthYear: string
   phone: string
   gender: string
@@ -47,6 +48,7 @@ const VACIO: Campos = {
   fullName: '',
   documentNumber: '',
   municipalityCode: '',
+  veredaCode: '',
   birthYear: '',
   phone: '',
   gender: '',
@@ -74,8 +76,23 @@ export function Sumar({ scope }: { scope: Scope }): JSX.Element {
   const [enviando, setEnviando] = useState(false)
   const [cargando, setCargando] = useState(true)
   const primerCampo = useRef<HTMLInputElement>(null)
-
+  const [veredas, setVeredas] = useState<VeredaCatalogo[]>([])
+  const [cargandoVeredas, setCargandoVeredas] = useState(false)
+  const [errorVeredas, setErrorVeredas] = useState(false)
   const puedeSumar = scope.permissions.includes('records.capture')
+
+  useEffect(() => {
+    let vigente = true
+    setVeredas([])
+    setErrorVeredas(false)
+    if (!campos.municipalityCode || !puedeSumar) { setCargandoVeredas(false); return }
+    setCargandoVeredas(true)
+    void api.veredas(scope, campos.municipalityCode)
+      .then(r => { if (vigente) setVeredas(r.veredas) })
+      .catch(() => { if (vigente) setErrorVeredas(true) })
+      .finally(() => { if (vigente) setCargandoVeredas(false) })
+    return () => { vigente = false }
+  }, [scope, campos.municipalityCode, puedeSumar])
 
   useEffect(() => {
     if (!puedeSumar) {
@@ -126,6 +143,7 @@ export function Sumar({ scope }: { scope: Scope }): JSX.Element {
         fullName: campos.fullName.trim(),
         documentNumber: campos.documentNumber.trim(),
         municipalityCode: campos.municipalityCode,
+        ...(campos.veredaCode ? { veredaCode: campos.veredaCode } : {}),
         ...(anio ? { birthYear: Number(anio) } : {}),
         ...(campos.phone.trim() ? { phone: campos.phone.trim() } : {}),
         gender: campos.gender,
@@ -218,7 +236,7 @@ export function Sumar({ scope }: { scope: Scope }): JSX.Element {
   if (!form) {
     return (
       <div className="pagina-angosta">
-        <h1 className="pagina-titulo">Sumar persona</h1>
+        <h1 className="pagina-titulo">Registrar persona</h1>
         <p className="aviso error">{error ?? 'El formulario no está disponible.'}</p>
       </div>
     )
@@ -229,9 +247,9 @@ export function Sumar({ scope }: { scope: Scope }): JSX.Element {
   return (
     <div className="pagina-angosta">
       <header className="pagina-cabecera">
-        <h1 className="pagina-titulo">Sumar persona</h1>
+        <h1 className="pagina-titulo">Registrar persona</h1>
         <p className="tenue">
-          Aparece en el panorama apenas la sumás. Queda a tu nombre.
+          Aparece en el panorama cuando la registras. El registro queda a tu nombre.
         </p>
       </header>
 
@@ -284,7 +302,7 @@ export function Sumar({ scope }: { scope: Scope }): JSX.Element {
             <label className="campo">
               <span>Género</span>
               <select className="entrada" value={campos.gender} onChange={set('gender')} required>
-                <option value="">Elegí</option>
+                <option value="">Elige</option>
                 {GENEROS.map(([v, etiqueta]) => (
                   <option key={v} value={v}>
                     {etiqueta}
@@ -347,7 +365,7 @@ export function Sumar({ scope }: { scope: Scope }): JSX.Element {
               onChange={set('relationship')}
               required
             >
-              <option value="">Elegí</option>
+              <option value="">Elige</option>
               {RELACIONES.map(([v, etiqueta]) => (
                 <option key={v} value={v}>
                   {etiqueta}
@@ -364,10 +382,10 @@ export function Sumar({ scope }: { scope: Scope }): JSX.Element {
             <select
               className="entrada"
               value={campos.municipalityCode}
-              onChange={set('municipalityCode')}
+              onChange={e => setCampos(c => ({ ...c, municipalityCode: e.target.value, veredaCode: '' }))}
               required
             >
-              <option value="">Elegí un municipio</option>
+              <option value="">Elige un municipio</option>
               {PROVINCIAS.map((p) => (
                 <optgroup key={p.id} label={p.name}>
                   {[...p.municipalityCodes]
@@ -382,6 +400,16 @@ export function Sumar({ scope }: { scope: Scope }): JSX.Element {
             </select>
           </label>
           {provincia && <p className="mas-tenue pista">Provincia de {provincia.name}</p>}
+          <label className="campo">
+            <span>Vereda <small className="mas-tenue">(opcional)</small></span>
+            <select className="entrada" value={campos.veredaCode} onChange={set('veredaCode')}
+              disabled={!campos.municipalityCode || cargandoVeredas || errorVeredas}>
+              <option value="">{cargandoVeredas ? 'Cargando veredas…' : 'Sin vereda asignada'}</option>
+              {veredas.map(v => <option key={v.code} value={v.code}>{v.name}</option>)}
+            </select>
+          </label>
+          <p className="mas-tenue pista">Si vive en el casco urbano o no conoces la vereda, déjala sin asignar.</p>
+          {errorVeredas && <p className="error" role="status">No se pudo cargar el catálogo de veredas. Puedes guardar la persona sin asignar una.</p>}
         </fieldset>
 
         <fieldset className="bloque">
@@ -402,7 +430,7 @@ export function Sumar({ scope }: { scope: Scope }): JSX.Element {
                 onChange={set('evidenceKind')}
                 required
               >
-                <option value="">Elegí</option>
+                <option value="">Elige</option>
                 {form.evidencias.map((ev) => (
                   <option key={ev.valor} value={ev.valor}>
                     {ev.etiqueta}
@@ -434,7 +462,7 @@ export function Sumar({ scope }: { scope: Scope }): JSX.Element {
 
         <div className="formulario-pie">
           <button type="submit" className="boton primario grande" disabled={!completo || enviando}>
-            {enviando ? 'Sumando…' : 'Sumar persona'}
+            {enviando ? 'Registrando…' : 'Registrar persona'}
           </button>
           {!completo && (
             <span className="mas-tenue">

@@ -97,7 +97,7 @@ export function Panorama({ scope }: { scope: Scope }): JSX.Element {
   if (!puedeVer) {
     return (
       <div className="vacio">
-        <strong>No tenés acceso a los datos agregados de este espacio.</strong>
+        <strong>No tienes acceso a los datos agregados de este espacio.</strong>
         <span>Pedile a quien administra el espacio que te habilite la vista del panorama.</span>
       </div>
     )
@@ -113,11 +113,12 @@ export function Panorama({ scope }: { scope: Scope }): JSX.Element {
           <p className="eyebrow">Cundinamarca · 15 provincias · 116 municipios</p>
           <h1>Panorama</h1>
         </div>
+        <Enlace a="mapa" className="boton">Explorar el mapa</Enlace>
       </header>
 
       <section className="resumen" aria-label="Resumen">
         <div className="resumen-bloque">
-          <span className="etiqueta">{filtrado ? 'Personas en este recorte' : 'Personas sumadas'}</span>
+          <span className="etiqueta">{filtrado ? 'Personas en estos filtros' : 'Personas registradas'}</span>
           <strong className="numero-grande cifra">
             {datos === null ? '—' : datos.total?.suppressed ? 'n/d' : formato.format(datos.total?.value ?? 0)}
           </strong>
@@ -155,7 +156,7 @@ export function Panorama({ scope }: { scope: Scope }): JSX.Element {
             <SimboloSuma />
           </span>
           <span>
-            Sumaste <strong className="cifra">{formato.format(mias.total)}</strong>{' '}
+            Registraste <strong className="cifra">{formato.format(mias.total)}</strong>{' '}
             {mias.total === 1 ? 'persona' : 'personas'} en {mias.municipios}{' '}
             {mias.municipios === 1 ? 'municipio' : 'municipios'}
             {mias.hoy > 0 && <span className="tenue"> · {mias.hoy} hoy</span>}
@@ -170,14 +171,14 @@ export function Panorama({ scope }: { scope: Scope }): JSX.Element {
       {vacio && (
         <div className="vacio-panorama">
           <div>
-            <strong>Todavía no se sumó nadie.</strong>
+            <strong>Todavía no hay personas registradas.</strong>
             <span className="tenue">
-              Cada persona que se suma aparece acá, en su municipio. El mapa de abajo se va llenando.
+              Cada persona que se registra aparece aquí, en su municipio. El mapa de abajo se va llenando.
             </span>
           </div>
           {puedeSumar && (
             <Enlace a="sumar" className="boton primario grande">
-              Sumar la primera persona
+              Registrar la primera persona
             </Enlace>
           )}
         </div>
@@ -185,7 +186,7 @@ export function Panorama({ scope }: { scope: Scope }): JSX.Element {
 
       {filtrado && datos && (datos.total?.value ?? 0) === 0 && !datos.total?.suppressed && (
         <p className="aviso">
-          Ninguna persona coincide con estos filtros. Probá quitando alguno.
+          Ninguna persona coincide con estos filtros. Intenta quitando alguno.
         </p>
       )}
 
@@ -278,7 +279,7 @@ export function Panorama({ scope }: { scope: Scope }): JSX.Element {
           <section className="tarjeta" aria-label="Por mes">
             <div className="tarjeta-titulo">
               <h2>Cómo creció</h2>
-              <span>personas sumadas por mes</span>
+              <span>personas registradas por mes</span>
             </div>
             <Columnas
               filas={[...datos.porMes.rows]

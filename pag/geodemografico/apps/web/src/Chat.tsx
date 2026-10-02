@@ -57,10 +57,10 @@ const ETAPAS: Record<EventoProgreso['etapa'], (e: EventoProgreso) => string> = {
 const SUGERENCIAS_NOTAS = [
   { titulo: 'Última reunión', pregunta: '¿Qué se acordó en la última reunión?' },
   { titulo: 'Compromisos', pregunta: '¿Qué compromisos quedaron pendientes?' },
-  { titulo: 'Qué hay cargado', pregunta: '¿Qué notas tenés cargadas?' },
+  { titulo: 'Qué hay cargado', pregunta: '¿Qué notas tienes cargadas?' },
 ]
 const SUGERENCIAS_DATOS = [
-  { titulo: 'Personas sumadas', pregunta: '¿Cuántas personas se sumaron por municipio?' },
+  { titulo: 'Personas registradas', pregunta: '¿Cuántas personas se registraron por municipio?' },
   { titulo: 'Por género', pregunta: '¿Cuántas personas hay por género?' },
 ]
 
@@ -127,7 +127,7 @@ export function useConversacion(scope: Scope | null): Conversacion {
             // mal; este texto es cierto en los dos casos.
             fallar(
               codigo === 'RATE_LIMITED' || codigo === 'PROVIDER_UNAVAILABLE'
-                ? 'SUMA no pudo responder ahora: hay mucha demanda. Probá de nuevo en unos segundos.'
+                ? 'SUMA no pudo responder ahora: hay mucha demanda. Intenta de nuevo en unos segundos.'
                 : mensaje,
             ),
         })
@@ -243,10 +243,10 @@ export function Chat({
 
           {puedeLeer && turnos.length === 0 && (
             <div className="suma-bienvenida">
-              <h3>¿Qué querés saber?</h3>
+              <h3>¿Qué quieres saber?</h3>
               <p>
                 {puedeDatos
-                  ? 'Respondo sobre las notas de reunión y sobre las personas sumadas. Cada respuesta dice de dónde sale; si no lo encuentro, te lo digo.'
+                  ? 'Respondo sobre las notas de reunión y sobre las personas registradas. Cada respuesta dice de dónde sale; si no lo encuentro, te lo digo.'
                   : 'Respondo sobre las notas de reunión y te muestro de qué documento sale cada dato. Si no lo encuentro, te lo digo.'}
               </p>
               <div className="suma-sugerencias">
@@ -307,7 +307,7 @@ export function Chat({
                   mandar(texto)
                 }
               }}
-              placeholder="Preguntale a SUMA…"
+              placeholder="Pregúntale a SUMA…"
               aria-label="Tu pregunta"
               maxLength={8000}
               disabled={!puedeLeer || enviando}
@@ -496,7 +496,7 @@ function AccionesRespuesta({
     } catch {
       setExportar({
         tipo: 'error',
-        mensaje: 'No se pudo armar el dashboard. Probá de nuevo en unos segundos.',
+        mensaje: 'No se pudo armar el tablero. Intenta de nuevo en unos segundos.',
       })
     }
   }
@@ -509,7 +509,7 @@ function AccionesRespuesta({
           <Icono nombre="tablero" />
         </span>
         <div>
-          <strong>Dashboard listo</strong>
+          <strong>Tablero listo</strong>
           <span>Privado · vence en 5 días</span>
         </div>
         <button type="button" className="boton" onClick={() => navegarADashboard(exportar.id)}>
@@ -542,7 +542,7 @@ function AccionesRespuesta({
           disabled={exportar.tipo === 'creando'}
         >
           <Icono nombre="tablero" />
-          {exportar.tipo === 'creando' ? 'Armando el dashboard…' : 'Exportar a dashboard'}
+          {exportar.tipo === 'creando' ? 'Armando el tablero…' : 'Exportar a tablero'}
         </button>
       )}
       {exportar.tipo === 'error' && <span className="suma-accion-error">{exportar.mensaje}</span>}
@@ -572,8 +572,8 @@ export function MisDashboards({ scope }: { scope: Scope }): JSX.Element | null {
   if (!lista || lista.length === 0) return null
 
   return (
-    <nav className="mis-dashboards" aria-label="Tus dashboards">
-      <span className="mis-dashboards-titulo">Dashboards</span>
+    <nav className="mis-dashboards" aria-label="Tus tableros">
+      <span className="mis-dashboards-titulo">Tableros</span>
       <ul>
         {lista.slice(0, 6).map((d) => (
           <li key={d.id}>

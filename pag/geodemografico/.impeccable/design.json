@@ -1,0 +1,929 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-02T21:12:25.850Z",
+  "title": "Design System: Geodemográfico · Kaizen",
+  "extensions": {
+    "documentation": {
+      "workflowReference": "C:/Users/Usuario/.agents/skills/impeccable/reference/document.md",
+      "mode": "scan",
+      "visualAuthority": "Sistema incumbente extendido en modo Operate; sin comp aprobada.",
+      "sources": [
+        "apps/web/src/tokens.css",
+        "apps/web/src/styles.css",
+        "apps/web/src/MapaTerritorial.tsx",
+        "apps/web/src/SelectorMultiple.tsx",
+        "apps/web/src/mapa.css",
+        "apps/web/src/Panorama.tsx",
+        "PRODUCT.md",
+        ".impeccable/mapa-territorial.md",
+        "apps/web/src/MapaEntorno.tsx",
+        "apps/web/src/Chat.tsx",
+        "apps/web/src/GraficoTerritorial.tsx",
+        "apps/web/src/comparacionTerritorial.ts",
+        "apps/web/src/cartografiaTerritorial.ts",
+        "apps/web/src/App.tsx",
+        "docs/auditoria-app-territorial.md"
+      ],
+      "evidence": [
+        ".impeccable/review/desktop.png",
+        ".impeccable/review/anapoima.png",
+        ".impeccable/review/mobile.png",
+        ".impeccable/review/multi-desktop.png",
+        ".impeccable/review/multi-mobile.png",
+        ".impeccable/review/infra-desktop.png",
+        ".impeccable/review/infra-mobile.png",
+        ".impeccable/review/infra-referidos-desktop.png",
+        ".impeccable/review/infra-referidos-mobile.png",
+        ".impeccable/review/infra-satelite-desktop.png",
+        ".impeccable/review/panorama-desktop.png",
+        ".impeccable/review/panorama-mobile.png",
+        ".impeccable/review/panorama-mobile-empty.png",
+        ".impeccable/review/auditoria-desktop.png",
+        ".impeccable/review/auditoria-mobile.png",
+        ".impeccable/review/auditoria-mobile-empty.png"
+      ],
+      "evidenceScope": "Capturas de prueba con datos sintéticos, incluidos selectores múltiples en escritorio y teléfono. Tema oscuro revisado por fuente; no existe captura oscura.",
+      "rampScope": "Las rampas de ocho pasos se sintetizan en OKLCH para el panel; no sustituyen las escalas de datos implementadas.",
+      "infrastructureEvidenceScope": "Capturas infra-* con cifras sintéticas de personas y cartografía/infraestructura pública real. Calles final: consulta puntual de 754 tramos, listado férreo y ficha; satélite: consulta previa de 391 tramos. Referidos conserva el diseño anterior. Los conteos son evidencia de esas consultas, no tokens ni totales normativos.",
+      "panoramaEvidenceScope": "Capturas panorama-* de la composición anterior: Anapoima con cifras sintéticas, ficha y tabla de ambas medidas. Se conservan como evidencia histórica. Ambas medidas se consultan separadas; la medida activa colorea el mapa y ordena el gráfico actual.",
+      "auditEvidenceScope": "Capturas auditoria-* actuales, de página completa, con cifras sintéticas: tarjetas independientes, gráfico ligado a la ficha y estados vacíos en escritorio y teléfono. Cartografía pública real. Sin captura de error ni tema oscuro; oscuro revisado por fuente. Ship with fixes: error de cifras corregido, documentación alineada."
+    },
+    "colorMeta": {
+      "tinta": {
+        "role": "neutral",
+        "displayName": "tinta",
+        "tonalRamp": [
+          "oklch(15% 0.0067 258.37)",
+          "oklch(26.4% 0.0067 258.37)",
+          "oklch(37.9% 0.0067 258.37)",
+          "oklch(49.3% 0.0067 258.37)",
+          "oklch(60.7% 0.0067 258.37)",
+          "oklch(72.1% 0.0067 258.37)",
+          "oklch(83.6% 0.0067 258.37)",
+          "oklch(95% 0.0067 258.37)"
+        ]
+      },
+      "tinta-2": {
+        "role": "neutral",
+        "displayName": "tinta 2",
+        "tonalRamp": [
+          "oklch(15% 0.0126 248.12)",
+          "oklch(26.4% 0.0126 248.12)",
+          "oklch(37.9% 0.0126 248.12)",
+          "oklch(49.3% 0.0126 248.12)",
+          "oklch(60.7% 0.0126 248.12)",
+          "oklch(72.1% 0.0126 248.12)",
+          "oklch(83.6% 0.0126 248.12)",
+          "oklch(95% 0.0126 248.12)"
+        ]
+      },
+      "tinta-3": {
+        "role": "neutral",
+        "displayName": "tinta 3",
+        "tonalRamp": [
+          "oklch(15% 0.0148 244.44)",
+          "oklch(26.4% 0.0148 244.44)",
+          "oklch(37.9% 0.0148 244.44)",
+          "oklch(49.3% 0.0148 244.44)",
+          "oklch(60.7% 0.0148 244.44)",
+          "oklch(72.1% 0.0148 244.44)",
+          "oklch(83.6% 0.0148 244.44)",
+          "oklch(95% 0.0148 244.44)"
+        ],
+        "contrast": {
+          "lightSurface": 5.42,
+          "lightCanvas": 5.09,
+          "darkSurface": 6.58,
+          "scope": "Pares concretos de tokens del tema; no certificación de toda la app."
+        }
+      },
+      "lienzo": {
+        "role": "neutral",
+        "displayName": "lienzo",
+        "tonalRamp": [
+          "oklch(15% 0.0017 145.56)",
+          "oklch(26.4% 0.0017 145.56)",
+          "oklch(37.9% 0.0017 145.56)",
+          "oklch(49.3% 0.0017 145.56)",
+          "oklch(60.7% 0.0017 145.56)",
+          "oklch(72.1% 0.0017 145.56)",
+          "oklch(83.6% 0.0017 145.56)",
+          "oklch(95% 0.0017 145.56)"
+        ]
+      },
+      "superficie": {
+        "role": "neutral",
+        "displayName": "superficie",
+        "tonalRamp": [
+          "oklch(15% 0.0000 89.88)",
+          "oklch(26.4% 0.0000 89.88)",
+          "oklch(37.9% 0.0000 89.88)",
+          "oklch(49.3% 0.0000 89.88)",
+          "oklch(60.7% 0.0000 89.88)",
+          "oklch(72.1% 0.0000 89.88)",
+          "oklch(83.6% 0.0000 89.88)",
+          "oklch(95% 0.0000 89.88)"
+        ]
+      },
+      "superficie-2": {
+        "role": "neutral",
+        "displayName": "superficie 2",
+        "tonalRamp": [
+          "oklch(15% 0.0034 145.55)",
+          "oklch(26.4% 0.0034 145.55)",
+          "oklch(37.9% 0.0034 145.55)",
+          "oklch(49.3% 0.0034 145.55)",
+          "oklch(60.7% 0.0034 145.55)",
+          "oklch(72.1% 0.0034 145.55)",
+          "oklch(83.6% 0.0034 145.55)",
+          "oklch(95% 0.0034 145.55)"
+        ]
+      },
+      "linea": {
+        "role": "neutral",
+        "displayName": "linea",
+        "tonalRamp": [
+          "oklch(15% 0.0051 145.53)",
+          "oklch(26.4% 0.0051 145.53)",
+          "oklch(37.9% 0.0051 145.53)",
+          "oklch(49.3% 0.0051 145.53)",
+          "oklch(60.7% 0.0051 145.53)",
+          "oklch(72.1% 0.0051 145.53)",
+          "oklch(83.6% 0.0051 145.53)",
+          "oklch(95% 0.0051 145.53)"
+        ]
+      },
+      "linea-fuerte": {
+        "role": "neutral",
+        "displayName": "linea fuerte",
+        "tonalRamp": [
+          "oklch(15% 0.0085 157.07)",
+          "oklch(26.4% 0.0085 157.07)",
+          "oklch(37.9% 0.0085 157.07)",
+          "oklch(49.3% 0.0085 157.07)",
+          "oklch(60.7% 0.0085 157.07)",
+          "oklch(72.1% 0.0085 157.07)",
+          "oklch(83.6% 0.0085 157.07)",
+          "oklch(95% 0.0085 157.07)"
+        ]
+      },
+      "acento": {
+        "role": "primary",
+        "displayName": "acento",
+        "tonalRamp": [
+          "oklch(15% 0.0710 168.86)",
+          "oklch(26.4% 0.0710 168.86)",
+          "oklch(37.9% 0.0710 168.86)",
+          "oklch(49.3% 0.0710 168.86)",
+          "oklch(60.7% 0.0710 168.86)",
+          "oklch(72.1% 0.0710 168.86)",
+          "oklch(83.6% 0.0710 168.86)",
+          "oklch(95% 0.0710 168.86)"
+        ]
+      },
+      "acento-hover": {
+        "role": "primary",
+        "displayName": "acento hover",
+        "tonalRamp": [
+          "oklch(15% 0.0601 169.32)",
+          "oklch(26.4% 0.0601 169.32)",
+          "oklch(37.9% 0.0601 169.32)",
+          "oklch(49.3% 0.0601 169.32)",
+          "oklch(60.7% 0.0601 169.32)",
+          "oklch(72.1% 0.0601 169.32)",
+          "oklch(83.6% 0.0601 169.32)",
+          "oklch(95% 0.0601 169.32)"
+        ]
+      },
+      "acento-suave": {
+        "role": "primary",
+        "displayName": "acento suave",
+        "tonalRamp": [
+          "oklch(15% 0.0100 164.87)",
+          "oklch(26.4% 0.0100 164.87)",
+          "oklch(37.9% 0.0100 164.87)",
+          "oklch(49.3% 0.0100 164.87)",
+          "oklch(60.7% 0.0100 164.87)",
+          "oklch(72.1% 0.0100 164.87)",
+          "oklch(83.6% 0.0100 164.87)",
+          "oklch(95% 0.0100 164.87)"
+        ]
+      },
+      "acento-borde": {
+        "role": "primary",
+        "displayName": "acento borde",
+        "tonalRamp": [
+          "oklch(15% 0.0262 165.57)",
+          "oklch(26.4% 0.0262 165.57)",
+          "oklch(37.9% 0.0262 165.57)",
+          "oklch(49.3% 0.0262 165.57)",
+          "oklch(60.7% 0.0262 165.57)",
+          "oklch(72.1% 0.0262 165.57)",
+          "oklch(83.6% 0.0262 165.57)",
+          "oklch(95% 0.0262 165.57)"
+        ]
+      },
+      "sobre-acento": {
+        "role": "neutral",
+        "displayName": "sobre acento",
+        "tonalRamp": [
+          "oklch(15% 0.0000 89.88)",
+          "oklch(26.4% 0.0000 89.88)",
+          "oklch(37.9% 0.0000 89.88)",
+          "oklch(49.3% 0.0000 89.88)",
+          "oklch(60.7% 0.0000 89.88)",
+          "oklch(72.1% 0.0000 89.88)",
+          "oklch(83.6% 0.0000 89.88)",
+          "oklch(95% 0.0000 89.88)"
+        ]
+      },
+      "dato-1": {
+        "role": "primary",
+        "displayName": "dato 1",
+        "tonalRamp": [
+          "oklch(15% 0.0100 164.87)",
+          "oklch(26.4% 0.0100 164.87)",
+          "oklch(37.9% 0.0100 164.87)",
+          "oklch(49.3% 0.0100 164.87)",
+          "oklch(60.7% 0.0100 164.87)",
+          "oklch(72.1% 0.0100 164.87)",
+          "oklch(83.6% 0.0100 164.87)",
+          "oklch(95% 0.0100 164.87)"
+        ]
+      },
+      "dato-2": {
+        "role": "primary",
+        "displayName": "dato 2",
+        "tonalRamp": [
+          "oklch(15% 0.0262 165.57)",
+          "oklch(26.4% 0.0262 165.57)",
+          "oklch(37.9% 0.0262 165.57)",
+          "oklch(49.3% 0.0262 165.57)",
+          "oklch(60.7% 0.0262 165.57)",
+          "oklch(72.1% 0.0262 165.57)",
+          "oklch(83.6% 0.0262 165.57)",
+          "oklch(95% 0.0262 165.57)"
+        ]
+      },
+      "dato-3": {
+        "role": "primary",
+        "displayName": "dato 3",
+        "tonalRamp": [
+          "oklch(15% 0.0559 165.88)",
+          "oklch(26.4% 0.0559 165.88)",
+          "oklch(37.9% 0.0559 165.88)",
+          "oklch(49.3% 0.0559 165.88)",
+          "oklch(60.7% 0.0559 165.88)",
+          "oklch(72.1% 0.0559 165.88)",
+          "oklch(83.6% 0.0559 165.88)",
+          "oklch(95% 0.0559 165.88)"
+        ]
+      },
+      "dato-4": {
+        "role": "primary",
+        "displayName": "dato 4",
+        "tonalRamp": [
+          "oklch(15% 0.0750 166.88)",
+          "oklch(26.4% 0.0750 166.88)",
+          "oklch(37.9% 0.0750 166.88)",
+          "oklch(49.3% 0.0750 166.88)",
+          "oklch(60.7% 0.0750 166.88)",
+          "oklch(72.1% 0.0750 166.88)",
+          "oklch(83.6% 0.0750 166.88)",
+          "oklch(95% 0.0750 166.88)"
+        ]
+      },
+      "dato-5": {
+        "role": "primary",
+        "displayName": "dato 5",
+        "tonalRamp": [
+          "oklch(15% 0.0710 168.86)",
+          "oklch(26.4% 0.0710 168.86)",
+          "oklch(37.9% 0.0710 168.86)",
+          "oklch(49.3% 0.0710 168.86)",
+          "oklch(60.7% 0.0710 168.86)",
+          "oklch(72.1% 0.0710 168.86)",
+          "oklch(83.6% 0.0710 168.86)",
+          "oklch(95% 0.0710 168.86)"
+        ]
+      },
+      "senal": {
+        "role": "semantic",
+        "displayName": "senal",
+        "tonalRamp": [
+          "oklch(15% 0.1821 29.51)",
+          "oklch(26.4% 0.1821 29.51)",
+          "oklch(37.9% 0.1821 29.51)",
+          "oklch(49.3% 0.1821 29.51)",
+          "oklch(60.7% 0.1821 29.51)",
+          "oklch(72.1% 0.1821 29.51)",
+          "oklch(83.6% 0.1821 29.51)",
+          "oklch(95% 0.1821 29.51)"
+        ]
+      },
+      "senal-suave": {
+        "role": "semantic",
+        "displayName": "senal suave",
+        "tonalRamp": [
+          "oklch(15% 0.0119 23.70)",
+          "oklch(26.4% 0.0119 23.70)",
+          "oklch(37.9% 0.0119 23.70)",
+          "oklch(49.3% 0.0119 23.70)",
+          "oklch(60.7% 0.0119 23.70)",
+          "oklch(72.1% 0.0119 23.70)",
+          "oklch(83.6% 0.0119 23.70)",
+          "oklch(95% 0.0119 23.70)"
+        ]
+      },
+      "mapa-fondo": {
+        "role": "neutral",
+        "displayName": "mapa fondo",
+        "tonalRamp": [
+          "oklch(15% 0.0068 145.52)",
+          "oklch(26.4% 0.0068 145.52)",
+          "oklch(37.9% 0.0068 145.52)",
+          "oklch(49.3% 0.0068 145.52)",
+          "oklch(60.7% 0.0068 145.52)",
+          "oklch(72.1% 0.0068 145.52)",
+          "oklch(83.6% 0.0068 145.52)",
+          "oklch(95% 0.0068 145.52)"
+        ]
+      },
+      "dato-cero": {
+        "role": "primary",
+        "displayName": "dato cero",
+        "tonalRamp": [
+          "oklch(15% 0.0100 155.09)",
+          "oklch(26.4% 0.0100 155.09)",
+          "oklch(37.9% 0.0100 155.09)",
+          "oklch(49.3% 0.0100 155.09)",
+          "oklch(60.7% 0.0100 155.09)",
+          "oklch(72.1% 0.0100 155.09)",
+          "oklch(83.6% 0.0100 155.09)",
+          "oklch(95% 0.0100 155.09)"
+        ]
+      },
+      "dato-uno": {
+        "role": "primary",
+        "displayName": "dato uno",
+        "tonalRamp": [
+          "oklch(15% 0.0381 158.83)",
+          "oklch(26.4% 0.0381 158.83)",
+          "oklch(37.9% 0.0381 158.83)",
+          "oklch(49.3% 0.0381 158.83)",
+          "oklch(60.7% 0.0381 158.83)",
+          "oklch(72.1% 0.0381 158.83)",
+          "oklch(83.6% 0.0381 158.83)",
+          "oklch(95% 0.0381 158.83)"
+        ]
+      },
+      "dato-dos": {
+        "role": "primary",
+        "displayName": "dato dos",
+        "tonalRamp": [
+          "oklch(15% 0.0728 159.94)",
+          "oklch(26.4% 0.0728 159.94)",
+          "oklch(37.9% 0.0728 159.94)",
+          "oklch(49.3% 0.0728 159.94)",
+          "oklch(60.7% 0.0728 159.94)",
+          "oklch(72.1% 0.0728 159.94)",
+          "oklch(83.6% 0.0728 159.94)",
+          "oklch(95% 0.0728 159.94)"
+        ]
+      },
+      "dato-tres": {
+        "role": "primary",
+        "displayName": "dato tres",
+        "tonalRamp": [
+          "oklch(15% 0.0825 162.01)",
+          "oklch(26.4% 0.0825 162.01)",
+          "oklch(37.9% 0.0825 162.01)",
+          "oklch(49.3% 0.0825 162.01)",
+          "oklch(60.7% 0.0825 162.01)",
+          "oklch(72.1% 0.0825 162.01)",
+          "oklch(83.6% 0.0825 162.01)",
+          "oklch(95% 0.0825 162.01)"
+        ]
+      },
+      "dato-cuatro": {
+        "role": "primary",
+        "displayName": "dato cuatro",
+        "tonalRamp": [
+          "oklch(15% 0.0658 166.53)",
+          "oklch(26.4% 0.0658 166.53)",
+          "oklch(37.9% 0.0658 166.53)",
+          "oklch(49.3% 0.0658 166.53)",
+          "oklch(60.7% 0.0658 166.53)",
+          "oklch(72.1% 0.0658 166.53)",
+          "oklch(83.6% 0.0658 166.53)",
+          "oklch(95% 0.0658 166.53)"
+        ]
+      },
+      "via-pavimentada": {
+        "role": "semantic",
+        "displayName": "Azul vial",
+        "tonalRamp": [
+          "oklch(15% 0.0919 237.69)",
+          "oklch(26.4% 0.0919 237.69)",
+          "oklch(37.9% 0.0919 237.69)",
+          "oklch(49.3% 0.0919 237.69)",
+          "oklch(60.7% 0.0919 237.69)",
+          "oklch(72.1% 0.0919 237.69)",
+          "oklch(83.6% 0.0919 237.69)",
+          "oklch(95% 0.0919 237.69)"
+        ]
+      },
+      "via-afirmado": {
+        "role": "semantic",
+        "displayName": "Tierra vial",
+        "tonalRamp": [
+          "oklch(15% 0.1129 56.70)",
+          "oklch(26.4% 0.1129 56.70)",
+          "oklch(37.9% 0.1129 56.70)",
+          "oklch(49.3% 0.1129 56.70)",
+          "oklch(60.7% 0.1129 56.70)",
+          "oklch(72.1% 0.1129 56.70)",
+          "oklch(83.6% 0.1129 56.70)",
+          "oklch(95% 0.1129 56.70)"
+        ]
+      },
+      "via-otra": {
+        "role": "semantic",
+        "displayName": "Violeta vial",
+        "tonalRamp": [
+          "oklch(15% 0.0818 303.77)",
+          "oklch(26.4% 0.0818 303.77)",
+          "oklch(37.9% 0.0818 303.77)",
+          "oklch(49.3% 0.0818 303.77)",
+          "oklch(60.7% 0.0818 303.77)",
+          "oklch(72.1% 0.0818 303.77)",
+          "oklch(83.6% 0.0818 303.77)",
+          "oklch(95% 0.0818 303.77)"
+        ]
+      },
+      "via-desconocida": {
+        "role": "semantic",
+        "displayName": "Gris vial",
+        "tonalRamp": [
+          "oklch(15% 0.0185 233.35)",
+          "oklch(26.4% 0.0185 233.35)",
+          "oklch(37.9% 0.0185 233.35)",
+          "oklch(49.3% 0.0185 233.35)",
+          "oklch(60.7% 0.0185 233.35)",
+          "oklch(72.1% 0.0185 233.35)",
+          "oklch(83.6% 0.0185 233.35)",
+          "oklch(95% 0.0185 233.35)"
+        ]
+      },
+      "red-ferrea": {
+        "role": "semantic",
+        "displayName": "Violeta férreo",
+        "tonalRamp": [
+          "oklch(15% 0.0423 299.49)",
+          "oklch(26.4% 0.0423 299.49)",
+          "oklch(37.9% 0.0423 299.49)",
+          "oklch(49.3% 0.0423 299.49)",
+          "oklch(60.7% 0.0423 299.49)",
+          "oklch(72.1% 0.0423 299.49)",
+          "oklch(83.6% 0.0423 299.49)",
+          "oklch(95% 0.0423 299.49)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Total territorial",
+        "purpose": "Totales con números tabulares: resumen territorial clamp(30px, 3vw, 42px), 26px en teléfono; ficha 22px."
+      },
+      "headline": {
+        "displayName": "Encabezado territorial",
+        "purpose": "Nombre de la superficie."
+      },
+      "title": {
+        "displayName": "Título cartográfico",
+        "purpose": "Territorio del encuadre; 20px en teléfono."
+      },
+      "body": {
+        "displayName": "Lectura general",
+        "purpose": "Texto y ayudas de la app."
+      },
+      "label": {
+        "displayName": "Etiqueta",
+        "purpose": "Nombre de campo y contexto."
+      }
+    },
+    "shadows": [
+      {
+        "name": "sombra-1",
+        "value": "0 1px 2px rgba(16, 24, 20, 0.04)",
+        "purpose": "Sombra mínima del sistema."
+      },
+      {
+        "name": "sombra-flotante",
+        "value": "0 10px 32px rgba(16, 24, 20, 0.12), 0 1px 3px rgba(16, 24, 20, 0.06)",
+        "purpose": "Menús superpuestos."
+      },
+      {
+        "name": "mapa-controles",
+        "value": "0 2px 8px #172e1810",
+        "purpose": "Controles flotantes sobre la cartografía."
+      },
+      {
+        "name": "mapa-tooltip",
+        "value": "0 4px 18px #172e1810",
+        "purpose": "Detalle bajo puntero del mapa."
+      }
+    ],
+    "motion": [
+      {
+        "name": "curva",
+        "value": "cubic-bezier(0.2, 0.8, 0.2, 1)",
+        "purpose": "Estados y aparición."
+      },
+      {
+        "name": "rapido",
+        "value": "120ms",
+        "purpose": "Estados de controles."
+      },
+      {
+        "name": "medio",
+        "value": "200ms",
+        "purpose": "Aparición con desplazamiento de 4px."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "0.01ms",
+        "purpose": "Duración de animaciones y transiciones con prefers-reduced-motion."
+      },
+      {
+        "name": "selector-chevron",
+        "value": "160ms ease-out",
+        "purpose": "Giro de flecha al abrir SelectorMultiple; transition:none con prefers-reduced-motion."
+      },
+      {
+        "name": "territorio-trazo",
+        "value": "360ms cubic-bezier(.16,1,.3,1)",
+        "purpose": "Entrada de barras mediante transform:scaleX, sin animar dimensiones; omitida con movimiento reducido."
+      },
+      {
+        "name": "territorio-barra-cambio",
+        "value": "320ms cubic-bezier(.16,1,.3,1)",
+        "purpose": "Actualización del transform de la barra; transition:none con movimiento reducido."
+      },
+      {
+        "name": "territorio-fila-hover",
+        "value": "140ms ease-out",
+        "purpose": "Cambio de background-color de fila seleccionable; transition:none con movimiento reducido."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "input-desktop",
+        "value": "720px"
+      },
+      {
+        "name": "territorio-stacked-max",
+        "value": "760px"
+      },
+      {
+        "name": "shell-desktop",
+        "value": "900px"
+      },
+      {
+        "name": "territorio-narrow-max",
+        "value": "1000px"
+      },
+      {
+        "name": "territorio-wide",
+        "value": "1100px"
+      }
+    ],
+    "themeSources": {
+      "shell": "apps/web/src/tokens.css — tema oscuro condicionado por prefers-color-scheme y data-tema; tinta-3 oscuro #96a19b sobre superficie #161a18.",
+      "map": "apps/web/src/mapa.css — base y cero oscuros; cuatro tonos positivos constantes con tinta y halos por clase."
+    },
+    "selectorMultiple": {
+      "source": [
+        "apps/web/src/SelectorMultiple.tsx",
+        "apps/web/src/mapa.css",
+        "apps/web/src/MapaTerritorial.tsx"
+      ],
+      "layout": {
+        "triggerMinHeight": "44px",
+        "optionMinHeight": "44px",
+        "checkboxSize": "16px",
+        "applyMinHeight": "36px; 44px at max-width:760px",
+        "panelPosition": "fixed",
+        "panelWidth": "min(340px, innerWidth - 32px)",
+        "viewportSideMargin": "16px",
+        "panelMaxHeight": "calc(100dvh - 128px)",
+        "optionsMaxHeight": "280px",
+        "placement": "left clamped to viewport; top clamped from trigger.bottom + 8px to innerHeight - panel.height - 96px, minimum 16px",
+        "stacking": 50,
+        "filterColumns": "3; 2 at max-width:760px, with months spanning the full lower row",
+        "chipsVisible": 2,
+        "chipRemoveSize": "24px"
+      },
+      "behavior": [
+        "Búsqueda sin mayúsculas ni tildes por etiqueta y grupo; valores aplicados primero.",
+        "Casillas nativas editan borrador; Aplicar confirma, Seleccionar todos/resultados y Limpiar sólo editan borrador.",
+        "Escape cancela y devuelve foco al disparador; Aplicar devuelve foco. ArrowUp/ArrowDown recorren casillas; Tab sigue orden nativo.",
+        "Clic exterior, salida del foco, resize y scroll externo cierran sin aplicar; scroll interno conserva panel.",
+        "Etiquetas removibles aplican de inmediato; dos visibles y +n con title para el resto.",
+        "Municipios se acotan por provincias; cambio provincial descarta municipios fuera de alcance.",
+        "Meses incluye últimos 24 meses y entrada month nativa para extras.",
+        "Ambas medidas siempre se consultan; Colorear por elige la medida cartográfica y el orden del gráfico, con altura mínima 34px en escritorio y 44px en teléfono."
+      ],
+      "previewScope": "Muestra visual abierta con valores sintéticos; HTML/CSS del panel no reproduce la lógica React de búsqueda ni Aplicar."
+    },
+    "infrastructure": {
+      "source": [
+        "apps/web/src/MapaEntorno.tsx",
+        "apps/web/src/MapaTerritorial.tsx",
+        "apps/web/src/mapa.css",
+        "apps/web/src/Chat.tsx"
+      ],
+      "visualAuthority": "Extensión aditiva del diseño Kaizen confirmado; Geist, neutros y verde forestal. Apps Script sólo aporta referencias funcionales y de fuentes.",
+      "defaults": {
+        "view": "referidos",
+        "base": "calles",
+        "boundaries": true,
+        "names": true,
+        "railway": false
+      },
+      "layout": {
+        "mapHeightDesktop": "540px",
+        "mapHeightMobile": "420px",
+        "mobileMaxWidth": "760px",
+        "listMaxHeight": "220px",
+        "rowMinHeight": "44px",
+        "checkboxSize": "16px",
+        "globalSearchMaxWidth": "380px",
+        "globalResultsMaxHeight": "320px",
+        "panelPadding": "20px 24px",
+        "mobilePanelPadding": "16px"
+      },
+      "mapBehavior": {
+        "permanentNamesMinZoom": 12,
+        "permanentNamesMaxAreas": 60,
+        "roadQueryMinZoom": 13,
+        "roadQueryMaxSpanDegrees": 0.16,
+        "queryBounds": [
+          -75,
+          3.6,
+          -73,
+          6
+        ],
+        "railwayStroke": "3px; dashArray:8 5",
+        "roadStroke": "3px; selected:6px",
+        "wheelZoom": false
+      },
+      "accessibility": [
+        "Botones de vista/base y filas usan aria-pressed; casillas nativas con etiquetas y cantidades.",
+        "Foco de acento 2px con separación 3px, filas de altura mínima 44px.",
+        "Listado férreo departamental y ficha ofrecen selección por teclado fuera del mapa.",
+        "Carga, errores y ficha se anuncian por status/alert/aria-live según su estado."
+      ],
+      "behavior": [
+        "Referidos conserva su escala de cantidad y semántica de cero/protegido.",
+        "Búsqueda global desde dos caracteres, hasta ocho coincidencias por vereda/municipio/código sin mayúsculas ni tildes.",
+        "Ficha territorial añade código, municipio, área aproximada en hectáreas y vigencia de referencia.",
+        "Consulta vial manual sobre caja pequeña visible; marco discontinuo conserva el alcance de la consulta.",
+        "Categorías y búsqueda por nombre filtran los tramos consultados; selección vial enfoca geometría y abre ficha.",
+        "Corredores férreos de fuente departamental no implican presencia en el municipio seleccionado.",
+        "Ficha distingue atributos desconocidos; no infiere obras pendientes ni operación de trenes.",
+        "Fuentes/licencias en desplegable; GeoJSON sólo con geometría, propiedades, vigencias, atribución y licencia públicas.",
+        "Copy es-CO también en SUMA: Pregúntale a SUMA…; rutas e identificadores conservados."
+      ],
+      "previewScope": "Muestras autónomas HTML/CSS del estado capturado. Casillas nativas y estilos de foco/hover funcionan; no reproducen Leaflet, consulta API, búsqueda ni estado React. Cantidades y atributos ilustran la evidencia puntual, no producción."
+    },
+    "territorialComparison": {
+      "source": [
+        "apps/web/src/MapaTerritorial.tsx",
+        "apps/web/src/GraficoTerritorial.tsx",
+        "apps/web/src/comparacionTerritorial.ts",
+        "apps/web/src/mapa.css"
+      ],
+      "defaultTerritory": "Cundinamarca",
+      "layout": {
+        "indicatorColumns": "4; 2 at max-width:760px",
+        "indicatorGap": "18px; 12px at max-width:760px",
+        "indicatorPadding": "22px; 16px at max-width:760px",
+        "desktopGrid": "minmax(0, 1fr) minmax(350px, .54fr)",
+        "desktopGap": "20px",
+        "mediumGrid": "minmax(0, 1fr) 350px at 761px–1100px; gap 16px",
+        "mobileOrder": [
+          "mapa",
+          "gráfico",
+          "ficha",
+          "tabla"
+        ],
+        "panelGap": "18px",
+        "chartPadding": "22px; 20px at max-width:760px",
+        "chartRowMinHeight": "56px",
+        "mainMobileTarget": "44px",
+        "chipRemoveTarget": "24px; mejora pendiente"
+      },
+      "behavior": [
+        "Hasta seis filas, ordenadas por la medida cartográfica activa; la tabla conserva todos los territorios.",
+        "Registradas y Referidas son series independientes, escala común; no se apilan ni suman porque las referidas forman parte de las registradas.",
+        "Cifras protegidas o faltantes muestran texto y no generan barra ni valor inferido. Dos ceros no generan fila.",
+        "Fila botón con aria-pressed y nombre accesible que incluye ambas cifras; activa la selección y enfoca la ficha.",
+        "Carga Consultando comparación…; vacío No hay registros para comparar con estos filtros.",
+        "Error de cifras separado del cartográfico: comparación indisponible, Reintentar comparación y aria-busy=false.",
+        "Actualizar cifras y reintento limpian la caché y consultan de nuevo."
+      ],
+      "privacy": "Cifras agregadas con permisos y supresión en servidor; no representan población total.",
+      "previewScope": "Muestra visual autónoma con datos sintéticos y estados hover/focus. No reproduce consultas, selección React ni navegación; los estados de carga/error/vacío están implementados en GraficoTerritorial.tsx."
+    },
+    "performanceEvidence": {
+      "source": "docs/auditoria-app-territorial.md",
+      "publicCartography": "Derivados Mapshaper 8% keep-shapes; originales intactos para descarga, areaHa precalculada sobre el original. 116 municipios y 2.578 veredas conservados. Caché máxima de 12 archivos públicos, preparación reutilizada mientras la entrada permanece.",
+      "figuresCache": "Hasta 60s y 12 consultas en memoria del componente; clave por filtros, tenantId, purposeId y permissions. AbortSignal, limpieza al error o actualización manual, destrucción al desmontar; nunca se comparte con la caché pública.",
+      "loading": "React.lazy por rutas y creación diferida del índice veredal; Leaflet sólo con Vías y entorno.",
+      "observations": "Entrada Vite 750KB aproximados → 415,90KB / 119,56KB gzip; módulo mapa 286,74KB / 48,18KB gzip. JSON municipal 8.206.875 → 639.086 caracteres; mediana CPU local Node 1.867ms → 136ms.",
+      "limits": "Build y benchmark local; no LCP, INP, latencia real ni garantía de Core Web Vitals en producción. Oscuro y lector de pantalla requieren validación adicional.",
+      "remaining": "Endpoint autorizado de conteo de revisión; blancos de chips removibles de 24px."
+    }
+  },
+  "components": [
+    {
+      "name": "Botón primario",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Acción principal del sistema.",
+      "html": "<button class=\"ds-btn ds-primary\">Registrar persona</button>",
+      "css": ".ds-btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; height:34px; padding:0 14px; border:1px solid var(--linea,#e4e7e4); border-radius:var(--r-full,999px); background:var(--superficie,#fff); color:var(--tinta,#15171a); font-family:var(--fuente,'Geist Variable',sans-serif); font-size:13px; font-weight:500; cursor:pointer; transition:background var(--rapido,120ms) var(--curva,cubic-bezier(.2,.8,.2,1)),border-color var(--rapido,120ms) var(--curva,cubic-bezier(.2,.8,.2,1)),color var(--rapido,120ms) var(--curva,cubic-bezier(.2,.8,.2,1)); } .ds-btn:hover:not(:disabled) { background:var(--superficie-2,#f1f3f1); border-color:var(--linea-fuerte,#d0d6d2); } .ds-btn:focus-visible { outline:2px solid var(--acento,#2f6b57); outline-offset:2px; } .ds-btn:disabled { opacity:.45; cursor:not-allowed; } @media(prefers-reduced-motion:reduce) { .ds-btn { transition-duration:.01ms; } }.ds-primary { border-color:transparent; background:var(--acento,#2f6b57); color:var(--sobre-acento,#fff); } .ds-primary:hover:not(:disabled) { background:var(--acento-hover,#245545); border-color:transparent; }"
+    },
+    {
+      "name": "Botón neutro",
+      "kind": "button",
+      "refersTo": "button-neutral",
+      "description": "Acciones secundarias, como acceso a Anapoima.",
+      "html": "<button class=\"ds-btn\">Ver Anapoima <svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m9 5 7 7-7 7\"/></svg></button>",
+      "css": ".ds-btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; height:34px; padding:0 14px; border:1px solid var(--linea,#e4e7e4); border-radius:var(--r-full,999px); background:var(--superficie,#fff); color:var(--tinta,#15171a); font-family:var(--fuente,'Geist Variable',sans-serif); font-size:13px; font-weight:500; cursor:pointer; transition:background var(--rapido,120ms) var(--curva,cubic-bezier(.2,.8,.2,1)),border-color var(--rapido,120ms) var(--curva,cubic-bezier(.2,.8,.2,1)),color var(--rapido,120ms) var(--curva,cubic-bezier(.2,.8,.2,1)); } .ds-btn:hover:not(:disabled) { background:var(--superficie-2,#f1f3f1); border-color:var(--linea-fuerte,#d0d6d2); } .ds-btn:focus-visible { outline:2px solid var(--acento,#2f6b57); outline-offset:2px; } .ds-btn:disabled { opacity:.45; cursor:not-allowed; } @media(prefers-reduced-motion:reduce) { .ds-btn { transition-duration:.01ms; } }"
+    },
+    {
+      "name": "Botón fantasma",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Acción discreta con el marco transparente.",
+      "html": "<button class=\"ds-btn ds-ghost\">Cancelar</button>",
+      "css": ".ds-btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; height:34px; padding:0 14px; border:1px solid var(--linea,#e4e7e4); border-radius:var(--r-full,999px); background:var(--superficie,#fff); color:var(--tinta,#15171a); font-family:var(--fuente,'Geist Variable',sans-serif); font-size:13px; font-weight:500; cursor:pointer; transition:background var(--rapido,120ms) var(--curva,cubic-bezier(.2,.8,.2,1)),border-color var(--rapido,120ms) var(--curva,cubic-bezier(.2,.8,.2,1)),color var(--rapido,120ms) var(--curva,cubic-bezier(.2,.8,.2,1)); } .ds-btn:hover:not(:disabled) { background:var(--superficie-2,#f1f3f1); border-color:var(--linea-fuerte,#d0d6d2); } .ds-btn:focus-visible { outline:2px solid var(--acento,#2f6b57); outline-offset:2px; } .ds-btn:disabled { opacity:.45; cursor:not-allowed; } @media(prefers-reduced-motion:reduce) { .ds-btn { transition-duration:.01ms; } }.ds-ghost { border-color:transparent; background:transparent; color:var(--tinta-2,#4b5157); } .ds-ghost:hover:not(:disabled) { border-color:transparent; color:var(--tinta,#15171a); }"
+    },
+    {
+      "name": "Campo base",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Primitiva de campo etiquetado del sistema existente.",
+      "html": "<label class=\"ds-field\"><span>Nombre</span><input class=\"ds-input\" placeholder=\"Ingresa un nombre\" /></label>",
+      "css": ".ds-field { display:flex; flex-direction:column; gap:6px; font-family:var(--fuente,'Geist Variable',sans-serif); } .ds-field>span { color:var(--tinta-2,#4b5157); font-size:12px; font-weight:500; } .ds-input { min-width:0; height:40px; padding:0 12px; border:1px solid var(--linea,#e4e7e4); border-radius:var(--r,10px); background:var(--superficie,#fff); color:var(--tinta,#15171a); font:16px var(--fuente,'Geist Variable',sans-serif); transition:border-color var(--rapido,120ms) var(--curva,cubic-bezier(.2,.8,.2,1)),box-shadow var(--rapido,120ms) var(--curva,cubic-bezier(.2,.8,.2,1)); } .ds-input::placeholder { color:var(--tinta-3,#636b72); } .ds-input:focus { border-color:var(--acento,#2f6b57); box-shadow:0 0 0 3px var(--acento-suave,#eaf2ee); outline:none; } @media(min-width:720px) { .ds-input { height:36px; font-size:14px; } } @media(prefers-reduced-motion:reduce) { .ds-input { transition-duration:.01ms; } }"
+    },
+    {
+      "name": "Navegación superior",
+      "kind": "nav",
+      "description": "Cápsula neutra de página activa.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Vista\"><a href=\"#panorama\">Panorama</a><a href=\"#mapa\" aria-current=\"page\">Mapa</a><a href=\"#revision\">Revisión</a></nav>",
+      "css": ".ds-nav { display:flex; gap:2px; font-family:var(--fuente,'Geist Variable',sans-serif); } .ds-nav a { padding:6px 10px; border-radius:var(--r-full,999px); color:var(--tinta-2,#4b5157); font-size:13px; text-decoration:none; transition:background var(--rapido,120ms) var(--curva,cubic-bezier(.2,.8,.2,1)),color var(--rapido,120ms) var(--curva,cubic-bezier(.2,.8,.2,1)); } .ds-nav a:hover { color:var(--tinta,#15171a); } .ds-nav a[aria-current='page'] { background:var(--superficie-2,#f1f3f1); color:var(--tinta,#15171a); } .ds-nav a:focus-visible { outline:2px solid var(--acento,#2f6b57); outline-offset:2px; } @media(prefers-reduced-motion:reduce) { .ds-nav a { transition-duration:.01ms; } }"
+    },
+    {
+      "name": "Insignia de cantidad",
+      "kind": "chip",
+      "refersTo": "badge",
+      "description": "Indicador pequeño del shell, sin comportamiento de filtro.",
+      "html": "<span class=\"ds-badge\">3</span>",
+      "css": ".ds-badge { display:inline-grid; place-items:center; min-width:18px; height:18px; padding:0 5px; border-radius:var(--r-full,999px); background:var(--acento,#2f6b57); color:var(--sobre-acento,#fff); font-family:var(--fuente,'Geist Variable',sans-serif); font-size:11px; font-variant-numeric:tabular-nums; }"
+    },
+    {
+      "name": "Tarjeta de lectura",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Contenedor del sistema existente para datos y encabezados.",
+      "html": "<section class=\"ds-card\"><div class=\"ds-card-title\"><h2>Territorio</h2><span>Por provincia</span></div><p>Datos agregados del espacio activo.</p></section>",
+      "css": ".ds-card { border:1px solid var(--linea,#e4e7e4); border-radius:var(--r-lg,14px); background:var(--superficie,#fff); color:var(--tinta,#15171a); padding:20px; font-family:var(--fuente,'Geist Variable',sans-serif); font-size:14px; line-height:1.5; } .ds-card-title { display:flex; gap:8px; align-items:baseline; justify-content:space-between; margin-bottom:16px; } .ds-card h2 { margin:0; font-size:14px; font-weight:500; letter-spacing:-.01em; } .ds-card-title>span { color:var(--tinta-3,#636b72); font-size:12px; } .ds-card p { margin:0; }"
+    },
+    {
+      "name": "Fila territorial protegida",
+      "kind": "custom",
+      "description": "Alternativa accesible al mapa; cifra reservada distinta de cero.",
+      "html": "<button class=\"ds-territory-row\"><span class=\"ds-protected-dot\" aria-hidden=\"true\"></span><span>Territorio</span><strong>Protegido</strong><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" aria-hidden=\"true\"><path d=\"m9 5 7 7-7 7\"/></svg></button>",
+      "css": ".ds-territory-row { display:flex; align-items:center; width:100%; gap:10px; padding:12px; border:0; border-bottom:1px solid var(--linea,#e4e7e4); background:transparent; color:var(--tinta,#15171a); font-family:var(--fuente,'Geist Variable',sans-serif); font-size:12px; text-align:left; cursor:pointer; } .ds-territory-row:hover,.ds-territory-row[aria-pressed='true'] { background:var(--superficie-2,#f1f3f1); } .ds-territory-row:focus-visible { outline:2px solid var(--acento,#2f6b57); outline-offset:3px; } .ds-territory-row>span:nth-child(2) { flex:1; } .ds-territory-row strong { font-size:12px; font-weight:550; font-variant-numeric:tabular-nums; } .ds-territory-row svg { flex-shrink:0; color:var(--tinta-3,#636b72); } .ds-protected-dot { width:7px; height:7px; border-radius:2px; flex-shrink:0; background:repeating-linear-gradient(135deg,#dae0db 0px,#dae0db 3px,#8c998e 3px,#8c998e 4px); }"
+    },
+    {
+      "name": "SelectorMultiple",
+      "kind": "custom",
+      "refersTo": "selector-multiple",
+      "description": "Filtro con búsqueda, borrador, casillas nativas y etiquetas; muestra visual abierta. Lógica completa en SelectorMultiple.tsx.",
+      "html": "<div class=\"ds-selector-multiple\"><span class=\"ds-selector-label\" id=\"ds-multi-label\">Municipios / alcaldías</span><button class=\"ds-selector-trigger\" aria-labelledby=\"ds-multi-label ds-multi-value\" aria-haspopup=\"dialog\" aria-expanded=\"true\" aria-controls=\"ds-multi-panel\"><span id=\"ds-multi-value\">2 seleccionados</span><span class=\"ds-selector-count\" aria-hidden=\"true\">2</span><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" aria-hidden=\"true\"><path d=\"m6 9 6 6 6-6\"/></svg></button><div class=\"ds-selector-etiquetas\"><span class=\"ds-selector-etiqueta\"><span title=\"Funza\">Funza</span><button aria-label=\"Quitar Funza\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" aria-hidden=\"true\"><path d=\"m6 6 12 12M6 18 18 6\"/></svg></button></span><span class=\"ds-selector-etiqueta\"><span title=\"Anapoima\">Anapoima</span><button aria-label=\"Quitar Anapoima\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" aria-hidden=\"true\"><path d=\"m6 6 12 12M6 18 18 6\"/></svg></button></span></div><div class=\"ds-selector-panel\" id=\"ds-multi-panel\" role=\"dialog\" aria-label=\"Elegir municipios / alcaldías\"><div class=\"ds-selector-search\"><svg width=\"17\" height=\"17\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" aria-hidden=\"true\"><circle cx=\"10\" cy=\"10\" r=\"6\"/><path d=\"m15 15 5 5\"/></svg><input type=\"search\" placeholder=\"Buscar…\" aria-label=\"Buscar municipios / alcaldías\"/></div><div class=\"ds-selector-acciones\"><button>Seleccionar todos</button><button>Limpiar</button></div><div class=\"ds-selector-options\"><label class=\"ds-selector-option\"><input type=\"checkbox\" checked/><span><span>Funza</span><small>Sabana Occidente</small></span></label><label class=\"ds-selector-option\"><input type=\"checkbox\" checked/><span><span>Anapoima</span><small>Tequendama</small></span></label><label class=\"ds-selector-option\"><input type=\"checkbox\"/><span><span>Bojacá</span><small>Sabana Occidente</small></span></label></div><div class=\"ds-selector-footer\"><span aria-live=\"polite\">2 seleccionados</span><button class=\"ds-selector-apply\">Aplicar</button></div></div></div>",
+      "css": ".ds-selector-multiple { min-width: 0; position: relative; }\n.ds-selector-multiple.abierto { z-index: 50; }\n.ds-selector-label { display: block; margin-bottom: 8px; font-size: 12px; font-weight: 550; color: var(--tinta-2); }\n.ds-selector-trigger { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid var(--linea-fuerte); border-radius: 8px; background: var(--superficie); color: var(--tinta); font: inherit; font-size: 13px; cursor: pointer; text-align: left; }\n.ds-selector-trigger > span:first-child { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }\n.ds-selector-trigger > svg { color: var(--tinta-2); flex-shrink: 0; transition: transform 160ms ease-out; }\n.ds-selector-trigger:hover { border-color: var(--acento); background: var(--superficie-2); }\n.ds-selector-trigger[aria-expanded=\"true\"] { border-color: var(--acento); }\n.ds-selector-trigger[aria-expanded=\"true\"] > svg { transform: rotate(180deg); }\n.ds-selector-count { padding: 1px 6px; border-radius: 4px; color: var(--acento); background: var(--acento-suave); font-size: 11px; font-variant-numeric: tabular-nums; }\n.ds-selector-etiquetas { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }\n.ds-selector-etiqueta { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; min-width: 0; border-radius: 5px; padding: 3px 6px 3px 8px; background: var(--acento-suave); color: var(--acento); font-size: 11px; }\n.ds-selector-etiqueta > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }\n.ds-selector-etiqueta button { display: grid; place-items: center; flex-shrink: 0; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 4px; background: transparent; color: currentColor; cursor: pointer; }\n.ds-selector-etiqueta button:hover { background: var(--acento-borde); }\n.ds-selector-etiqueta svg { width: 12px; height: 12px; }\n.ds-selector-resto { align-self: center; padding: 3px 5px; color: var(--tinta-2); font-size: 11px; }\n.ds-selector-panel { position: fixed; display: flex; flex-direction: column; width: 340px; max-height: calc(100dvh - 128px); border-radius: 12px; background: var(--superficie); color: var(--tinta); box-shadow: var(--sombra-flotante); overflow: hidden; z-index: 50; }\n.ds-selector-search { display: flex; align-items: center; gap: 9px; padding: 14px 16px; border-bottom: 1px solid var(--linea); color: var(--tinta-2); }\n.ds-selector-search input { border: 0; min-width: 0; width: 100%; padding: 0; outline: none; background: transparent; color: var(--tinta); font: inherit; font-size: 13px; }\n.ds-selector-search:focus-within { box-shadow: inset 0 -2px var(--acento); }\n.ds-selector-search input::placeholder { color: var(--tinta-2); }\n.ds-selector-acciones { display: flex; justify-content: space-between; gap: 12px; padding: 9px 16px; }\n.ds-selector-options { overflow-y: auto; min-height: 0; max-height: 280px; padding: 2px 8px 8px; scrollbar-width: thin; scrollbar-color: var(--linea-fuerte) transparent; }\n.ds-selector-option { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 10px 9px; border-radius: 6px; cursor: pointer; }\n.ds-selector-option:hover, .ds-selector-option:focus-within { background: var(--superficie-2); }\n.ds-selector-option:has(input:checked) { background: var(--acento-suave); }\n.ds-selector-option input { width: 16px; height: 16px; flex-shrink: 0; margin: 0; accent-color: var(--acento); cursor: pointer; }\n.ds-selector-option > span { display: grid; gap: 3px; font-size: 13px; }\n.ds-selector-option small { font-size: 11px; color: var(--tinta-2); }\n.ds-selector-empty { color: var(--tinta-2); font-size: 12px; padding: 12px 9px; }\n.ds-selector-month { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 16px; border-top: 1px solid var(--linea); font-size: 11px; color: var(--tinta-2); }\n.ds-selector-month input { min-width: 0; max-width: 170px; border: 1px solid var(--linea); padding: 6px; border-radius: 5px; font: inherit; color: var(--tinta); background: var(--superficie); }\n.ds-selector-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-top: 1px solid var(--linea); }\n.ds-selector-footer > span { color: var(--tinta-2); font-size: 11px; }\n.ds-selector-apply { min-height: 36px; padding: 8px 15px; border: 0; border-radius: 6px; background: var(--acento); color: var(--sobre-acento); font: inherit; font-size: 12px; font-weight: 550; cursor: pointer; }\n.ds-selector-apply:disabled { opacity: .5; cursor: default; }\n.ds-selector-apply:hover:enabled { background: var(--acento-hover); }\n.ds-selector-multiple { font-family:var(--fuente,'Geist Variable',sans-serif); max-width:340px; } .ds-selector-panel { position:relative; width:100%; margin-top:8px; } .ds-selector-acciones button { padding:3px 0; border:0; color:var(--acento); background:transparent; font:inherit; font-size:11px; cursor:pointer; } .ds-selector-acciones button:hover { text-decoration:underline; text-underline-offset:3px; } .ds-selector-multiple button:focus-visible,.ds-selector-multiple input:focus-visible { outline:2px solid var(--acento); outline-offset:3px; } .ds-selector-search input:focus-visible { outline:none; caret-color:var(--acento); } @media(prefers-reduced-motion:reduce) { .ds-selector-trigger > svg { transition:none; } }\n@media(max-width:760px){.ds-selector-apply,.ds-selector-acciones button{min-height:44px;}}"
+    },
+    {
+      "name": "Vista cartográfica",
+      "kind": "custom",
+      "refersTo": "territorio-vista",
+      "description": "Selector segmentado de Mapa de la red / Vías y entorno; muestra Mapa de la red predeterminado.",
+      "html": "<div class=\"ds-infra-view\" aria-label=\"Vista del mapa\"><button aria-pressed=\"true\">Mapa de la red</button><button aria-pressed=\"false\">Vías y entorno</button></div>",
+      "css": ".ds-infra-view{display:inline-flex;gap:3px;padding:3px;border:1px solid var(--linea,#e4e7e4);border-radius:8px;background:var(--superficie,#fff);font-family:var(--fuente,'Geist Variable',ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif);}.ds-infra-view button{min-height:38px;padding:8px 16px;border:0;border-radius:5px;background:transparent;color:var(--tinta-2,#4b5157);font:inherit;font-size:12px;cursor:pointer;}.ds-infra-view button[aria-pressed='true']{background:var(--acento-suave,#eaf2ee);color:var(--acento,#2f6b57);font-weight:600;}.ds-infra-view button:focus-visible,.ds-infra-categories input:focus-visible,.ds-infra-rail button:focus-visible,.ds-infra-detail button:focus-visible{outline:2px solid var(--acento,#2f6b57);outline-offset:3px;}\n@media(max-width:760px){.ds-infra-view button{min-height:44px;}}"
+    },
+    {
+      "name": "Categorías de superficie vial",
+      "kind": "custom",
+      "description": "Casillas nativas con trazo categórico, nombre y cifra tabular; valores de la captura final de 754 tramos.",
+      "html": "<div class=\"ds-infra-categories\"><label><input type=\"checkbox\" checked/><i class=\"ds-road-paved\" aria-hidden=\"true\"></i><span>Pavimentada <b>26</b></span></label><label><input type=\"checkbox\" checked/><i class=\"ds-road-earth\" aria-hidden=\"true\"></i><span>Sin pavimentar / afirmado <b>40</b></span></label><label><input type=\"checkbox\" checked/><i class=\"ds-road-other\" aria-hidden=\"true\"></i><span>Otra superficie <b>1</b></span></label><label><input type=\"checkbox\" checked/><i class=\"ds-road-unknown\" aria-hidden=\"true\"></i><span>Sin información <b>687</b></span></label></div>",
+      "css": ".ds-infra-categories{display:flex;flex-wrap:wrap;gap:6px 18px;color:var(--tinta,#15171a);font-family:var(--fuente,'Geist Variable',ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif);}.ds-infra-categories label{display:flex;align-items:center;gap:7px;font-size:11px;min-height:36px;cursor:pointer;}.ds-infra-categories input{accent-color:var(--acento,#2f6b57);width:16px;height:16px;margin:0;flex-shrink:0;}.ds-infra-categories i{width:14px;height:3px;flex-shrink:0;}.ds-infra-categories b{margin-left:5px;font-weight:600;font-variant-numeric:tabular-nums;}.ds-road-paved{background:#256a91;}.ds-road-earth{background:#a15d24;}.ds-road-other{background:#6b5587;}.ds-road-unknown{background:#58646b;}.ds-infra-view button:focus-visible,.ds-infra-categories input:focus-visible,.ds-infra-rail button:focus-visible,.ds-infra-detail button:focus-visible{outline:2px solid var(--acento,#2f6b57);outline-offset:3px;}"
+    },
+    {
+      "name": "Corredores férreos por teclado",
+      "kind": "custom",
+      "refersTo": "entorno-tramo",
+      "description": "Lista departamental de la fuente IDEC; botones con selección y estado textual, sin afirmar presencia local u operación.",
+      "html": "<section class=\"ds-infra-rail\"><h3>Corredores férreos de referencia</h3><p>Listado departamental de la fuente IDEC; no indica que existan estos trazados en el municipio seleccionado.</p><div class=\"ds-infra-rail-list\" aria-label=\"Corredores férreos\"><button aria-pressed=\"false\"><span>Corredor Bogotá, D.C. - Belencito</span><small>ANI - En Recuperacion</small></button><button aria-pressed=\"true\"><span>Bogotá - Ferreo Central</span><small>Sin información de operación</small></button></div></section>",
+      "css": ".ds-infra-rail{padding:16px 24px;background:var(--superficie,#fff);color:var(--tinta,#15171a);border-bottom:1px solid var(--linea,#e4e7e4);font-family:var(--fuente,'Geist Variable',ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif);}.ds-infra-rail h3{font-size:13px;font-weight:600;margin:0 0 10px;}.ds-infra-rail p{margin:0 0 14px;font-size:12px;line-height:1.65;color:var(--tinta-2,#4b5157);}.ds-infra-rail-list{max-height:220px;overflow-y:auto;scrollbar-width:thin;}.ds-infra-rail button{width:100%;display:flex;justify-content:space-between;gap:12px;min-height:44px;padding:10px 8px;border:0;border-bottom:1px solid var(--linea,#e4e7e4);background:transparent;font:inherit;color:var(--tinta,#15171a);font-size:12px;cursor:pointer;text-align:left;}.ds-infra-rail button:hover,.ds-infra-rail button[aria-pressed='true']{background:var(--acento-suave,#eaf2ee);}.ds-infra-rail small{color:var(--tinta-2,#4b5157);font-size:11px;}.ds-infra-view button:focus-visible,.ds-infra-categories input:focus-visible,.ds-infra-rail button:focus-visible,.ds-infra-detail button:focus-visible{outline:2px solid var(--acento,#2f6b57);outline-offset:3px;}@media(max-width:760px){.ds-infra-rail{padding:16px;}}"
+    },
+    {
+      "name": "Ficha de infraestructura",
+      "kind": "custom",
+      "refersTo": "entorno-ficha",
+      "description": "Atributos públicos de un corredor de referencia; estado de operación desconocido y fuente explícita.",
+      "html": "<section class=\"ds-infra-detail\" aria-live=\"polite\"><h3>Bogotá - Ferreo Central</h3><dl><div><dt>Tipo</dt><dd>Vía férrea</dd></div><div><dt>Superficie registrada</dt><dd>No aplica</dd></div><div><dt>Estado reportado en la fuente</dt><dd>Sin información de operación</dd></div><div><dt>Referencia</dt><dd>Ferrocarril del Norte</dd></div><div><dt>Fuente</dt><dd>IDEC · red férrea 2024</dd></div></dl><button>Cerrar ficha</button></section>",
+      "css": ".ds-infra-detail{border-top:1px solid var(--linea,#e4e7e4);padding:20px 24px;background:var(--superficie,#fff);color:var(--tinta,#15171a);font-family:var(--fuente,'Geist Variable',ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif);}.ds-infra-detail h3{margin:0 0 16px;font-size:17px;font-weight:600;}.ds-infra-detail dl{margin:0 0 18px;font-size:12px;}.ds-infra-detail dl>div{display:grid;grid-template-columns:minmax(140px,1fr) 2fr;gap:16px;padding:8px 0;border-bottom:1px solid var(--linea,#e4e7e4);}.ds-infra-detail dt{color:var(--tinta-2,#4b5157);}.ds-infra-detail dd{margin:0;overflow-wrap:anywhere;}.ds-infra-detail button{height:34px;padding:0 14px;border:1px solid var(--linea,#e4e7e4);border-radius:var(--r-full,999px);background:var(--superficie,#fff);color:var(--tinta,#15171a);font:inherit;font-size:12px;font-weight:500;cursor:pointer;}.ds-infra-detail button:hover{background:var(--superficie-2,#f1f3f1);border-color:var(--linea-fuerte,#d0d6d2);}.ds-infra-view button:focus-visible,.ds-infra-categories input:focus-visible,.ds-infra-rail button:focus-visible,.ds-infra-detail button:focus-visible{outline:2px solid var(--acento,#2f6b57);outline-offset:3px;}@media(max-width:760px){.ds-infra-detail{padding:16px;}.ds-infra-detail dl>div{grid-template-columns:1fr 1fr;gap:10px;}}"
+    },
+    {
+      "name": "Resumen territorial",
+      "kind": "custom",
+      "refersTo": "territorio-indicadores",
+      "description": "Cuatro tarjetas independientes separadas 18px/12px; primera forestal con texto sobre-acento. Muestra sintética de Anapoima; en otros niveles el cuarto indicador es Sin registros.",
+      "html": "<section class=\"ds-territorio-indicadores\" aria-label=\"Resumen de Anapoima\"><article><h2>Personas registradas</h2><strong>12</strong><p>Registros enviados o aprobados.</p></article><article><h2>Personas referidas</h2><strong>6</strong><p>Con referente registrado; cada persona se cuenta una vez.</p></article><article><h2>Presencia territorial</h2><strong>2<small> / 27</small></strong><p>Veredas con personas registradas.</p></article><article><h2>Sin vereda asignada</h2><strong>Protegido</strong><p>Personas sin vereda informada. No equivale a población urbana.</p></article></section>",
+      "css": ".ds-territorio-indicadores { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; margin: 0 0 30px; }\r\n.ds-territorio-indicadores article { padding: 22px; min-width: 0; border: 1px solid var(--linea); border-radius: 14px; background: var(--superficie); }\r\n.ds-territorio-indicadores article:first-child { background: var(--acento); border-color: var(--acento); }\r\n.ds-territorio-indicadores article:first-child :is(h2, strong, p) { color: var(--sobre-acento); }\r\n.ds-territorio-indicadores article:first-child p { opacity: .85; }\r\n.ds-territorio-indicadores h2 { margin: 0 0 10px; color: var(--tinta-2); font-size: 12px; font-weight: 500; }\r\n.ds-territorio-indicadores strong { display: block; color: var(--tinta); font-size: clamp(30px, 3vw, 42px); font-weight: 550; line-height: 1.2; letter-spacing: -.03em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }\r\n.ds-territorio-indicadores strong small { font-size: 18px; color: var(--tinta-2); font-weight: 400; }\r\n.ds-territorio-indicadores p { margin: 10px 0 0; color: var(--tinta-2); font-size: 11px; line-height: 1.6; }\r\n\n.ds-territorio-indicadores{font-family:var(--fuente,'Geist Variable',ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif);}@media(max-width:760px){.ds-territorio-indicadores{grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;}.ds-territorio-indicadores article{padding:16px;}.ds-territorio-indicadores strong{font-size:26px;}}"
+    },
+    {
+      "name": "Gráfico territorial",
+      "kind": "custom",
+      "refersTo": "territorio-grafico",
+      "description": "Dos series independientes con escala común, fila seleccionable y texto protegido sin barra. Muestra sintética; consultas y foco React no se reproducen en este preview.",
+      "html": "<section class=\"ds-territorio-preview ds-territorio-grafico\" aria-labelledby=\"ds-grafico-territorial-titulo\" aria-busy=\"false\"><div class=\"ds-territorio-grafico-cabecera\"><h2 id=\"ds-grafico-territorial-titulo\">Tu red, en perspectiva</h2><p>Compara las cifras visibles por veredas.</p></div><div class=\"ds-territorio-grafico-leyenda\"><span><i></i>Registradas</span><span><i></i>Referidas</span></div><div class=\"ds-territorio-grafico-escala\" aria-hidden=\"true\"><span>0</span><span>8</span></div><div class=\"ds-territorio-grafico-filas\"><button class=\"ds-territorio-grafico-fila\" aria-pressed=\"true\" aria-label=\"Consultar Andalucia: 8 registradas; 6 referidas\"><span class=\"ds-territorio-grafico-nombre\">Andalucia</span><span class=\"ds-territorio-grafico-par\"><span class=\"ds-territorio-grafico-serie ds-serie-registros\"><span class=\"ds-territorio-grafico-carril\" aria-hidden=\"true\"><i style=\"transform:scaleX(1)\"></i></span><strong>8</strong></span><span class=\"ds-territorio-grafico-serie ds-serie-referidos\"><span class=\"ds-territorio-grafico-carril\" aria-hidden=\"true\"><i style=\"transform:scaleX(.75)\"></i></span><strong>6</strong></span></span></button><button class=\"ds-territorio-grafico-fila\" aria-pressed=\"false\" aria-label=\"Consultar Apicata: registradas protegidas o no disponibles; 0 referidas\"><span class=\"ds-territorio-grafico-nombre\">Apicata</span><span class=\"ds-territorio-grafico-par\"><span class=\"ds-territorio-grafico-serie ds-serie-registros\"><span class=\"ds-territorio-grafico-carril\" aria-hidden=\"true\"></span><strong>Protegido</strong></span><span class=\"ds-territorio-grafico-serie ds-serie-referidos\"><span class=\"ds-territorio-grafico-carril\" aria-hidden=\"true\"><i style=\"transform:scaleX(0)\"></i></span><strong>0</strong></span></span></button></div><p class=\"ds-territorio-grafico-nota\">Hasta seis territorios, ordenados por registradas. Selecciona una fila para consultar su ficha. La tabla incluye todos.</p></section>",
+      "css": ".ds-territorio-preview{font-family:var(--fuente,'Geist Variable',ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif);color:var(--tinta);}.ds-territorio-preview button:focus-visible{outline:2px solid var(--acento);outline-offset:3px;}\n.ds-territorio-grafico { padding: 22px; border: 1px solid var(--linea); border-radius: 14px; background: var(--superficie); }\r\n.ds-territorio-grafico h2 { margin: 0; font-size: 20px; font-weight: 600; line-height: 1.3; letter-spacing: -.025em; }\r\n.ds-territorio-grafico-cabecera p { margin: 7px 0 18px; font-size: 12px; color: var(--tinta-2); line-height: 1.6; }\r\n.ds-territorio-grafico-leyenda { display: flex; gap: 18px; flex-wrap: wrap; font-size: 11px; color: var(--tinta-2); }\r\n.ds-territorio-grafico-leyenda span { display: inline-flex; align-items: center; gap: 7px; }\r\n.ds-territorio-grafico-leyenda i { width: 14px; height: 7px; border-radius: 2px; background: var(--acento); }\r\n.ds-territorio-grafico-leyenda span + span i { background: var(--dato-tres); }\r\n.ds-territorio-grafico-escala { display: flex; justify-content: space-between; margin: 22px 65px 6px 104px; font-size: 10px; color: var(--tinta-2); font-variant-numeric: tabular-nums; }\r\n.ds-territorio-grafico-filas { display: grid; gap: 6px; }\r\n.ds-territorio-grafico-fila { display: grid; grid-template-columns: 90px minmax(0, 1fr); gap: 14px; align-items: center; padding: 10px 8px; margin: 0 -8px; border: 0; border-radius: 7px; color: var(--tinta); background: transparent; font: inherit; text-align: left; cursor: pointer; min-height: 56px; transition: background-color 140ms ease-out; }\r\n.ds-territorio-grafico-fila:hover, .ds-territorio-grafico-fila[aria-pressed=\"true\"] { background: var(--acento-suave); }\r\n.ds-territorio-grafico-nombre { font-size: 12px; font-weight: 550; line-height: 1.4; overflow-wrap: anywhere; }\r\n.ds-territorio-grafico-par { display: grid; gap: 7px; min-width: 0; }\r\n.ds-territorio-grafico-serie { display: grid; grid-template-columns: minmax(0, 1fr) 57px; gap: 8px; align-items: center; }\r\n.ds-territorio-grafico-serie strong { font-size: 11px; font-weight: 550; text-align: right; font-variant-numeric: tabular-nums; }\r\n.ds-territorio-grafico-carril { height: 8px; border-radius: 3px; background: var(--superficie-2); overflow: hidden; }\r\n.ds-territorio-grafico-carril i { display: block; width: 100%; height: 100%; border-radius: inherit; background: var(--acento); transform-origin: left center; transition: transform 320ms cubic-bezier(.16,1,.3,1); animation: ds-territorio-trazo 360ms cubic-bezier(.16,1,.3,1); }\r\n.ds-serie-referidos .ds-territorio-grafico-carril i { background: var(--dato-tres); }\r\n@keyframes ds-territorio-trazo { from { transform: scaleX(0); } }\r\n.ds-territorio-grafico-nota, .ds-territorio-grafico-vacio { margin: 18px 0 0; font-size: 11px; color: var(--tinta-2); line-height: 1.7; }\r\n.ds-territorio-grafico-vacio { padding: 22px 0; }\r\n\n@media(max-width:760px){.ds-territorio-grafico{padding:20px;}}@media(prefers-reduced-motion:reduce){.ds-territorio-grafico-carril i,.ds-territorio-grafico-fila{transition:none;animation:none;}}"
+    },
+    {
+      "name": "Inspector territorial",
+      "kind": "custom",
+      "refersTo": "territorio-inspector",
+      "description": "Ficha en tarjeta independiente bajo el gráfico, con ambas cifras y metadatos. Ejemplo sintético de Andalucia; foco y navegación residen en MapaTerritorial.tsx.",
+      "html": "<div class=\"ds-territorio-preview\"><section class=\"ds-territorio-inspector\" tabindex=\"-1\" aria-live=\"polite\"><div class=\"ds-territorio-inspector-cabecera\"><h2>Andalucia</h2><button aria-label=\"Quitar selección territorial\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" aria-hidden=\"true\"><path d=\"m6 6 12 12M18 6 6 18\"/></svg></button></div><p class=\"ds-territorio-inspector-subtitulo\">Vereda · Anapoima</p><dl class=\"ds-territorio-cifras-seleccion\"><div><dt>Personas registradas</dt><dd>8</dd></div><div><dt>Personas referidas</dt><dd>6</dd></div></dl><dl class=\"ds-territorio-ficha-geo\"><div><dt>Código de vereda</dt><dd>25035001</dd></div><div><dt>Área aproximada</dt><dd>598,01 ha</dd></div><div><dt>Vigencia de referencia</dt><dd>2010</dd></div></dl><p class=\"ds-territorio-inspector-ayuda\">Consulta las vías y capas públicas de esta zona en “Vías y entorno”.</p></section><section class=\"ds-territorio-alcance\"><h3>Qué estás consultando</h3><p>Anapoima · todos los meses.</p><p>Las personas referidas forman parte de las registradas. Las dos cifras no se suman.</p><p>Los registros sin vereda se muestran aparte y están incluidos en el total municipal.</p></section></div>",
+      "css": ".ds-territorio-inspector { padding: 24px; min-height: 280px; scroll-margin-top: 80px; }\n.ds-territorio-inspector:focus-visible { outline: 2px solid var(--acento); outline-offset: -3px; }\n.ds-territorio-inspector-cabecera { display: flex; justify-content: space-between; align-items: start; gap: 12px; }\n.ds-territorio-inspector h2 { margin: 0; font-size: 19px; font-weight: 600; line-height: 1.3; letter-spacing: -.02em; overflow-wrap: anywhere; }\n.ds-territorio-inspector-cabecera button { display: grid; place-items: center; flex-shrink: 0; width: 28px; height: 28px; border: 0; border-radius: 6px; background: var(--superficie-2); color: var(--tinta-2); cursor: pointer; }\n.ds-territorio-inspector-ayuda { margin: 14px 0 0; color: var(--tinta-2); font-size: 12px; line-height: 1.7; }\n.ds-territorio-inspector-subtitulo { font-size: 12px; color: var(--tinta-2); margin: 7px 0 22px; }\n.ds-territorio-recorrido { display: grid; grid-template-columns: 1fr 18px; gap: 12px; align-items: center; margin: 24px 0; font-size: 12px; }\n.ds-territorio-recorrido svg { transform: rotate(90deg); width: 13px; color: var(--tinta-2); }\n.ds-territorio-cifras-seleccion { margin: 0; font-size: 12px; }\n.ds-territorio-cifras-seleccion > div { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--linea); }\n.ds-territorio-cifras-seleccion dt { color: var(--tinta-2); }\n.ds-territorio-cifras-seleccion dd { margin: 0; color: var(--tinta); font-size: 22px; font-weight: 550; font-variant-numeric: tabular-nums; }\n.ds-territorio-detalle { display: flex; align-items: center; justify-content: center; gap: 14px; width: 100%; min-height: 40px; margin-top: 20px; }\n.ds-territorio-alcance { padding: 20px 24px; border-top: 1px solid var(--linea); }\n.ds-territorio-alcance h3 { font-size: 12px; margin: 0 0 10px; font-weight: 600; }\n.ds-territorio-alcance p { font-size: 11px; line-height: 1.7; margin: 8px 0 0; color: var(--tinta-2); }\n.ds-territorio-comparacion { margin-top: 28px; background: var(--superficie); border: 1px solid var(--linea); border-radius: 14px; overflow: hidden; }\n.ds-territorio-ficha-geo { font-size: 11px; line-height: 1.5; margin: 14px 0; }\n.ds-territorio-ficha-geo div { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; }\n.ds-territorio-ficha-geo dt { color: var(--tinta-2); }\n.ds-territorio-ficha-geo dd { margin: 0; text-align: right; }\n.ds-territorio-preview{font-family:var(--fuente,'Geist Variable',ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif);background:var(--superficie);color:var(--tinta);}.ds-territorio-preview button:focus-visible,.ds-territorio-preview input:focus-visible{outline:2px solid var(--acento);outline-offset:3px;}.ds-territorio-inspector-cabecera button:hover{background:var(--superficie-2);color:var(--tinta);}@media(max-width:760px){.ds-territorio-inspector{min-height:0;padding:20px;}.ds-territorio-alcance{padding:18px 20px;}}\n.ds-territorio-inspector{padding:22px;min-height:0;border:1px solid var(--linea);border-radius:14px;background:var(--superficie);}.ds-territorio-inspector-cabecera button{width:44px;height:44px;}.ds-territorio-recorrido{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0;}.ds-territorio-recorrido svg{transform:none;width:10px;}@media(max-width:760px){.ds-territorio-inspector{padding:20px;}.ds-territorio-detalle{min-height:44px;}}"
+    },
+    {
+      "name": "Tabla comparativa territorial",
+      "kind": "custom",
+      "refersTo": "territorio-comparacion",
+      "description": "Matriz de ambas medidas, filas seleccionables, filtros y encabezados ordenables. Muestra sintética de veredas; móvil conserva tres columnas. Preview estático; orden, búsqueda, navegación y estado vacío se implementan en MapaTerritorial.tsx.",
+      "html": "<section class=\"ds-territorio-preview ds-territorio-comparacion\" aria-labelledby=\"ds-comparacion-titulo\"><div class=\"ds-territorio-tabla-cabecera\"><div><h2 id=\"ds-comparacion-titulo\">Compara veredas</h2><p>Anapoima · Todos los meses. Ordena las columnas para cambiar la lectura.</p></div><label class=\"ds-territorio-buscar\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" aria-hidden=\"true\"><circle cx=\"10\" cy=\"10\" r=\"6\"/><path d=\"m15 15 5 5\"/></svg><input type=\"search\" placeholder=\"Buscar veredas…\" aria-label=\"Buscar veredas\"/></label></div><div class=\"ds-territorio-tabla-filtros\" aria-label=\"Filtrar la tabla\"><div><button aria-pressed=\"true\">Todos</button><button aria-pressed=\"false\">Sin registros</button><button aria-pressed=\"false\">Con cifras protegidas</button></div><span>27 de 27 veredas</span></div><div class=\"ds-territorio-tabla-scroll\" tabindex=\"0\" role=\"region\" aria-label=\"Tabla comparativa territorial\"><table><thead><tr><th scope=\"col\" aria-sort=\"none\"><button>Vereda<svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" aria-hidden=\"true\"><path d=\"m8 4-4 4 4 4M4 8h14M16 20l4-4-4-4M20 16H6\"/></svg></button></th><th scope=\"col\" aria-sort=\"none\"><button aria-label=\"Personas registradas\"><span class=\"ds-territorio-columna-completa\">Personas registradas</span><span class=\"ds-territorio-columna-corta\" aria-hidden=\"true\">Registradas</span><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" aria-hidden=\"true\"><path d=\"m8 4-4 4 4 4M4 8h14M16 20l4-4-4-4M20 16H6\"/></svg></button></th><th scope=\"col\" aria-sort=\"descending\"><button aria-label=\"Personas referidas\"><span class=\"ds-territorio-columna-completa\">Personas referidas</span><span class=\"ds-territorio-columna-corta\" aria-hidden=\"true\">Referidas</span><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" aria-hidden=\"true\"><path d=\"m8 4-4 4 4 4M4 8h14M16 20l4-4-4-4M20 16H6\"/></svg></button></th><th scope=\"col\">Detalle</th></tr></thead><tbody><tr class=\"ds-seleccionada\"><th scope=\"row\"><button class=\"ds-territorio-tabla-nombre\" aria-pressed=\"true\" aria-label=\"Seleccionar Andalucia\"><i class=\"ds-territorio-punto ds-dato-uno\"></i><span>Andalucia<small>25035001</small></span></button></th><td>8</td><td>6</td><td><button class=\"ds-territorio-tabla-abrir\" aria-label=\"Ver ficha de Andalucia\">Ficha<svg width=\"13\" height=\"13\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" aria-hidden=\"true\"><path d=\"m9 5 7 7-7 7\"/></svg></button></td></tr><tr><th scope=\"row\"><button class=\"ds-territorio-tabla-nombre\" aria-pressed=\"false\" aria-label=\"Seleccionar Apicata\"><i class=\"ds-territorio-punto ds-dato-protegido\"></i><span>Apicata<small>25035002</small></span></button></th><td class=\"ds-cifra-protegida\">Protegido</td><td>0</td><td><button class=\"ds-territorio-tabla-abrir\" aria-label=\"Ver ficha de Apicata\">Ficha<svg width=\"13\" height=\"13\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" aria-hidden=\"true\"><path d=\"m9 5 7 7-7 7\"/></svg></button></td></tr><tr><th scope=\"row\"><button class=\"ds-territorio-tabla-nombre\" aria-pressed=\"false\" aria-label=\"Seleccionar Calichana\"><i class=\"ds-territorio-punto ds-dato-cero\"></i><span>Calichana<small>25035003</small></span></button></th><td>0</td><td>0</td><td><button class=\"ds-territorio-tabla-abrir\" aria-label=\"Ver ficha de Calichana\">Ficha<svg width=\"13\" height=\"13\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" aria-hidden=\"true\"><path d=\"m9 5 7 7-7 7\"/></svg></button></td></tr></tbody></table></div><p class=\"ds-territorio-tabla-nota\">“Sin registros” se refiere a personas registradas en este espacio, para los meses elegidos. No indica ausencia de habitantes. Las cifras protegidas no se ordenan por cantidad.</p></section>",
+      "css": ".ds-territorio-tabla-cabecera { display: flex; justify-content: space-between; align-items: center; gap: 24px; padding: 24px; }\n.ds-territorio-tabla-cabecera h2 { font-size: 20px; font-weight: 600; letter-spacing: -.02em; margin: 0; }\n.ds-territorio-tabla-cabecera p { font-size: 12px; color: var(--tinta-2); line-height: 1.6; margin: 6px 0 0; }\n.ds-territorio-tabla-cabecera .ds-territorio-buscar { width: 260px; flex-shrink: 0; min-height: 40px; }\n.ds-territorio-tabla-filtros { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: center; padding: 0 24px 16px; }\n.ds-territorio-tabla-filtros > div { display: flex; flex-wrap: wrap; gap: 6px; }\n.ds-territorio-tabla-filtros button { min-height: 34px; padding: 6px 10px; border: 0; border-radius: 6px; font: inherit; font-size: 11px; background: var(--superficie-2); color: var(--tinta-2); cursor: pointer; }\n.ds-territorio-tabla-filtros button[aria-pressed=\"true\"] { background: var(--acento-suave); color: var(--acento); font-weight: 600; }\n.ds-territorio-tabla-filtros > span { color: var(--tinta-2); font-size: 11px; }\n.ds-territorio-tabla-scroll { max-height: 460px; overflow: auto; scrollbar-width: thin; scrollbar-color: var(--linea-fuerte) transparent; }\n.ds-territorio-tabla-scroll:focus-visible { outline: 2px solid var(--acento); outline-offset: -2px; }\n.ds-territorio-comparacion table { width: 100%; min-width: 610px; border-spacing: 0; font-size: 13px; }\n.ds-territorio-comparacion thead th { position: sticky; top: 0; background: var(--superficie-2); z-index: 1; font-weight: 500; font-size: 11px; color: var(--tinta-2); padding: 0; border-bottom: 1px solid var(--linea); }\n.ds-territorio-comparacion thead th > button { display: flex; align-items: center; justify-content: end; gap: 8px; width: 100%; min-height: 46px; padding: 10px 24px; font: inherit; color: inherit; border: 0; background: transparent; cursor: pointer; }\n.ds-territorio-comparacion thead th:first-child > button { justify-content: start; }\n.ds-territorio-comparacion thead th:last-child { padding: 10px 24px; text-align: right; }\n.ds-territorio-comparacion thead svg { width: 14px; height: 14px; flex-shrink: 0; opacity: .5; }\n.ds-territorio-comparacion thead th[aria-sort=\"ascending\"], .ds-territorio-comparacion thead th[aria-sort=\"descending\"] { color: var(--acento); }\n.ds-territorio-comparacion thead th[aria-sort=\"ascending\"] svg, .ds-territorio-comparacion thead th[aria-sort=\"descending\"] svg { opacity: 1; }\n.ds-territorio-comparacion thead th[aria-sort=\"ascending\"] svg { transform: rotate(180deg); }\n.ds-territorio-columna-corta { display: none; }\n.ds-territorio-comparacion tbody th, .ds-territorio-comparacion td { border-bottom: 1px solid var(--linea); padding: 12px 24px; text-align: right; font-weight: 500; font-variant-numeric: tabular-nums; }\n.ds-territorio-comparacion tbody th { padding: 0; width: 38%; text-align: left; }\n.ds-territorio-comparacion tbody tr:hover { background: var(--superficie-2); }\n.ds-territorio-comparacion tbody tr.ds-seleccionada { background: var(--acento-suave); }\n.ds-territorio-tabla-nombre { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 62px; padding: 12px 24px; border: 0; background: transparent; color: var(--tinta); font: inherit; font-size: 13px; text-align: left; cursor: pointer; }\n.ds-territorio-tabla-nombre small { display: block; color: var(--tinta-2); margin-top: 3px; font-size: 10px; font-weight: 400; }\n.ds-territorio-tabla-abrir { display: inline-flex; align-items: center; justify-content: end; gap: 8px; min-height: 36px; border: 0; padding: 6px 0 6px 8px; background: transparent; color: var(--acento); font: inherit; font-size: 11px; cursor: pointer; }\n.ds-territorio-tabla-abrir svg { width: 13px; height: 13px; }\n.ds-territorio-comparacion td.ds-cifra-protegida { color: var(--tinta-2); font-size: 11px; font-weight: 400; }\n.ds-territorio-comparacion td.ds-territorio-tabla-vacio { padding: 32px 24px; text-align: center; color: var(--tinta-2); font-size: 12px; }\n.ds-territorio-tabla-vacio button { display: block; margin: 12px auto 0; border: 0; background: transparent; color: var(--acento); font: inherit; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; min-height: 36px; }\n.ds-territorio-tabla-nota { font-size: 11px; line-height: 1.7; color: var(--tinta-2); margin: 0; padding: 16px 24px; }\n.ds-territorio-lista-cabecera h2 { font-size: 13px; font-weight: 600; margin: 0 0 12px; }\n.ds-territorio-buscar { display: flex; align-items: center; gap: 8px; border: 1px solid var(--linea); border-radius: 6px; padding: 8px 10px; color: var(--tinta-2); }\n.ds-territorio-buscar input { width: 100%; min-width: 0; background: transparent; color: var(--tinta); border: 0; font: inherit; font-size: 12px; outline: none; }\n.ds-territorio-buscar:focus-within { outline: 2px solid var(--acento); outline-offset: 2px; }\n.ds-territorio-preview{font-family:var(--fuente,'Geist Variable',ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif);color:var(--tinta);}.ds-territorio-comparacion{margin-top:0;border:1px solid var(--linea);border-radius:14px;background:var(--superficie);overflow:hidden;}.ds-territorio-punto{width:7px;height:7px;border-radius:2px;flex-shrink:0;}.ds-dato-uno{background:var(--dato-uno,#b5d1c0);}.ds-dato-cero{background:var(--dato-cero,#e0e7e2);}.ds-dato-protegido{background:repeating-linear-gradient(135deg,#dae0db 0px,#dae0db 3px,#8c998e 3px,#8c998e 4px);}.ds-territorio-preview button:focus-visible,.ds-territorio-preview input:focus-visible{outline:2px solid var(--acento);outline-offset:3px;}.ds-territorio-tabla-filtros button:hover{background:var(--superficie-2);color:var(--tinta);}.ds-territorio-tabla-abrir:hover{text-decoration:underline;}.ds-territorio-comparacion thead button:hover{color:var(--acento);}\n@media(max-width:760px){  .ds-territorio-tabla-cabecera { flex-direction: column; align-items: stretch; padding: 20px 16px 16px; gap: 16px; }\n  .ds-territorio-tabla-cabecera .ds-territorio-buscar { width: 100%; }\n  .ds-territorio-tabla-filtros { padding: 0 16px 14px; }\n  .ds-territorio-comparacion table { min-width: 0; table-layout: fixed; }\n  .ds-territorio-comparacion thead th:first-child, .ds-territorio-comparacion tbody th { width: 46%; }\n  .ds-territorio-comparacion thead th:last-child, .ds-territorio-comparacion tbody td:last-child:not([colspan]) { display: none; }\n  .ds-territorio-columna-completa { display: none; }\n  .ds-territorio-columna-corta { display: inline; }\n  .ds-territorio-comparacion thead th > button, .ds-territorio-comparacion tbody td { padding: 10px; }\n  .ds-territorio-comparacion thead th > button { gap: 3px; font-size: 10px; }\n  .ds-territorio-comparacion thead svg { width: 11px; }\n  .ds-territorio-tabla-nombre { padding: 12px; font-size: 12px; gap: 8px; overflow-wrap: anywhere; }\n  .ds-territorio-tabla-nota { padding: 16px; }\n}\n@media(max-width:760px){.ds-territorio-tabla-filtros button{min-height:44px;}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Personas en el territorio del altiplano",
+    "overview": "Este nombre descriptivo proviene del comentario del sistema de tokens; no constituye una identidad nueva ni una metáfora aprobada por entrevista. La app usa un marco neutro, tipografía Geist y un acento verde forestal para que la información territorial conserve la prioridad. Su carácter es sobrio, compacto y legible, adecuado para consultar y operar datos agregados.\r\n\r\nEste documento registra el sistema implementado de la app en modo **Operate**. La autoridad visual es el código existente y su extensión territorial, sin una comp aprobada. Las capturas de revisión usan datos sintéticos. El alcance visual es la app; la landing y `politica` conservan sus sistemas existentes. La composición particular del mapa y su contrato de datos viven en [.impeccable/mapa-territorial.md](.impeccable/mapa-territorial.md).\r\n\r\nLa ampliación de **Vías y entorno** conserva el diseño Kaizen confirmado por el usuario. Apps Script aporta referencias funcionales y de fuentes, sin autoridad visual. En las capturas `infra-*`, las cifras de personas siguen siendo sintéticas; la cartografía y la consulta de infraestructura proceden de fuentes públicas reales. Las capturas finales de calles registran 754 tramos y una ficha férrea; ese número documenta una consulta puntual y no un total territorial permanente.",
+    "keyCharacteristics": [
+      "Superficies neutras, filetes finos y verde asociado a datos y acciones.",
+      "Una sola familia sans, con cifras tabulares.",
+      "Controles compactos, foco visible y alternativas de navegación por teclado.",
+      "Distinción explícita entre cero, cifra protegida y falta de asignación."
+    ],
+    "rules": [
+      {
+        "name": "Cantidad",
+        "body": "El color del dato expresa una medida documentada; no se usa para atribuir precisión a cifras reservadas o datos faltantes.",
+        "section": "colors"
+      },
+      {
+        "name": "Cifra",
+        "body": "Usar cifras tabulares para totales, comparaciones y filas; conservar texto explícito para los estados que no tienen un número publicable.",
+        "section": "typography"
+      },
+      {
+        "name": "Superficie",
+        "body": "Los paneles de lectura se separan por fondo y borde; reservar la elevación perceptible para elementos superpuestos.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do extender Geist, las superficies neutras y el acento existente en nuevas vistas de la app.",
+      "Do conservar foco visible, cifras tabulares y texto que explique estados reservados.",
+      "Do mantener la escala de cantidad y su leyenda consistentes entre mapa y tabla.",
+      "Do mostrar procedencia y alcance consultables en la superficie territorial.",
+      "Do mantener nombres, cantidades y filas accesibles junto a los colores y trazos de infraestructura.",
+      "Do conservar la vista Mapa de la red predeterminada y extender sus primitivas en Vías y entorno.",
+      "Do conservar separación entre tarjetas y dos series independientes con escala común en el gráfico territorial."
+    ],
+    "donts": [
+      "Don't mostrar una cifra protegida o faltante como cero.",
+      "Don't aplicar fondos de alarma a avisos informativos.",
+      "Don't introducir otra identidad visual en la landing o en politica mediante este documento.",
+      "Don't presentar datos sintéticos de las capturas como contenido de producción.",
+      "Don't interpretar una categoría de superficie o un trazado férreo como necesidad de obra u operación actual.",
+      "Don't tomar el diseño de Apps Script como autoridad visual para la app Kaizen.",
+      "Don't dibujar barras para cifras protegidas ni presentar las mediciones locales como garantías de Core Web Vitals en producción."
+    ]
+  }
+}

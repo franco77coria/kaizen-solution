@@ -33,8 +33,8 @@ export function LoginLocal(): JSX.Element {
     <main className="entrar">
       <div className="entrar-tarjeta ancha">
         <SimboloGeo className="entrar-simbolo" />
-        <h1>Elegí una cuenta de prueba</h1>
-        <p className="mas-tenue">Modo desarrollo: en producción acá aparece Google.</p>
+        <h1>Elige una cuenta de prueba</h1>
+        <p className="mas-tenue">Modo desarrollo: en producción aquí aparece Google.</p>
 
         <ul className="cuentas-prueba">
           {CUENTAS.map((c) => (

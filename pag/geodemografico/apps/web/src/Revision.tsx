@@ -92,7 +92,7 @@ export function Revision({ scope }: { scope: Scope }): JSX.Element {
       {filas && filas.length === 0 && (
         <div className="vacio">
           <strong>No hay nadie esperando revisión.</strong>
-          <span>Cuando alguien sume una persona, aparece acá.</span>
+          <span>Cuando alguien registre una persona, aparece aquí.</span>
         </div>
       )}
 
@@ -143,7 +143,7 @@ export function Revision({ scope }: { scope: Scope }): JSX.Element {
                       </>
                     )
                   ) : (
-                    <span className="mas-tenue">Este registro lo cargaste vos: lo aprueba otra persona.</span>
+                    <span className="mas-tenue">Este registro lo registraste tú: lo aprueba otra persona.</span>
                   )}
                 </div>
               </div>

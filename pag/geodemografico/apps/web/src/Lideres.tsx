@@ -5,7 +5,7 @@ import { ApiError, api, type Lider, type Scope } from './api'
  * Líderes: quién suma.
  *
  * Se carga el email de Google de cada líder. Cuando esa cuenta entra por
- * primera vez, el sistema la reconoce; desde ahí todo lo que suma queda a su
+ * primera vez, el sistema la reconoce; desde ahí todo lo que registra queda a su
  * nombre. Un líder puede sumar personas y ver el panorama; no ve SUMA.
  *
  * Revocar no borra lo que sumó: esas personas siguen contando. Lo que se
@@ -59,9 +59,9 @@ export function Lideres({ scope }: { scope: Scope }): JSX.Element {
     } catch (e) {
       setError(
         e instanceof ApiError && e.code === 'CONFLICT'
-          ? 'Ese email ya está cargado como líder.'
+          ? 'Ese correo electrónico ya está registrado como líder.'
           : e instanceof ApiError && e.code === 'VALIDATION_FAILED'
-            ? 'Revisá el nombre y usá una cuenta @kaizensolutionscol.com.'
+            ? 'Revisa el nombre y usa una cuenta @kaizensolutionscol.com.'
             : 'No se pudo cargar al líder.',
       )
     } finally {
@@ -90,15 +90,15 @@ export function Lideres({ scope }: { scope: Scope }): JSX.Element {
       <header className="pagina-cabecera">
         <h1 className="pagina-titulo">Líderes</h1>
         <p className="tenue">
-          Cargá el email de Kaizen de cada líder. Cuando entra por primera vez lo reconocemos, y
-          todo lo que suma queda a su nombre. Los líderes suman personas y ven el panorama; no ven
+          Ingresa el correo electrónico de Kaizen de cada líder. Cuando entra por primera vez lo reconocemos, y
+          todo lo que registra queda a su nombre. Los líderes registran personas y ven el panorama; no ven
           SUMA.
         </p>
       </header>
 
       <form className="alta-lider" onSubmit={alta}>
         <fieldset className="bloque">
-          <legend>Cargar un líder</legend>
+          <legend>Registrar un líder</legend>
           <div className="campos">
             <label className="campo">
               <span>Nombre</span>
@@ -110,7 +110,7 @@ export function Lideres({ scope }: { scope: Scope }): JSX.Element {
               />
             </label>
             <label className="campo">
-              <span>Email de Kaizen</span>
+              <span>Correo electrónico de Kaizen</span>
               <input
                 className="entrada"
                 type="email"
@@ -144,7 +144,7 @@ export function Lideres({ scope }: { scope: Scope }): JSX.Element {
       {lideres && lideres.length === 0 && (
         <div className="vacio">
           <strong>Todavía no hay líderes cargados.</strong>
-          <span>El primero que cargues aparece acá, con cuántas personas va sumando.</span>
+          <span>El primero que registres aparece aquí, con cuántas personas va registrando.</span>
         </div>
       )}
 
@@ -155,7 +155,7 @@ export function Lideres({ scope }: { scope: Scope }): JSX.Element {
               {activos} activo{activos === 1 ? '' : 's'}
               {pendientes > 0 && ` · ${pendientes} sin entrar todavía`}
             </span>
-            <span>personas sumadas</span>
+            <span>personas registradas</span>
           </div>
           <ol>
             {lideres.map((l, i) => (

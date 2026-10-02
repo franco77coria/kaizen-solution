@@ -11,10 +11,15 @@
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",
     "@kaizen/geography": "workspace:*",
+    "d3-geo": "^3.1.1",
+    "leaflet": "1.9.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@types/d3-geo": "^3.1.1",
+    "@types/geojson": "^7946.0.16",
+    "@types/leaflet": "1.9.21",
     "@types/react": "^18.3.17",
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^4.3.4",
