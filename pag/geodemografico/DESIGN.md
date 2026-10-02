@@ -146,6 +146,28 @@ components:
     width: "100%"
   entorno-tramo-seleccionado:
     backgroundColor: "{colors.acento-suave}"
+  territorio-indicadores:
+    backgroundColor: "{colors.superficie}"
+    textColor: "{colors.tinta}"
+    rounded: "{rounded.lg}"
+  territorio-indicador:
+    padding: "20px"
+  territorio-inspector:
+    backgroundColor: "{colors.superficie}"
+    textColor: "{colors.tinta}"
+    padding: "24px"
+  territorio-comparacion:
+    backgroundColor: "{colors.superficie}"
+    textColor: "{colors.tinta}"
+    rounded: "{rounded.lg}"
+  territorio-color:
+    backgroundColor: "{colors.superficie}"
+    textColor: "{colors.tinta-2}"
+    rounded: "{rounded.territorio-field}"
+    padding: "6px 10px"
+  territorio-color-activo:
+    backgroundColor: "{colors.acento}"
+    textColor: "{colors.sobre-acento}"
   entorno-ficha:
     backgroundColor: "{colors.superficie}"
     textColor: "{colors.tinta}"
@@ -189,7 +211,7 @@ El verde es apagado y forestal; la mayor parte de la pantalla se compone de blan
 - **Gris vial — via-desconocida:** ausencia de información de superficie; nunca equivale a una obra pendiente.
 - **Violeta férreo — red-ferrea:** trazados de referencia con línea discontinua; el trazo no confirma operación actual.
 
-Estos colores, extraídos de `MapaEntorno.tsx`, identifican categorías, no cantidades de personas. Las casillas repiten cada categoría por nombre y cantidad; conservar esa lectura textual en calles y satélite. No sustituir con ellos la escala verde de Referidos.
+Estos colores, extraídos de `MapaEntorno.tsx`, identifican categorías, no cantidades de personas. Las casillas repiten cada categoría por nombre y cantidad; conservar esa lectura textual en calles y satélite. No sustituir con ellos la escala verde de Mapa de la red.
 
 ### Neutral
 
@@ -216,7 +238,7 @@ La diferencia de función depende de tamaño, peso y espacio, manteniendo una vo
 
 ### Hierarchy
 
-- **Display:** total territorial; en teléfono baja a 40px.
+- **Display:** rol disponible del sistema para totales. El resumen actual usa cuatro indicadores con cifras de tamaño fluido (25–34px), reducidas a 26px en teléfono; la ficha usa cifras de 22px.
 - **Headline:** encabezado de la superficie territorial, con tamaño fluido.
 - **Title:** título de la cartografía; en teléfono baja a 20px.
 - **Body:** lectura general y ayudas. Los campos base usan 16px en teléfono y el tamaño de cuerpo a partir de 720px.
@@ -228,13 +250,17 @@ La diferencia de función depende de tamaño, peso y espacio, manteniendo una vo
 
 El shell es mobile-first, con contenido centrado de 1120px y barra superior de 56px. La base tiene padding de 24px 16px 112px; a partir de 900px usa 32px 24px 96px. Ese espacio inferior acompaña las acciones del teléfono y no debe perderse en nuevas superficies.
 
-La superficie territorial amplía el máximo a 1480px. En escritorio usa cartografía flexible y panel de 330px; hasta 1000px el panel baja a 290px. Hasta 760px, cartografía y panel se apilan, y los cuatro filtros forman una grilla de dos columnas. El mapa tiene altura de 560px en escritorio y 360px en teléfono. A partir de 1100px el contenido territorial usa padding de 36px 32px 60px.
+La superficie territorial amplía el máximo a 1480px. En escritorio usa cartografía flexible y panel de 300px; hasta 1000px el panel baja a 290px. Hasta 760px, cartografía y panel se apilan. El SVG del mapa tiene altura de 440px en escritorio y 360px en teléfono; título, selector de color y leyenda ocupan espacio adicional. A partir de 1100px el contenido territorial usa padding de 36px 32px 60px.
 
-Los selectores múltiples conservan la grilla de cuatro columnas en escritorio y dos en teléfono; sus etiquetas seleccionadas se envuelven debajo del disparador. El desplegable es fijo: mide como máximo 340px de ancho, deja 16px a los lados y se desplaza hacia arriba cuando falta espacio inferior, reservando 96px bajo el panel. Su altura máxima es `calc(100dvh - 128px)`; la lista interna desplaza hasta 280px y la acción Aplicar queda al pie del panel. Estos valores proceden de `SelectorMultiple.tsx` y `mapa.css`; las capturas `multi-desktop.png` y `multi-mobile.png` registran la misma selección en ambos tamaños.
+Los tres selectores múltiples —provincias, municipios y meses de registro— ocupan tres columnas en escritorio y dos en teléfono; el filtro de meses ocupa toda la fila inferior. Sus etiquetas seleccionadas se envuelven debajo del disparador. El desplegable es fijo: mide como máximo 340px de ancho, deja 16px a los lados y se desplaza hacia arriba cuando falta espacio inferior, reservando 96px bajo el panel. Su altura máxima es `calc(100dvh - 128px)`; la lista interna desplaza hasta 280px y la acción Aplicar queda al pie del panel. Estos valores proceden de `SelectorMultiple.tsx` y `mapa.css`; las capturas `multi-desktop.png` y `multi-mobile.png` registran la misma selección en ambos tamaños.
+
+El resumen territorial reúne cuatro indicadores en una superficie blanca con filetes internos y esquinas de tarjeta: cuatro columnas en escritorio y dos por dos en teléfono. El mapa y su inspector comparten un contenedor; la tabla comparativa ocupa el ancho completo debajo, con separación de 28px. La tabla desplaza verticalmente hasta 460px y fija los encabezados; en teléfono mantiene nombre y ambas cifras en tres columnas, oculta la acción de detalle redundante y permite seleccionar el nombre para enfocar la ficha.
 
 Los grupos reutilizan separaciones pequeñas en controles y padding mayor en paneles. Evitar imponer una grilla nueva a todas las pantallas: la vista territorial es una extensión más amplia, mientras Panorama conserva el contenedor y las primitivas comunes.
 
-Vías y entorno ocupa el mismo marco territorial. Su mapa Leaflet mide 540px en escritorio y 420px hasta 760px; son alturas propias de esa vista, independientes de las de Referidos. La barra de capas se envuelve; la consulta y los inventarios usan padding de 24px a los lados, reducido a 16px en teléfono. Las listas viales y férreas desplazan internamente hasta 220px, con filas de altura mínima 44px. Las fichas muestran atributo y valor en dos columnas; en teléfono usan columnas iguales y valores que permiten envolver palabras largas.
+Vías y entorno ocupa el mismo marco territorial. Su mapa Leaflet mide 540px en escritorio y 420px hasta 760px; son alturas propias de esa vista, independientes de las de Mapa de la red. La barra de capas se envuelve; la consulta y los inventarios usan padding de 24px a los lados, reducido a 16px en teléfono. Las listas viales y férreas desplazan internamente hasta 220px, con filas de altura mínima 44px. Las fichas muestran atributo y valor en dos columnas; en teléfono usan columnas iguales y valores que permiten envolver palabras largas.
+
+Las capturas actuales del panorama son [.impeccable/review/panorama-desktop.png](.impeccable/review/panorama-desktop.png), [panorama-mobile.png](.impeccable/review/panorama-mobile.png) y [panorama-mobile-empty.png](.impeccable/review/panorama-mobile-empty.png). Registran Anapoima con cifras sintéticas, ficha seleccionada, tabla con ambas medidas y estado sin coincidencias; no son contenido de producción. Las capturas anteriores se conservan como evidencia histórica de sus respectivas ampliaciones.
 
 La búsqueda global mide hasta 380px en escritorio y ocupa el ancho disponible en teléfono; los resultados flotantes desplazan hasta 320px. Las capturas de evidencia son [.impeccable/review/infra-desktop.png](.impeccable/review/infra-desktop.png), [infra-mobile.png](.impeccable/review/infra-mobile.png), [infra-referidos-desktop.png](.impeccable/review/infra-referidos-desktop.png), [infra-referidos-mobile.png](.impeccable/review/infra-referidos-mobile.png) e [infra-satelite-desktop.png](.impeccable/review/infra-satelite-desktop.png). La captura de satélite registra una consulta previa de 391 tramos; las dos capturas finales de calles incluyen el listado férreo y su ficha.
 
@@ -264,13 +290,13 @@ Campos con etiqueta encima, ancho flexible y mínimo de ancho cero para contener
 
 ### SelectorMultiple
 
-Componente reutilizado por provincias, municipios/alcaldías, medidas y meses. Disparador de altura mínima 44px, texto de 13px, filete de línea fuerte y radio propio; hover usa superficie-2 y borde de acento. El contador usa cifras tabulares de 11px. Se muestran dos etiquetas removibles y `+n` para el resto; cada etiqueta trunca su texto y conserva el nombre completo en title. La eliminación se aplica de inmediato, respetando el mínimo del componente.
+Componente reutilizado por los filtros de provincias, municipios y meses. Disparador de altura mínima 44px, texto de 13px, filete de línea fuerte y radio propio; hover usa superficie-2 y borde de acento. El contador usa cifras tabulares de 11px. Se muestran dos etiquetas removibles y `+n` para el resto; cada etiqueta trunca su texto y conserva el nombre completo en title. La eliminación se aplica de inmediato, respetando el mínimo del componente.
 
 El panel elevado abre con foco en búsqueda. Busca sin distinguir mayúsculas ni tildes, también por grupo; las selecciones ya aplicadas aparecen primero. Las filas de casillas nativas tienen altura mínima 44px, casilla de 16px y fondo suave de acento al marcar. Seleccionar todos/resultados y Limpiar editan un borrador; Aplicar confirma el conjunto. Su botón tiene altura mínima 36px y usa acento, hover oscuro y opacidad reducida cuando no alcanza el mínimo. La búsqueda señala foco con un filete inferior de acento; los demás controles conservan contorno visible. La flecha gira en 160ms ease-out, sin transición con movimiento reducido.
 
 Escape descarta el borrador y devuelve foco al disparador; también lo devuelve Aplicar. Las flechas arriba/abajo recorren casillas, y Tab usa el orden nativo. Clic exterior, salida del foco, resize o scroll externo cierran el panel sin confirmar; el scroll interno permanece disponible. Al reabrir, el borrador parte de la selección aplicada.
 
-En el mapa, las provincias acotan los municipios y eliminan selecciones municipales fuera de alcance. Meses ofrece los últimos 24 meses y una entrada nativa para añadir otros. Medidas exige al menos una selección; cuando hay dos, sus totales se muestran por separado en botones de altura mínima 42px, con `aria-pressed` y acento suave para la medida que colorea el mapa. No sumar esos totales entre sí.
+En el mapa, las provincias acotan los municipios y eliminan selecciones municipales fuera de alcance. Meses ofrece los últimos 24 meses y una entrada nativa para añadir otros. Personas registradas y personas referidas siempre se consultan por separado; ya no constituyen un filtro múltiple. El selector de color conserva las dos medidas visibles y cambia únicamente el coroplético. No sumar sus totales entre sí.
 
 ### Cards / Containers
 
@@ -284,15 +310,27 @@ La navegación superior usa texto pequeño y cápsula neutra para la página act
 
 La insignia del shell es una cápsula pequeña en acento con cifra tabular y texto sobre-acento. Es un indicador de cantidad, no un filtro territorial.
 
-### Mapa y lista territorial
+### Resumen territorial
 
-Una superficie compartida reúne mapa y detalle equivalente. La lista ofrece las mismas cifras y acciones por teclado. Las filas usan divisores, punto de escala y cifra tabular; hover y selección reciben superficie-2. Las etiquetas del mapa evitan colisiones y el detalle completo permanece en la lista.
+Cuatro indicadores compactos, planos y separados por filetes. Cada uno usa etiqueta de 12px, cifra tabular y definición de 11px. Personas registradas y Personas referidas conservan sus totales separados; Presencia territorial muestra áreas con registros sobre áreas de referencia. El cuarto indicador cuenta territorios Sin registros; en vereda cambia a Sin vereda asignada y muestra personas sin asignación, sin equipararlas con población urbana. La presencia corresponde a registros del espacio, no a cobertura de habitantes.
+
+### Mapa e inspector territorial
+
+Una superficie compartida reúne cartografía y ficha. Colorear por usa botones de altura mínima 34px y radio de campo (6px); la medida activa recibe acento sólido con texto sobre-acento y `aria-pressed`. La leyenda y el punto de cada fila siguen esa medida; los indicadores, la tabla y la ficha conservan ambas cifras.
+
+Pasar el cursor ofrece nombre y ambas cifras en un tooltip; hacer clic selecciona y enfoca el inspector sin cambiar automáticamente de nivel. La ficha muestra título de 19px, contexto de 12px, ambas cifras de 22px y metadatos de 11px. Provincia muestra municipios de referencia; municipio muestra veredas de referencia y código DANE; vereda añade código, área aproximada y vigencia. Explorar municipios / Explorar veredas es una acción explícita en cápsula primaria, de ancho completo y altura mínima 40px. Quitar selección mantiene el nivel. El estado inicial explica cómo seleccionar y comparar. Alcance y privacidad continúan en bloques separados por filetes.
+
+### Tabla comparativa territorial
+
+Superficie blanca, borde de línea y radio de tarjeta. El encabezado combina título de 20px, contexto y búsqueda; debajo, Todos / Sin registros / Con cifras protegidas conservan `aria-pressed`, altura mínima 34px y selección de acento suave. El filtro Sin registros se refiere a personas registradas, con independencia del color del mapa.
+
+Encabezados ordenables de 11px, `aria-sort`, cifra tabular y acción de siguiente nivel por fila. Los nombres son botones con altura mínima 62px y foco visible; seleccionarlos enfoca la ficha. Hover usa superficie-2 y selección usa acento suave. La lectura de cifras protegidas permanece textual y esas filas no se ordenan como cantidades. El estado sin coincidencias ofrece Mostrar todos los territorios; carga y error conservan texto explícito. En teléfono se mantienen nombre, Registradas y Referidas sin desplazamiento horizontal; los nombres largos pueden envolver. Las etiquetas del mapa evitan colisiones y el detalle completo permanece accesible en la tabla.
 
 Cero se muestra con tono neutro y `0`; el dato protegido usa rayado y `Protegido`. `—` expresa una cifra todavía no disponible. El bloque `Sin vereda asignada` separa datos históricos o faltantes sin afirmar que sean urbanos. Esta semántica es parte del componente y debe mantenerse en todos sus estados.
 
 ### Vista cartográfica y búsqueda global
 
-Referidos es la vista inicial. Los botones Referidos / Vías y entorno y Calles / Satélite comparten el selector segmentado existente: contenedor blanco con filete y radio de 8px, botones de altura mínima 38px y radio de 5px, texto de 12px y estado activo en acento suave con peso 600. La selección se comunica con `aria-pressed`; el foco conserva el contorno de acento de 2px y separación de 3px.
+Mapa de la red es la vista inicial. Los botones Mapa de la red / Vías y entorno y Calles / Satélite comparten el selector segmentado existente: contenedor blanco con filete y radio de 8px, botones de altura mínima 38px y radio de 5px, texto de 12px y estado activo en acento suave con peso 600. La selección se comunica con `aria-pressed`; el foco conserva el contorno de acento de 2px y separación de 3px.
 
 La búsqueda de veredas acepta nombre, municipio o código desde dos caracteres, sin distinguir mayúsculas ni tildes, y ofrece hasta ocho resultados. Cada resultado muestra vereda, municipio y código y abre su territorio. La ficha territorial conserva cifra y estado protegido, y añade código, municipio, área aproximada en hectáreas y vigencia de referencia, con filas compactas de 11px. Los nombres de ruta y los identificadores no cambian por adaptar el texto visible al español de Colombia; SUMA mantiene la misma voz y el campo «Pregúntale a SUMA…».
 
@@ -314,10 +352,10 @@ Fuentes de infraestructura y descarga conserva el patrón desplegable de procede
 
 - **Do** extender Geist, las superficies neutras y el acento existente en nuevas vistas de la app.
 - **Do** conservar foco visible, cifras tabulares y texto que explique estados reservados.
-- **Do** mantener la escala de cantidad y su leyenda consistentes entre mapa y lista.
+- **Do** mantener la escala de cantidad y su leyenda consistentes entre mapa y tabla.
 - **Do** mostrar procedencia y alcance consultables en la superficie territorial.
 - **Do** mantener nombres, cantidades y filas accesibles junto a los colores y trazos de infraestructura.
-- **Do** conservar la vista Referidos predeterminada y extender sus primitivas en Vías y entorno.
+- **Do** conservar la vista Mapa de la red predeterminada y extender sus primitivas en Vías y entorno.
 
 ### Don't:
 
