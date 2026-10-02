@@ -15470,6 +15470,9 @@ export const VEREDAS: readonly VeredaEntry[] = [
     "vintage": "2010"
   }
 ]
-const POR_CODIGO = new Map(VEREDAS.map(v => [v.code, v]))
-export function findVereda(code: string): VeredaEntry | undefined { return POR_CODIGO.get(code) }
+let porCodigo: Map<string, VeredaEntry> | undefined
+export function findVereda(code: string): VeredaEntry | undefined {
+  porCodigo ??= new Map(VEREDAS.map(v => [v.code, v]))
+  return porCodigo.get(code)
+}
 export function veredasOf(municipalityCode: string): readonly VeredaEntry[] { return VEREDAS.filter(v => v.municipalityCode === municipalityCode) }

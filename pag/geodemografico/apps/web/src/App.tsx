@@ -1,16 +1,16 @@
-import { useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { ApiError, api, type Me, type Scope } from './api'
-import { Ajustes } from './Ajustes'
 import { Chat, useConversacion } from './Chat'
 import { Entrar } from './Entrar'
-import { Lideres } from './Lideres'
 import { Icono, SimboloGeo, SimboloSuma } from './Marca'
 import { Panorama } from './Panorama'
-import { MapaTerritorial } from './MapaTerritorial'
-import { Revision } from './Revision'
-import { Sumar } from './Sumar'
-import { Dashboard } from './Dashboard'
 import { Enlace, conBase, navegar, useIdDashboard, useRuta } from './rutas'
+const MapaTerritorial = lazy(() => import('./MapaTerritorial').then(m => ({ default: m.MapaTerritorial })))
+const Ajustes = lazy(() => import('./Ajustes').then(m => ({ default: m.Ajustes })))
+const Lideres = lazy(() => import('./Lideres').then(m => ({ default: m.Lideres })))
+const Revision = lazy(() => import('./Revision').then(m => ({ default: m.Revision })))
+const Sumar = lazy(() => import('./Sumar').then(m => ({ default: m.Sumar })))
+const Dashboard = lazy(() => import('./Dashboard').then(m => ({ default: m.Dashboard })))
 
 /**
  * Shell de la aplicación: sesión, espacio activo, barra, rutas y SUMA.
@@ -107,7 +107,7 @@ export function App(): JSX.Element {
 
   if (!scope) {
     return (
-      <Entrar error="Tu cuenta entró, pero todavía no tiene permisos en ningún espacio. Pedile a quien administra que te los asigne." />
+      <Entrar error="Tu cuenta entró, pero todavía no tiene permisos en ningún espacio. Pídele a quien administra que te los asigne." />
     )
   }
 
@@ -189,6 +189,7 @@ export function App(): JSX.Element {
         />
       ) : (
         <main className={ruta === 'mapa' ? 'contenido contenido-mapa' : 'contenido'}>
+          <Suspense fallback={<p className="vacio" role="status">Cargando sección…</p>}>
           {ruta === 'panorama' && <Panorama scope={scope} />}
           {ruta === 'mapa' && <MapaTerritorial key={`${scope.tenantId}:${scope.purposeId}`} scope={scope} />}
           {ruta === 'sumar' && <Sumar scope={scope} />}
@@ -213,6 +214,7 @@ export function App(): JSX.Element {
               <strong>Tu cuenta no tiene acceso a los tableros de SUMA en este espacio.</strong>
             </div>
           )}
+          </Suspense>
         </main>
       )}
 

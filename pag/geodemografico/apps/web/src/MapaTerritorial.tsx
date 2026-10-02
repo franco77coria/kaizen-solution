@@ -1,14 +1,12 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { geoArea, geoMercator, geoPath, type GeoPermissibleObjects } from 'd3-geo'
-import type { Feature, FeatureCollection, MultiPolygon, Polygon } from 'geojson'
 import { CUNDINAMARCA_PROVINCES, VEREDAS, displayName, provinceOf } from '@kaizen/geography'
 import { api, type CeldaAnalitica, type FiltrosTerritoriales, type ResumenTerritorial, type Scope } from './api'
-import { conBase } from './rutas'
 import { SelectorMultiple } from './SelectorMultiple'
+import { GraficoTerritorial } from './GraficoTerritorial'
+import { leerCartografia, type AreaTerritorial as Area } from './cartografiaTerritorial'
 const MapaEntorno = lazy(() => import('./MapaEntorno'))
 
-type Area = Feature<Polygon | MultiPolygon, { code: string; name: string; vintage: string }>
-interface Capa extends FeatureCollection<Polygon | MultiPolygon, Area['properties']> { features: Area[] }
 const nf = new Intl.NumberFormat('es-CO')
 const provincias = [...CUNDINAMARCA_PROVINCES].sort((a, b) => a.name.localeCompare(b.name, 'es'))
 const medidas = [{ value: 'records' as const, label: 'Personas registradas' }, { value: 'referrals' as const, label: 'Personas referidas' }]
@@ -20,16 +18,6 @@ const cifra = (row: CeldaAnalitica | undefined) => !row ? '—' : row.suppressed
 const normalizar = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
 const nombre = (s: string) => s.toLocaleLowerCase('es').replace(/(^|\s)\S/g, c => c.toLocaleUpperCase('es'))
 const tono = (r: CeldaAnalitica | undefined) => !r ? 'pendiente' : r.suppressed ? 'protegido' : !r.value ? 'cero' : r.value < 20 ? 'uno' : r.value < 100 ? 'dos' : r.value < 500 ? 'tres' : 'cuatro'
-
-// d3 usa el sentido esférico inverso a RFC 7946. Sólo se invierte la copia
-// para dibujar; la cartografía original conserva sus anillos y coordenadas.
-function paraD3(f: Area): Area {
-  if (geoArea(f) < 2 * Math.PI) return f
-  const g = f.geometry
-  return { ...f, geometry: g.type === 'Polygon'
-    ? { type: 'Polygon', coordinates: g.coordinates.map(r => [...r].reverse()) }
-    : { type: 'MultiPolygon', coordinates: g.coordinates.map(p => p.map(r => [...r].reverse())) } }
-}
 
 function IconoMapa({ tipo }: { tipo: 'plus' | 'minus' | 'reset' | 'arrow' | 'search' | 'sort' }): JSX.Element {
   const paths = { plus: 'M12 5v14M5 12h14', minus: 'M5 12h14', reset: 'M5 8V4m0 4h4M5 8a8 8 0 1 1-1 8', arrow: 'm9 5 7 7-7 7', search: 'M21 21l-5-5M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0', sort: 'M12 5v14m-5-5 5 5 5-5' }
@@ -52,8 +40,10 @@ export function MapaTerritorial({ scope }: { scope: Scope }): JSX.Element {
   const [hover, setHover] = useState('')
   const [retry, setRetry] = useState(0)
   const [datos, setDatos] = useState<{ key: string; values: Partial<Record<'records' | 'referrals', ResumenTerritorial>> } | null>(null)
+  const cacheCifras = useRef(new Map<string, { expires: number; values: Partial<Record<'records' | 'referrals', ResumenTerritorial>> }>())
   const [capas, setCapas] = useState<{ key: string; base: Area[]; features: Area[]; originalBase: Area[]; originalFeatures: Area[] } | null>(null)
   const [error, setError] = useState('')
+  const [errorCifras, setErrorCifras] = useState('')
   const [vista, setVista] = useState({ scale: 1, x: 0, y: 0 })
   const svg = useRef<SVGSVGElement>(null)
   const inspector = useRef<HTMLDivElement>(null)
@@ -89,7 +79,7 @@ export function MapaTerritorial({ scope }: { scope: Scope }): JSX.Element {
     const observer = new ResizeObserver(entries => {
       const rect = entries[0]?.contentRect
       if (rect && rect.width > 0 && rect.height > 0) {
-        setCanvas({ width: rect.width, height: rect.height })
+        setCanvas(current => current.width === rect.width && current.height === rect.height ? current : { width: rect.width, height: rect.height })
         setVista({ scale: 1, x: 0, y: 0 })
       }
     })
@@ -99,28 +89,35 @@ export function MapaTerritorial({ scope }: { scope: Scope }): JSX.Element {
 
   useEffect(() => {
     if (!puedeVer) return
-    let actual = true
+    const controller = new AbortController()
+    const cacheKey = `${scope.tenantId}:${scope.purposeId}:${scope.permissions.join(',')}:${key}`
     setError('')
-    void Promise.all(medidas.map(async ({ value: m }) => [m, await api.territorio(scope, { ...filtros, metric: m })] as const))
-      .then(entries => { if (actual) setDatos({ key, values: Object.fromEntries(entries) }) })
-      .catch(() => { if (actual) setError('No se pudieron consultar las cifras territoriales.') })
-    return () => { actual = false }
+    setErrorCifras('')
+    const cached = cacheCifras.current.get(cacheKey)
+    if (cached && cached.expires > Date.now()) { setDatos({ key, values: cached.values }); return }
+    void Promise.all(medidas.map(async ({ value: m }) => [m, await api.territorio(scope, { ...filtros, metric: m }, controller.signal)] as const))
+      .then(entries => {
+        if (controller.signal.aborted) return
+        const values = Object.fromEntries(entries)
+        if (cacheCifras.current.size >= 12) cacheCifras.current.delete(cacheCifras.current.keys().next().value!)
+        cacheCifras.current.set(cacheKey, { values, expires: Date.now() + 60_000 })
+        setDatos({ key, values })
+      })
+      .catch(() => { if (!controller.signal.aborted) { cacheCifras.current.clear(); setError('No se pudieron consultar las cifras territoriales.'); setErrorCifras('No se pudieron consultar las cifras territoriales.') } })
+    return () => controller.abort()
   }, [scope, filtros, key, retry, puedeVer])
 
   useEffect(() => {
     if (!puedeVer) return
     const controller = new AbortController()
     setVista({ scale: 1, x: 0, y: 0 }); setSeleccion(''); setHover(''); setSearch(''); setLectura('all')
-    const leer = async (path: string): Promise<Capa> => {
-      const response = await fetch(conBase(path), { signal: controller.signal })
-      if (!response.ok) throw new Error('cartografía no disponible')
-      return response.json() as Promise<Capa>
-    }
     void (async () => {
-      const municipal = await leer('/geo/municipios.json')
-      const originalBase = municipal.features.filter(f => municipalityCodes.length ? municipalityCodes.includes(f.properties.code) : provinceIds.length ? provinceIds.includes(provinceOf(f.properties.code)?.id ?? '') : true)
-      const originalFeatures = municipalityCode ? (await leer(`/geo/veredas/${municipalityCode}.json`)).features : originalBase
-      if (!controller.signal.aborted) setCapas({ key: capaKey, base: originalBase.map(paraD3), features: originalFeatures.map(paraD3), originalBase, originalFeatures })
+      const municipal = await leerCartografia('/geo/vista/municipios.json')
+      const elegida = (f: Area) => municipalityCodes.length ? municipalityCodes.includes(f.properties.code) : provinceIds.length ? provinceIds.includes(provinceOf(f.properties.code)?.id ?? '') : true
+      const base = municipal.dibujo.filter(elegida)
+      const originalBase = municipal.original.filter(elegida)
+      const rural = municipalityCode ? await leerCartografia(`/geo/vista/veredas/${municipalityCode}.json`) : null
+      if (!controller.signal.aborted) setCapas({ key: capaKey, base, features: rural?.dibujo ?? base, originalBase, originalFeatures: rural?.original ?? originalBase })
     })().catch(() => { if (!controller.signal.aborted) setError('No se pudo cargar la cartografía. Puedes volver a intentarlo.') })
     return () => controller.abort()
   }, [capaKey, municipalityCode, municipalityCodes, provinceIds, retry, puedeVer])
@@ -151,10 +148,10 @@ export function MapaTerritorial({ scope }: { scope: Scope }): JSX.Element {
     return { areas, labels, outline: capa.base.map(f => path(f) ?? '') }
   }, [capa, level, WIDTH, HEIGHT])
   const rows = registros?.rows ?? []
-  const byId = new Map(resumen?.rows.map(r => [r.key, r]) ?? [])
-  const porRegistro = new Map(rows.map(r => [r.key, r]))
-  const porReferido = new Map(referidos?.rows.map(r => [r.key, r]) ?? [])
-  const visible = rows.filter(r => normalizar(r.label).includes(normalizar(search)) && (lectura === 'all' || lectura === 'zero' && !r.suppressed && r.value === 0 || lectura === 'protected' && (r.suppressed || porReferido.get(r.key)?.suppressed))).sort((a, b) => {
+  const byId = useMemo(() => new Map(resumen?.rows.map(r => [r.key, r]) ?? []), [resumen])
+  const porRegistro = useMemo(() => new Map(registros?.rows.map(r => [r.key, r]) ?? []), [registros])
+  const porReferido = useMemo(() => new Map(referidos?.rows.map(r => [r.key, r]) ?? []), [referidos])
+  const visible = useMemo(() => (registros?.rows ?? []).filter(r => normalizar(r.label).includes(normalizar(search)) && (lectura === 'all' || lectura === 'zero' && !r.suppressed && r.value === 0 || lectura === 'protected' && (r.suppressed || porReferido.get(r.key)?.suppressed))).sort((a, b) => {
     if (orden === 'name') return a.label.localeCompare(b.label, 'es') * (ascendente ? 1 : -1)
     const mapa = orden === 'records' ? porRegistro : porReferido
     const av = mapa.get(a.key), bv = mapa.get(b.key)
@@ -162,14 +159,14 @@ export function MapaTerritorial({ scope }: { scope: Scope }): JSX.Element {
     const aPublica = av && !av.suppressed && av.value !== null, bPublica = bv && !bv.suppressed && bv.value !== null
     if (!aPublica || !bPublica) return aPublica ? -1 : bPublica ? 1 : a.label.localeCompare(b.label, 'es')
     return (av.value! - bv.value!) * (ascendente ? 1 : -1) || a.label.localeCompare(b.label, 'es')
-  })
+  }), [registros, search, lectura, orden, ascendente, porRegistro, porReferido])
   const selected = porRegistro.get(seleccion)
   const hovered = byId.get(hover)
   const selectedArea = capa?.features.find(f => f.properties.code === seleccion)
-  const hectareas = selectedArea ? geoArea(selectedArea) * 6378137 ** 2 / 10000 : null
+  const hectareas = selectedArea ? selectedArea.properties.areaHa ?? geoArea(selectedArea) * 6378137 ** 2 / 10000 : null
   const provinciaSeleccionada = level === 'province' ? provincias.find(p => p.id === seleccion) : undefined
   const veredasMunicipio = level === 'municipality' && selected ? VEREDAS.filter(v => v.municipalityCode === seleccion).length : null
-  const veredasEncontradas = busquedaVereda.trim().length >= 2 ? VEREDAS.filter(v => normalizar(`${v.name} ${v.code} ${displayName(v.municipalityCode)}`).includes(normalizar(busquedaVereda.trim()))).slice(0, 8) : []
+  const veredasEncontradas = useMemo(() => busquedaVereda.trim().length >= 2 ? VEREDAS.filter(v => normalizar(`${v.name} ${v.code} ${displayName(v.municipalityCode)}`).includes(normalizar(busquedaVereda.trim()))).slice(0, 8) : [], [busquedaVereda])
   const vintages = [...new Set(capa?.features.map(f => f.properties.vintage) ?? [])].sort().join(', ')
 
   useEffect(() => {
@@ -184,11 +181,12 @@ export function MapaTerritorial({ scope }: { scope: Scope }): JSX.Element {
   function ordenar(campo: 'name' | 'records' | 'referrals'): void {
     setOrden(campo); setAscendente(campo === orden ? !ascendente : campo === 'name')
   }
-  function consultar(id: string): void {
+  const consultar = useCallback((id: string): void => {
     setSeleccion(id)
     inspector.current?.scrollIntoView({ block: 'nearest', behavior: 'instant' })
     inspector.current?.focus({ preventScroll: true })
-  }
+  }, [])
+  const actualizar = useCallback((): void => { cacheCifras.current.clear(); setDatos(null); setRetry(r => r + 1) }, [])
   function irAnapoima(): void { setProvinces(['tequendama']); setMunicipalities(['25035']) }
   function cambiarProvincias(values: string[]): void {
     setProvinces(values)
@@ -205,7 +203,7 @@ export function MapaTerritorial({ scope }: { scope: Scope }): JSX.Element {
   return <div className="territorio">
     <header className="territorio-cabecera">
       <div><h1>Panorama territorial</h1><p className="tenue">Compara tu red por provincia, municipio y vereda.</p></div>
-      <button className="boton territorio-atajo" onClick={irAnapoima}>Ver Anapoima <IconoMapa tipo="arrow" /></button>
+      <div className="territorio-cabecera-acciones"><button className="territorio-actualizar" disabled={!registros && !error} onClick={actualizar}><IconoMapa tipo="reset" />Actualizar cifras</button><button className="boton territorio-atajo" onClick={irAnapoima}>Ver Anapoima <IconoMapa tipo="arrow" /></button></div>
     </header>
     <div className="territorio-filtros">
       <SelectorMultiple label="Provincias" emptyLabel="Todo Cundinamarca" options={provincias.map(p => ({ value: p.id, label: p.name }))} value={provinceIds} onChange={cambiarProvincias} />
@@ -224,12 +222,12 @@ export function MapaTerritorial({ scope }: { scope: Scope }): JSX.Element {
       <div className="territorio-modos" aria-label="Vista del mapa"><button aria-pressed={modoMapa === 'referidos'} onClick={() => setModoMapa('referidos')}>Mapa de la red</button><button aria-pressed={modoMapa === 'entorno'} onClick={() => setModoMapa('entorno')}>Vías y entorno</button></div>
       <div className="territorio-busqueda-global"><label><span>Buscar vereda en Cundinamarca</span><input type="search" placeholder="Nombre, municipio o código…" value={busquedaVereda} onChange={e => setBusquedaVereda(e.target.value)} /></label>{busquedaVereda.trim().length >= 2 && <div className="territorio-resultados" aria-label="Veredas encontradas">{!veredasEncontradas.length ? <p>No hay coincidencias en el catálogo de referencia.</p> : veredasEncontradas.map(v => <button key={v.code} onClick={() => { setProvinces([provinceOf(v.municipalityCode)!.id]); setMunicipalities([v.municipalityCode]); setDestinoVereda(v.code); setBusquedaVereda('') }}><span>{nombre(v.name)}</span><small>{displayName(v.municipalityCode)} · {v.code}</small></button>)}</div>}</div>
     </div>
-    {error && <div className="territorio-error" role="alert">{error}<button className="boton" onClick={() => setRetry(r => r + 1)}>Reintentar</button></div>}
+    {error && <div className="territorio-error" role="alert">{error}<button className="boton" onClick={actualizar}>Reintentar</button></div>}
     <div className="territorio-layout">
       <section className="territorio-cartografia" aria-label={`Mapa de ${titulo}`} aria-busy={cargando}>
         <div className="territorio-mapa-titulo"><div><h2>{titulo}</h2><span>{level === 'province' ? '15 provincias · 116 municipios' : `${capa?.features.length ?? '—'} ${unidad}`}</span></div><span className="territorio-norte" aria-label="Norte arriba">N <svg width="16" height="25" viewBox="0 0 16 25" aria-hidden="true"><path d="m8 2 6 19-6-4-6 4Z" fill="currentColor" /></svg></span></div>
         {modoMapa === 'referidos' && <div className="territorio-color" aria-label="Medida que colorea el mapa"><span>Colorear por</span>{medidas.map(m => <button key={m.value} aria-pressed={m.value === metric} onClick={() => setMetric(m.value)}>{m.label}</button>)}</div>}
-        {modoMapa === 'entorno' && capa && <Suspense fallback={<p className="entorno-aviso" role="status">Cargando mapa de entorno…</p>}><MapaEntorno scope={scope} areas={capa.originalFeatures} municipios={capa.originalBase} seleccionado={seleccion} onSeleccionar={code => setSeleccion(level === 'province' ? provinceOf(code)?.id ?? '' : code)} titulo={titulo} /></Suspense>}
+        {modoMapa === 'entorno' && capa && <Suspense fallback={<p className="entorno-aviso" role="status">Cargando mapa de entorno…</p>}><MapaEntorno scope={scope} areas={capa.originalFeatures} municipios={capa.originalBase} originalPath={municipalityCode ? `/geo/veredas/${municipalityCode}.json` : '/geo/municipios.json'} seleccionado={seleccion} onSeleccionar={code => setSeleccion(level === 'province' ? provinceOf(code)?.id ?? '' : code)} titulo={titulo} /></Suspense>}
         <div className="territorio-vista-referidos" hidden={modoMapa !== 'referidos'}>
         <svg ref={svg} className="territorio-svg" viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="img" aria-label={`Mapa de ${titulo} por ${unidad}. Usa la tabla territorial para explorar con el teclado.`}
           onPointerDown={e => { if (e.button !== 0) return; const rect = e.currentTarget.getBoundingClientRect(); drag.current = { x: e.clientX * WIDTH / rect.width, y: e.clientY * HEIGHT / rect.height, ox: vista.x, oy: vista.y, moved: false }; e.currentTarget.setPointerCapture(e.pointerId) }}
@@ -252,6 +250,7 @@ export function MapaTerritorial({ scope }: { scope: Scope }): JSX.Element {
         </div>
       </section>
       <aside className="territorio-panel" aria-label="Detalle territorial">
+        <GraficoTerritorial registros={registros} referidos={referidos} medida={metric} unidad={unidad} seleccionado={seleccion} onSeleccionar={consultar} error={errorCifras} onReintentar={actualizar} />
         <div className="territorio-inspector" aria-live="polite" ref={inspector} tabIndex={-1}>
           <div className="territorio-inspector-cabecera"><h2>{selected ? nombre(selected.label) : 'Explora un territorio'}</h2>{selected && <button aria-label="Quitar selección territorial" onClick={() => setSeleccion('')}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg></button>}</div>
           {!selected ? <><p className="territorio-inspector-ayuda">Selecciona {level === 'province' ? 'una provincia' : level === 'municipality' ? 'un municipio' : 'una vereda'} en el mapa o en la tabla para consultar sus cifras.</p><div className="territorio-recorrido"><span>Cundinamarca</span><IconoMapa tipo="arrow" /><span>Provincia</span><IconoMapa tipo="arrow" /><span>Municipio</span><IconoMapa tipo="arrow" /><span>Vereda</span></div><p className="territorio-inspector-ayuda">Puedes elegir varios territorios en los filtros y comparar sus registros en la tabla.</p></> : <>
@@ -262,9 +261,11 @@ export function MapaTerritorial({ scope }: { scope: Scope }): JSX.Element {
             {level === 'vereda' && <p className="territorio-inspector-ayuda">Consulta las vías y capas públicas de esta zona en “Vías y entorno”.</p>}
           </>}
         </div>
+      </aside>
+    </div>
+    <div className="territorio-notas">
         <div className="territorio-alcance"><h3>Qué estás consultando</h3><p>{titulo} · {periodo.toLocaleLowerCase('es')}.</p><p>Las personas referidas forman parte de las registradas. Las dos cifras no se suman.</p>{level === 'vereda' && <p>Los registros sin vereda se muestran aparte y están incluidos en el total municipal.</p>}</div>
         <div className="territorio-privacidad"><strong>Lectura de las cifras</strong><p>0 significa que no hay registros para estos filtros. “Protegido” reserva grupos pequeños y sus complementos; nunca significa cero.</p></div>
-      </aside>
     </div>
     <section className="territorio-comparacion" aria-labelledby="comparacion-titulo">
       <div className="territorio-tabla-cabecera"><div><h2 id="comparacion-titulo">Compara {unidad}</h2><p>{titulo} · {periodo}. Ordena las columnas para cambiar la lectura.</p></div><label className="territorio-buscar"><IconoMapa tipo="search" /><input type="search" placeholder={`Buscar ${unidad}…`} value={search} onChange={e => setSearch(e.target.value)} aria-label={`Buscar ${unidad}`} /></label></div>
@@ -276,6 +277,6 @@ export function MapaTerritorial({ scope }: { scope: Scope }): JSX.Element {
       <p className="territorio-tabla-nota">“Sin registros” se refiere a personas registradas en este espacio, para los meses elegidos. No indica ausencia de habitantes. Las cifras protegidas no se ordenan por cantidad.</p>
     </section>
     {resumen && resumen.total.value === 0 && !cargando && <p className="territorio-aviso" role="status">No hay personas para estos filtros. El mapa muestra la división territorial de referencia.</p>}
-    <details className="territorio-fuentes"><summary>Fuentes y alcance del mapa</summary><p>Municipios: DANE, Marco Geoestadístico Nacional 2020, publicación UPRA. Veredas: nivel de referencia DANE 2020 publicado por IDEC; vigencias de las áreas visibles: {vintages || 'consultando'}. Cartografía estadística de referencia: no sustituye un deslinde.</p><p>Agrupación provincial del catálogo de Kaizen, pendiente de cotejo administrativo. Las cifras corresponden al espacio y finalidad seleccionados; no representan el censo ni la población total.</p><p>Departamento Administrativo Nacional de Estadística — DANE: <a href="https://www.dane.gov.co" target="_blank" rel="noreferrer">www.dane.gov.co</a>. <a href="https://geoportal.dane.gov.co/acerca-del-geoportal/licencia-y-condiciones-de-uso/" target="_blank" rel="noreferrer">Licencia CC BY 4.0</a> · <a href="https://www.arcgis.com/home/item.html?id=ceb6771090e04c6d966d10e64a9a6720" target="_blank" rel="noreferrer">Fuente de veredas IDEC</a>. Actualización de cifras: {resumen ? new Date(resumen.executedAt).toLocaleString('es-CO') : 'pendiente'}.</p></details>
+    <details className="territorio-fuentes"><summary>Fuentes y alcance del mapa</summary><p>Municipios: DANE, Marco Geoestadístico Nacional 2020, publicación UPRA. Veredas: nivel de referencia DANE 2020 publicado por IDEC; vigencias de las áreas visibles: {vintages || 'consultando'}. Cartografía estadística de referencia: no sustituye un deslinde.</p><p>La vista simplifica los trazados para facilitar la exploración. Las áreas aproximadas se calculan con la geometría original; la descarga conserva los límites completos.</p><p>Agrupación provincial del catálogo de Kaizen, pendiente de cotejo administrativo. Las cifras corresponden al espacio y finalidad seleccionados; no representan el censo ni la población total.</p><p>Departamento Administrativo Nacional de Estadística — DANE: <a href="https://www.dane.gov.co" target="_blank" rel="noreferrer">www.dane.gov.co</a>. <a href="https://geoportal.dane.gov.co/acerca-del-geoportal/licencia-y-condiciones-de-uso/" target="_blank" rel="noreferrer">Licencia CC BY 4.0</a> · <a href="https://www.arcgis.com/home/item.html?id=ceb6771090e04c6d966d10e64a9a6720" target="_blank" rel="noreferrer">Fuente de veredas IDEC</a>. Actualización de cifras: {resumen ? new Date(resumen.executedAt).toLocaleString('es-CO') : 'pendiente'}.</p></details>
   </div>
 }

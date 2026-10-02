@@ -4,9 +4,10 @@ import type { Feature, FeatureCollection, MultiPolygon, Polygon } from 'geojson'
 import 'leaflet/dist/leaflet.css'
 import { FERREA_ITEM, VIAS_ITEM, type Caja, type ConsultaVias, type Superficie, type Tramo, type TramoGeo } from '@kaizen/geography'
 import { api, type Scope } from './api'
+import { conBase } from './rutas'
 
 type Area = Feature<Polygon | MultiPolygon, { code: string; name: string; vintage: string }>
-interface Props { scope: Scope; areas: Area[]; municipios: Area[]; seleccionado: string; onSeleccionar: (code: string) => void; titulo: string }
+interface Props { scope: Scope; areas: Area[]; municipios: Area[]; originalPath: string; seleccionado: string; onSeleccionar: (code: string) => void; titulo: string }
 const categorias: Array<{ key: Superficie; label: string; color: string }> = [
   { key: 'pavimentada', label: 'Pavimentada', color: '#256a91' },
   { key: 'sin-pavimentar', label: 'Sin pavimentar / afirmado', color: '#a15d24' },
@@ -17,7 +18,7 @@ const todos = categorias.map(c => c.key)
 const fecha = (s: string | number) => new Date(s).toLocaleString('es-CO', { timeZone: 'America/Bogota' })
 const collection = <G extends Polygon | MultiPolygon | TramoGeo['geometry'], P>(features: Array<Feature<G, P>>): FeatureCollection<G, P> => ({ type: 'FeatureCollection', features })
 
-export default function MapaEntorno({ scope, areas, municipios, seleccionado, onSeleccionar, titulo }: Props): JSX.Element {
+export default function MapaEntorno({ scope, areas, municipios, originalPath, seleccionado, onSeleccionar, titulo }: Props): JSX.Element {
   const container = useRef<HTMLDivElement>(null)
   const map = useRef<L.Map | null>(null)
   const onSelect = useRef(onSeleccionar)
@@ -34,6 +35,8 @@ export default function MapaEntorno({ scope, areas, municipios, seleccionado, on
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [baseError, setBaseError] = useState(false)
+  const [descargando, setDescargando] = useState(false)
+  const [downloadError, setDownloadError] = useState('')
   const [canQuery, setCanQuery] = useState(false)
   const [zoom, setZoom] = useState(8)
   const [tipos, setTipos] = useState<Superficie[]>(todos)
@@ -140,11 +143,19 @@ export default function MapaEntorno({ scope, areas, municipios, seleccionado, on
   }
 
   function enfocar(f: TramoGeo): void { setTramo(f.properties); map.current?.fitBounds(L.geoJSON(f).getBounds(), { maxZoom: 17, padding: [40, 40], animate: false }) }
-  function descargar(): void {
+  async function descargar(): Promise<void> {
     if (!areas.length) return
-    const geo = { type: 'FeatureCollection', features: areas, attribution: 'Departamento Administrativo Nacional de Estadística — DANE (www.dane.gov.co). Publicación UPRA / IDEC Cundinamarca. Cartografía de referencia de Kaizen.', license: 'CC BY 4.0', licenseUrl: 'https://geoportal.dane.gov.co/acerca-del-geoportal/licencia-y-condiciones-de-uso/', note: 'Geometrías públicas reproyectadas a WGS84 y normalizadas; no incluye registros ni cifras de personas. Las vigencias originales se conservan en las propiedades.' }
-    const url = URL.createObjectURL(new Blob([JSON.stringify(geo)], { type: 'application/geo+json' }))
-    const anchor = document.createElement('a'); anchor.href = url; anchor.download = 'territorios_cundinamarca.geojson'; document.body.appendChild(anchor); anchor.click(); anchor.remove(); window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+    setDescargando(true); setDownloadError('')
+    try {
+      const response = await fetch(conBase(originalPath))
+      if (!response.ok) throw new Error('Límites no disponibles')
+      const original = await response.json() as FeatureCollection<Polygon | MultiPolygon, Area['properties']>
+      const codes = new Set(areas.map(f => f.properties.code))
+      const geo = { ...original, features: original.features.filter(f => codes.has(f.properties.code)) }
+      const url = URL.createObjectURL(new Blob([JSON.stringify(geo)], { type: 'application/geo+json' }))
+      const anchor = document.createElement('a'); anchor.href = url; anchor.download = 'territorios_cundinamarca.geojson'; document.body.appendChild(anchor); anchor.click(); anchor.remove(); window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+    } catch { setDownloadError('No se pudieron descargar los límites. Vuelve a intentarlo.') }
+    finally { setDescargando(false) }
   }
 
   return <div className="entorno">
@@ -173,6 +184,6 @@ export default function MapaEntorno({ scope, areas, municipios, seleccionado, on
     </div>}
     {tramo && <div className="entorno-ficha" aria-live="polite"><h3>{tramo.nombre}</h3><dl>{[['Tipo', tramo.tipo], ['Superficie registrada', tramo.superficie], ['Estado reportado en la fuente', tramo.estado], ['Regularidad registrada', tramo.suavidad], ['Puente', tramo.puente], ['Túnel', tramo.tunel], ['Ancho registrado', tramo.ancho], ['Referencia', tramo.referencia], ['Fuente', tramo.fuente]].filter(([, v]) => v).map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl><button className="boton" onClick={() => setTramo(null)}>Cerrar ficha</button></div>}
     <p className="entorno-nota">“Sin pavimentar” describe la superficie registrada, no una obra pendiente. “Sin información” no permite inferir el estado. La red férrea muestra trazados de referencia; su presencia no confirma un servicio de tren activo.</p>
-    <details className="entorno-fuentes"><summary>Fuentes de infraestructura y descarga</summary><p><a href={VIAS_ITEM} target="_blank" rel="noreferrer">IDEC · vías basadas en OpenStreetMap</a>. Datos consultados según el área visible; no es un inventario exhaustivo ni una inspección de campo. {consulta?.edicionFuente ? `Última edición de las capas: ${fecha(consulta.edicionFuente)}. Esa fecha no certifica la vigencia en campo.` : 'La vigencia de cada tramo no está certificada.'} <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noreferrer">CC BY-SA 4.0 según la publicación IDEC</a>.</p><p><a href={FERREA_ITEM} target="_blank" rel="noreferrer">IDEC · red férrea de Cundinamarca, publicación 2024</a>. <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">CC BY 4.0</a>. Se normalizan los atributos para consulta; no se verifica la operación actual.</p><p>Para determinar necesidades de pavimentación se requiere un inventario vial municipal actualizado o verificación en campo. <a href="https://www.openstreetmap.org/fixthemap" target="_blank" rel="noreferrer">Reportar un problema del mapa base</a>.</p><button className="boton" onClick={descargar} disabled={!areas.length}>Descargar límites GeoJSON</button></details>
+    <details className="entorno-fuentes"><summary>Fuentes de infraestructura y descarga</summary><p><a href={VIAS_ITEM} target="_blank" rel="noreferrer">IDEC · vías basadas en OpenStreetMap</a>. Datos consultados según el área visible; no es un inventario exhaustivo ni una inspección de campo. {consulta?.edicionFuente ? `Última edición de las capas: ${fecha(consulta.edicionFuente)}. Esa fecha no certifica la vigencia en campo.` : 'La vigencia de cada tramo no está certificada.'} <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noreferrer">CC BY-SA 4.0 según la publicación IDEC</a>.</p><p><a href={FERREA_ITEM} target="_blank" rel="noreferrer">IDEC · red férrea de Cundinamarca, publicación 2024</a>. <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">CC BY 4.0</a>. Se normalizan los atributos para consulta; no se verifica la operación actual.</p><p>Para determinar necesidades de pavimentación se requiere un inventario vial municipal actualizado o verificación en campo. <a href="https://www.openstreetmap.org/fixthemap" target="_blank" rel="noreferrer">Reportar un problema del mapa base</a>.</p><button className="boton" onClick={() => void descargar()} disabled={!areas.length || descargando}>{descargando ? "Preparando descarga…" : "Descargar límites GeoJSON"}</button>{downloadError && <p role="alert">{downloadError}</p>}</details>
   </div>
 }

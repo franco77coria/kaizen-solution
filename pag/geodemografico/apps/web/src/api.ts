@@ -343,8 +343,8 @@ export const api = {
     request<ConsultaVias>(`/v1/geography/infrastructure?${new URLSearchParams({ layer: 'vias', bbox: caja.join(',') })}`, { scope, signal }),
   infraestructuraFerrea: (scope: Scope, signal: AbortSignal) =>
     request<FeatureCollection<LineString | MultiLineString, Tramo>>('/v1/geography/infrastructure?layer=ferrea', { scope, signal }),
-  territorio: (scope: Scope, filtros: FiltrosTerritoriales) =>
-    request<ResumenTerritorial>(`/v1/geography/territory?${new URLSearchParams({ ...filtros })}`, { scope }),
+  territorio: (scope: Scope, filtros: FiltrosTerritoriales, signal?: AbortSignal) =>
+    request<ResumenTerritorial>(`/v1/geography/territory?${new URLSearchParams({ ...filtros })}`, { scope, ...(signal ? { signal } : {}) }),
   veredas: (scope: Scope, municipalityCode: string) =>
     request<{ veredas: VeredaCatalogo[] }>(`/v1/geography/veredas?${new URLSearchParams({ municipalityCode })}`, { scope }),
   me: () => request<Me>('/v1/me'),
