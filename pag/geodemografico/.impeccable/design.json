@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-02T14:59:23Z",
+  "generatedAt": "2026-10-02T15:35:50Z",
   "title": "Design System: Geodemográfico · Kaizen",
   "extensions": {
     "documentation": {
@@ -11,6 +11,7 @@
         "apps/web/src/tokens.css",
         "apps/web/src/styles.css",
         "apps/web/src/MapaTerritorial.tsx",
+        "apps/web/src/SelectorMultiple.tsx",
         "apps/web/src/mapa.css",
         "apps/web/src/Panorama.tsx",
         "PRODUCT.md",
@@ -19,9 +20,11 @@
       "evidence": [
         ".impeccable/review/desktop.png",
         ".impeccable/review/anapoima.png",
-        ".impeccable/review/mobile.png"
+        ".impeccable/review/mobile.png",
+        ".impeccable/review/multi-desktop.png",
+        ".impeccable/review/multi-mobile.png"
       ],
-      "evidenceScope": "Capturas de prueba con datos sintéticos. Tema oscuro revisado por fuente; no existe captura oscura.",
+      "evidenceScope": "Capturas de prueba con datos sintéticos, incluidos selectores múltiples en escritorio y teléfono. Tema oscuro revisado por fuente; no existe captura oscura.",
       "rampScope": "Las rampas de ocho pasos se sintetizan en OKLCH para el panel; no sustituyen las escalas de datos implementadas."
     },
     "colorMeta": {
@@ -454,6 +457,11 @@
         "name": "reduced-motion",
         "value": "0.01ms",
         "purpose": "Duración de animaciones y transiciones con prefers-reduced-motion."
+      },
+      {
+        "name": "selector-chevron",
+        "value": "160ms ease-out",
+        "purpose": "Giro de flecha al abrir SelectorMultiple; transition:none con prefers-reduced-motion."
       }
     ],
     "breakpoints": [
@@ -481,6 +489,40 @@
     "themeSources": {
       "shell": "apps/web/src/tokens.css — tema oscuro condicionado por prefers-color-scheme y data-tema.",
       "map": "apps/web/src/mapa.css — base y cero oscuros; cuatro tonos positivos constantes con tinta y halos por clase."
+    },
+    "selectorMultiple": {
+      "source": [
+        "apps/web/src/SelectorMultiple.tsx",
+        "apps/web/src/mapa.css",
+        "apps/web/src/MapaTerritorial.tsx"
+      ],
+      "layout": {
+        "triggerMinHeight": "44px",
+        "optionMinHeight": "44px",
+        "checkboxSize": "16px",
+        "applyMinHeight": "36px",
+        "panelPosition": "fixed",
+        "panelWidth": "min(340px, innerWidth - 32px)",
+        "viewportSideMargin": "16px",
+        "panelMaxHeight": "calc(100dvh - 128px)",
+        "optionsMaxHeight": "280px",
+        "placement": "left clamped to viewport; top clamped from trigger.bottom + 8px to innerHeight - panel.height - 96px, minimum 16px",
+        "stacking": 50,
+        "filterColumns": "4; 2 at max-width:760px",
+        "chipsVisible": 2,
+        "chipRemoveSize": "24px"
+      },
+      "behavior": [
+        "Búsqueda sin mayúsculas ni tildes por etiqueta y grupo; valores aplicados primero.",
+        "Casillas nativas editan borrador; Aplicar confirma, Seleccionar todos/resultados y Limpiar sólo editan borrador.",
+        "Escape cancela y devuelve foco al disparador; Aplicar devuelve foco. ArrowUp/ArrowDown recorren casillas; Tab sigue orden nativo.",
+        "Clic exterior, salida del foco, resize y scroll externo cierran sin aplicar; scroll interno conserva panel.",
+        "Etiquetas removibles aplican de inmediato; dos visibles y +n con title para el resto.",
+        "Municipios se acotan por provincias; cambio provincial descarta municipios fuera de alcance.",
+        "Meses incluye últimos 24 meses y entrada month nativa para extras.",
+        "Medidas exige mínimo una; totales separados y botones aria-pressed de mínimo 42px eligen la medida cartográfica."
+      ],
+      "previewScope": "Muestra visual abierta con valores sintéticos; HTML/CSS del panel no reproduce la lógica React de búsqueda ni Aplicar."
     }
   },
   "components": [
@@ -545,11 +587,19 @@
       "description": "Alternativa accesible al mapa; cifra reservada distinta de cero.",
       "html": "<button class=\"ds-territory-row\"><span class=\"ds-protected-dot\" aria-hidden=\"true\"></span><span>Territorio</span><strong>Protegido</strong><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" aria-hidden=\"true\"><path d=\"m9 5 7 7-7 7\"/></svg></button>",
       "css": ".ds-territory-row { display:flex; align-items:center; width:100%; gap:10px; padding:12px; border:0; border-bottom:1px solid var(--linea,#e4e7e4); background:transparent; color:var(--tinta,#15171a); font-family:var(--fuente,'Geist Variable',sans-serif); font-size:12px; text-align:left; cursor:pointer; } .ds-territory-row:hover,.ds-territory-row[aria-pressed='true'] { background:var(--superficie-2,#f1f3f1); } .ds-territory-row:focus-visible { outline:2px solid var(--acento,#2f6b57); outline-offset:3px; } .ds-territory-row>span:nth-child(2) { flex:1; } .ds-territory-row strong { font-size:12px; font-weight:550; font-variant-numeric:tabular-nums; } .ds-territory-row svg { flex-shrink:0; color:var(--tinta-3,#858b90); } .ds-protected-dot { width:7px; height:7px; border-radius:2px; flex-shrink:0; background:repeating-linear-gradient(135deg,#dae0db 0px,#dae0db 3px,#8c998e 3px,#8c998e 4px); }"
+    },
+    {
+      "name": "SelectorMultiple",
+      "kind": "custom",
+      "refersTo": "selector-multiple",
+      "description": "Filtro con búsqueda, borrador, casillas nativas y etiquetas; muestra visual abierta. Lógica completa en SelectorMultiple.tsx.",
+      "html": "<div class=\"ds-selector-multiple\"><span class=\"ds-selector-label\" id=\"ds-multi-label\">Municipios / alcaldías</span><button class=\"ds-selector-trigger\" aria-labelledby=\"ds-multi-label ds-multi-value\" aria-haspopup=\"dialog\" aria-expanded=\"true\" aria-controls=\"ds-multi-panel\"><span id=\"ds-multi-value\">2 seleccionados</span><span class=\"ds-selector-count\" aria-hidden=\"true\">2</span><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" aria-hidden=\"true\"><path d=\"m6 9 6 6 6-6\"/></svg></button><div class=\"ds-selector-etiquetas\"><span class=\"ds-selector-etiqueta\"><span title=\"Funza\">Funza</span><button aria-label=\"Quitar Funza\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" aria-hidden=\"true\"><path d=\"m6 6 12 12M6 18 18 6\"/></svg></button></span><span class=\"ds-selector-etiqueta\"><span title=\"Anapoima\">Anapoima</span><button aria-label=\"Quitar Anapoima\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" aria-hidden=\"true\"><path d=\"m6 6 12 12M6 18 18 6\"/></svg></button></span></div><div class=\"ds-selector-panel\" id=\"ds-multi-panel\" role=\"dialog\" aria-label=\"Elegir municipios / alcaldías\"><div class=\"ds-selector-search\"><svg width=\"17\" height=\"17\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" aria-hidden=\"true\"><circle cx=\"10\" cy=\"10\" r=\"6\"/><path d=\"m15 15 5 5\"/></svg><input type=\"search\" placeholder=\"Buscar…\" aria-label=\"Buscar municipios / alcaldías\"/></div><div class=\"ds-selector-acciones\"><button>Seleccionar todos</button><button>Limpiar</button></div><div class=\"ds-selector-options\"><label class=\"ds-selector-option\"><input type=\"checkbox\" checked/><span><span>Funza</span><small>Sabana Occidente</small></span></label><label class=\"ds-selector-option\"><input type=\"checkbox\" checked/><span><span>Anapoima</span><small>Tequendama</small></span></label><label class=\"ds-selector-option\"><input type=\"checkbox\"/><span><span>Bojacá</span><small>Sabana Occidente</small></span></label></div><div class=\"ds-selector-footer\"><span aria-live=\"polite\">2 seleccionados</span><button class=\"ds-selector-apply\">Aplicar</button></div></div></div>",
+      "css": ".ds-selector-multiple { min-width: 0; position: relative; }\n.ds-selector-multiple.abierto { z-index: 50; }\n.ds-selector-label { display: block; margin-bottom: 8px; font-size: 12px; font-weight: 550; color: var(--tinta-2); }\n.ds-selector-trigger { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid var(--linea-fuerte); border-radius: 8px; background: var(--superficie); color: var(--tinta); font: inherit; font-size: 13px; cursor: pointer; text-align: left; }\n.ds-selector-trigger > span:first-child { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }\n.ds-selector-trigger > svg { color: var(--tinta-2); flex-shrink: 0; transition: transform 160ms ease-out; }\n.ds-selector-trigger:hover { border-color: var(--acento); background: var(--superficie-2); }\n.ds-selector-trigger[aria-expanded=\"true\"] { border-color: var(--acento); }\n.ds-selector-trigger[aria-expanded=\"true\"] > svg { transform: rotate(180deg); }\n.ds-selector-count { padding: 1px 6px; border-radius: 4px; color: var(--acento); background: var(--acento-suave); font-size: 11px; font-variant-numeric: tabular-nums; }\n.ds-selector-etiquetas { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }\n.ds-selector-etiqueta { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; min-width: 0; border-radius: 5px; padding: 3px 6px 3px 8px; background: var(--acento-suave); color: var(--acento); font-size: 11px; }\n.ds-selector-etiqueta > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }\n.ds-selector-etiqueta button { display: grid; place-items: center; flex-shrink: 0; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 4px; background: transparent; color: currentColor; cursor: pointer; }\n.ds-selector-etiqueta button:hover { background: var(--acento-borde); }\n.ds-selector-etiqueta svg { width: 12px; height: 12px; }\n.ds-selector-resto { align-self: center; padding: 3px 5px; color: var(--tinta-2); font-size: 11px; }\n.ds-selector-panel { position: fixed; display: flex; flex-direction: column; width: 340px; max-height: calc(100dvh - 128px); border-radius: 12px; background: var(--superficie); color: var(--tinta); box-shadow: var(--sombra-flotante); overflow: hidden; z-index: 50; }\n.ds-selector-search { display: flex; align-items: center; gap: 9px; padding: 14px 16px; border-bottom: 1px solid var(--linea); color: var(--tinta-2); }\n.ds-selector-search input { border: 0; min-width: 0; width: 100%; padding: 0; outline: none; background: transparent; color: var(--tinta); font: inherit; font-size: 13px; }\n.ds-selector-search:focus-within { box-shadow: inset 0 -2px var(--acento); }\n.ds-selector-search input::placeholder { color: var(--tinta-2); }\n.ds-selector-acciones { display: flex; justify-content: space-between; gap: 12px; padding: 9px 16px; }\n.ds-selector-options { overflow-y: auto; min-height: 0; max-height: 280px; padding: 2px 8px 8px; scrollbar-width: thin; scrollbar-color: var(--linea-fuerte) transparent; }\n.ds-selector-option { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 10px 9px; border-radius: 6px; cursor: pointer; }\n.ds-selector-option:hover, .ds-selector-option:focus-within { background: var(--superficie-2); }\n.ds-selector-option:has(input:checked) { background: var(--acento-suave); }\n.ds-selector-option input { width: 16px; height: 16px; flex-shrink: 0; margin: 0; accent-color: var(--acento); cursor: pointer; }\n.ds-selector-option > span { display: grid; gap: 3px; font-size: 13px; }\n.ds-selector-option small { font-size: 11px; color: var(--tinta-2); }\n.ds-selector-empty { color: var(--tinta-2); font-size: 12px; padding: 12px 9px; }\n.ds-selector-month { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 16px; border-top: 1px solid var(--linea); font-size: 11px; color: var(--tinta-2); }\n.ds-selector-month input { min-width: 0; max-width: 170px; border: 1px solid var(--linea); padding: 6px; border-radius: 5px; font: inherit; color: var(--tinta); background: var(--superficie); }\n.ds-selector-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-top: 1px solid var(--linea); }\n.ds-selector-footer > span { color: var(--tinta-2); font-size: 11px; }\n.ds-selector-apply { min-height: 36px; padding: 8px 15px; border: 0; border-radius: 6px; background: var(--acento); color: var(--sobre-acento); font: inherit; font-size: 12px; font-weight: 550; cursor: pointer; }\n.ds-selector-apply:disabled { opacity: .5; cursor: default; }\n.ds-selector-apply:hover:enabled { background: var(--acento-hover); }\n.ds-selector-multiple { font-family:var(--fuente,'Geist Variable',sans-serif); max-width:340px; } .ds-selector-panel { position:relative; width:100%; margin-top:8px; } .ds-selector-acciones button { padding:3px 0; border:0; color:var(--acento); background:transparent; font:inherit; font-size:11px; cursor:pointer; } .ds-selector-acciones button:hover { text-decoration:underline; text-underline-offset:3px; } .ds-selector-multiple button:focus-visible,.ds-selector-multiple input:focus-visible { outline:2px solid var(--acento); outline-offset:3px; } .ds-selector-search input:focus-visible { outline:none; caret-color:var(--acento); } @media(prefers-reduced-motion:reduce) { .ds-selector-trigger > svg { transition:none; } }"
     }
   ],
   "narrative": {
     "northStar": "Personas en el territorio del altiplano",
-    "overview": "Este nombre descriptivo proviene del comentario del sistema de tokens; no constituye una identidad nueva ni una metáfora aprobada por entrevista. La app usa un marco neutro, tipografía Geist y un acento verde forestal para que la información territorial conserve la prioridad. Su carácter es sobrio, compacto y legible, adecuado para consultar y operar datos agregados.\n\nEste documento registra el sistema implementado de la app en modo **Operate**. La autoridad visual es el código existente y su extensión territorial, sin una comp aprobada. Las tres capturas de revisión usan datos sintéticos. El alcance visual es la app; la landing y `politica` conservan sus sistemas existentes. La composición particular del mapa y su contrato de datos viven en [.impeccable/mapa-territorial.md](.impeccable/mapa-territorial.md).",
+    "overview": "Este nombre descriptivo proviene del comentario del sistema de tokens; no constituye una identidad nueva ni una metáfora aprobada por entrevista. La app usa un marco neutro, tipografía Geist y un acento verde forestal para que la información territorial conserve la prioridad. Su carácter es sobrio, compacto y legible, adecuado para consultar y operar datos agregados.\n\nEste documento registra el sistema implementado de la app en modo **Operate**. La autoridad visual es el código existente y su extensión territorial, sin una comp aprobada. Las capturas de revisión usan datos sintéticos. El alcance visual es la app; la landing y `politica` conservan sus sistemas existentes. La composición particular del mapa y su contrato de datos viven en [.impeccable/mapa-territorial.md](.impeccable/mapa-territorial.md).",
     "keyCharacteristics": [
       "Superficies neutras, filetes finos y verde asociado a datos y acciones.",
       "Una sola familia sans, con cifras tabulares.",

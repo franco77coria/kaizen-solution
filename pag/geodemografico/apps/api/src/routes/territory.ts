@@ -14,6 +14,9 @@ const filters = z.object({
   provinceId: z.string().max(40).optional(),
   municipalityCode: z.string().regex(/^25\d{3}$/).optional(),
   month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/).optional(),
+  provinceIds: z.string().max(800).transform(v => v.split(',')).pipe(z.array(z.string().min(1).max(40)).min(1).max(15)).optional(),
+  municipalityCodes: z.string().max(700).transform(v => v.split(',')).pipe(z.array(z.string().regex(/^25\d{3}$/)).min(1).max(116)).optional(),
+  months: z.string().max(960).transform(v => v.split(',')).pipe(z.array(z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/)).min(1).max(120)).optional(),
   metric: z.enum(['records', 'referrals']).default('records'),
 }).strict()
 
@@ -32,17 +35,21 @@ export async function territoryRoutes(app: FastifyInstance): Promise<void> {
     const parsed = filters.safeParse(request.query ?? {})
     if (!parsed.success) throw validationFailed('filtros territoriales inválidos')
     const f = parsed.data
-    const province = f.provinceId ? CUNDINAMARCA_PROVINCES.find(p => p.id === f.provinceId) : undefined
-    if (f.provinceId && !province) throw validationFailed('provincia inválida')
-    if (f.municipalityCode && (!findMunicipality(f.municipalityCode) || (province && !province.municipalityCodes.includes(f.municipalityCode)))) throw validationFailed('municipio fuera de la provincia')
-    if (f.level === 'vereda' && !f.municipalityCode) throw validationFailed('elegí un municipio para consultar sus veredas')
-    if (f.level === 'province' && f.municipalityCode) throw validationFailed('el nivel provincia no admite un municipio')
+    if ((f.provinceId && f.provinceIds) || (f.municipalityCode && f.municipalityCodes) || (f.month && f.months)) throw validationFailed('no mezcles filtros individuales y múltiples')
+    const provinceIds = [...new Set(f.provinceIds ?? (f.provinceId ? [f.provinceId] : []))]
+    const municipalityCodes = [...new Set(f.municipalityCodes ?? (f.municipalityCode ? [f.municipalityCode] : []))]
+    const months = [...new Set(f.months ?? (f.month ? [f.month] : []))]
+    const selectedProvinces = CUNDINAMARCA_PROVINCES.filter(p => provinceIds.includes(p.id))
+    if (selectedProvinces.length !== provinceIds.length) throw validationFailed('provincia inválida')
+    if (municipalityCodes.some(code => !findMunicipality(code) || (provinceIds.length && !selectedProvinces.some(p => p.municipalityCodes.includes(code))))) throw validationFailed('municipio fuera de las provincias seleccionadas')
+    if (f.level === 'vereda' && !municipalityCodes.length) throw validationFailed('elegí un municipio para consultar sus veredas')
+    if (f.level === 'province' && municipalityCodes.length) throw validationFailed('el nivel provincia no admite municipios')
     await admitir('analytics', `${session.tenantId}:${session.userId}`)
     const catalog = f.level === 'province'
-      ? CUNDINAMARCA_PROVINCES.map(p => ({ code: p.id, name: p.name }))
+      ? CUNDINAMARCA_PROVINCES.filter(p => !provinceIds.length || provinceIds.includes(p.id)).map(p => ({ code: p.id, name: p.name }))
       : f.level === 'municipality'
-        ? CUNDINAMARCA_MUNICIPALITIES.filter(m => (!province || province.municipalityCodes.includes(m.code)) && (!f.municipalityCode || m.code === f.municipalityCode)).map(m => ({ code: m.code, name: displayName(m.code) }))
-        : veredasOf(f.municipalityCode ?? '').map(v => ({ code: v.code, name: v.name }))
+        ? CUNDINAMARCA_MUNICIPALITIES.filter(m => (!provinceIds.length || selectedProvinces.some(p => p.municipalityCodes.includes(m.code))) && (!municipalityCodes.length || municipalityCodes.includes(m.code))).map(m => ({ code: m.code, name: displayName(m.code) }))
+        : municipalityCodes.flatMap(code => veredasOf(code).map(v => ({ code: v.code, name: municipalityCodes.length > 1 ? `${v.name} · ${displayName(code)}` : v.name })))
     // Las únicas expresiones SQL posibles están escritas acá; los filtros
     // viajan como parámetros. Se cuenta cada receptor una sola vez.
     const group = f.level === 'province' ? 'm.province_id' : f.level === 'municipality' ? 'r.municipality_code' : "coalesce(r.vereda_code, '__unassigned')"
@@ -52,9 +59,9 @@ export async function territoryRoutes(app: FastifyInstance): Promise<void> {
         select ${group} as grupo, count(*)::int as cantidad
           from person_records r join municipality_catalog m on m.code = r.municipality_code
          where r.purpose_id = $1 and r.status in ('submitted','approved')
-           and ($2::text is null or m.province_id = $2)
-           and ($3::text is null or r.municipality_code = $3)
-           and ($4::text is null or to_char(r.created_at at time zone 'America/Bogota','YYYY-MM') = $4)
+           and ($2::text[] is null or m.province_id = any($2))
+           and ($3::text[] is null or r.municipality_code = any($3))
+           and ($4::text[] is null or to_char(r.created_at at time zone 'America/Bogota','YYYY-MM') = any($4))
            and ($5::text = 'records' or exists (
              select 1 from referrals x join person_records ref on ref.id = x.referrer_record_id and ref.tenant_id = x.tenant_id
               where x.referred_record_id = r.id and x.tenant_id = r.tenant_id
@@ -62,7 +69,7 @@ export async function territoryRoutes(app: FastifyInstance): Promise<void> {
                 and ref.status in ('submitted','approved')
            ))
          group by 1 order by 1`,
-        [session.purposeId, f.provinceId ?? null, f.municipalityCode ?? null, f.month ?? null, f.metric],
+        [session.purposeId, provinceIds.length ? provinceIds : null, municipalityCodes.length ? municipalityCodes : null, months.length ? months : null, f.metric],
       )
       return result.rows
     })

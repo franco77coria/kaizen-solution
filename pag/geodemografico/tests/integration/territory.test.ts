@@ -101,6 +101,38 @@ describe('mapa territorial, permisos y agregados', () => {
     expect(r.statusCode).toBe(200)
     expect(r.json().veredas).toHaveLength(27)
   })
+  it('une varias provincias sin contar dos veces y limita el catálogo al ámbito elegido', async () => {
+    const r = await consulta('level=municipality&provinceIds=tequendama,sabana_occidente,tequendama')
+    expect(r.statusCode).toBe(200)
+    expect(r.json().total.value).toBe(33)
+    expect(r.json().areaCount).toBe(18)
+    expect(r.json().rows.some((v: { key: string }) => v.key === '25899')).toBe(false)
+  })
+  it('compara municipios de distintas provincias y combina meses con OR', async () => {
+    const r = await consulta('level=municipality&provinceIds=tequendama,sabana_occidente&municipalityCodes=25035,25286,25035')
+    expect(r.statusCode).toBe(200)
+    expect(r.json().rows).toHaveLength(2)
+    expect(r.json().total.value).toBe(20)
+    const months = await consulta('level=vereda&municipalityCodes=25035&months=2026-09,2026-08,2026-09')
+    expect(months.statusCode).toBe(200)
+    expect(months.json().total.value).toBe(12)
+  })
+  it('calcula la supresión sobre el conjunto completo de municipios seleccionados', async () => {
+    const r = (await consulta('level=municipality&municipalityCodes=25035,25899')).json()
+    expect(r.total.value).toBe(14)
+    expect(r.rows).toHaveLength(2)
+    expect(r.rows.every((v: { suppressed: boolean; value: number | null }) => v.suppressed && v.value === null)).toBe(true)
+  })
+  it('unión rural conserva códigos y distingue los nombres por municipio', async () => {
+    const r = await consulta('level=vereda&municipalityCodes=25035,25286')
+    expect(r.statusCode).toBe(200)
+    expect(r.json().total.value).toBe(20)
+    expect(r.json().areaCount).toBe(veredasOf('25035').length + veredasOf('25286').length)
+    expect(r.json().rows.find((v: { key: string }) => v.key === veredas[0]!.code).label).toContain('Anapoima')
+  })
+  it('rechaza listas inválidas, ámbitos incompatibles y formatos mezclados', async () => {
+    for (const q of ['provinceIds=tequendama,no_existe', 'level=municipality&provinceIds=soacha&municipalityCodes=25035,25754', 'municipalityCodes=25035,11001', 'months=2026-09,2026-13', 'provinceId=tequendama&provinceIds=tequendama', 'month=2026-09&months=2026-09', 'provinceIds=', 'months=' ]) expect((await consulta(q)).statusCode).toBe(400)
+  })
   it('guarda la vereda opcional y rechaza una de otro municipio también en la base', async () => {
     const payload = { idempotencyKey: 'territory-capture-001', fullName: 'Persona sintética rural', documentNumber: 'territory-capture', municipalityCode: '25035', veredaCode: veredas[0]!.code, gender: 'prefiere_no_decir', relationship: 'amistad', usesWhatsapp: false, consentGiven: true, consentTextVersion: CONSENT_TEXT_VERSION, evidenceKind: 'formulario_papel', evidenceRef: 'fixture' }
     const good = await app.inject({ method: 'POST', url: '/v1/capture/records', headers: headers('sub-a3'), payload })

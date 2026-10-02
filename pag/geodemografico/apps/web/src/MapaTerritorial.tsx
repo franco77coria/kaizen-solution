@@ -4,11 +4,17 @@ import type { Feature, FeatureCollection, MultiPolygon, Polygon } from 'geojson'
 import { CUNDINAMARCA_PROVINCES, displayName, provinceOf } from '@kaizen/geography'
 import { api, type CeldaAnalitica, type FiltrosTerritoriales, type ResumenTerritorial, type Scope } from './api'
 import { conBase } from './rutas'
+import { SelectorMultiple } from './SelectorMultiple'
 
 type Area = Feature<Polygon | MultiPolygon, { code: string; name: string; vintage: string }>
 interface Capa extends FeatureCollection<Polygon | MultiPolygon, Area['properties']> { features: Area[] }
 const nf = new Intl.NumberFormat('es-CO')
 const provincias = [...CUNDINAMARCA_PROVINCES].sort((a, b) => a.name.localeCompare(b.name, 'es'))
+const medidas = [{ value: 'records', label: 'Personas sumadas' }, { value: 'referrals', label: 'Personas con referente' }]
+const mesLegible = (v: string) => {
+  const s = new Intl.DateTimeFormat('es-CO', { month: 'long', year: 'numeric' }).format(new Date(`${v}-01T12:00:00`))
+  return s.charAt(0).toLocaleUpperCase('es') + s.slice(1)
+}
 const cifra = (row: CeldaAnalitica | undefined) => !row ? '—' : row.suppressed ? 'Protegido' : nf.format(row.value ?? 0)
 const normalizar = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
 const nombre = (s: string) => s.toLocaleLowerCase('es').replace(/(^|\s)\S/g, c => c.toLocaleUpperCase('es'))
@@ -30,15 +36,16 @@ function IconoMapa({ tipo }: { tipo: 'plus' | 'minus' | 'reset' | 'arrow' | 'sea
 }
 
 export function MapaTerritorial({ scope }: { scope: Scope }): JSX.Element {
-  const [provinceId, setProvince] = useState('')
-  const [municipalityCode, setMunicipality] = useState('')
+  const [provinceIds, setProvinces] = useState<string[]>([])
+  const [municipalityCodes, setMunicipalities] = useState<string[]>([])
+  const [metrics, setMetrics] = useState<Array<'records' | 'referrals'>>(['records'])
   const [metric, setMetric] = useState<'records' | 'referrals'>('records')
-  const [month, setMonth] = useState('')
+  const [months, setMonths] = useState<string[]>([])
   const [search, setSearch] = useState('')
   const [seleccion, setSeleccion] = useState('')
   const [hover, setHover] = useState('')
   const [retry, setRetry] = useState(0)
-  const [datos, setDatos] = useState<{ key: string; value: ResumenTerritorial } | null>(null)
+  const [datos, setDatos] = useState<{ key: string; values: Partial<Record<'records' | 'referrals', ResumenTerritorial>> } | null>(null)
   const [capas, setCapas] = useState<{ key: string; base: Area[]; features: Area[] } | null>(null)
   const [error, setError] = useState('')
   const [vista, setVista] = useState({ scale: 1, x: 0, y: 0 })
@@ -48,17 +55,25 @@ export function MapaTerritorial({ scope }: { scope: Scope }): JSX.Element {
   const HEIGHT = canvas.height
   const drag = useRef<{ x: number; y: number; ox: number; oy: number; moved: boolean } | null>(null)
   const puedeVer = scope.permissions.includes('analytics.aggregate')
-  const level = municipalityCode ? 'vereda' : provinceId ? 'municipality' : 'province'
-  const filtros: FiltrosTerritoriales = useMemo(() => ({ level, metric, ...(provinceId ? { provinceId } : {}), ...(municipalityCode ? { municipalityCode } : {}), ...(month ? { month } : {}) }), [level, metric, provinceId, municipalityCode, month])
-  const key = JSON.stringify(filtros)
-  const capaKey = `${provinceId}:${municipalityCode}`
-  const resumen = datos?.key === key ? datos.value : null
+  const municipalityCode = municipalityCodes.length === 1 ? municipalityCodes[0]! : ''
+  const level = municipalityCode ? 'vereda' : provinceIds.length || municipalityCodes.length ? 'municipality' : 'province'
+  const filtros: FiltrosTerritoriales = useMemo(() => ({ level, metric: 'records', ...(provinceIds.length ? { provinceIds: provinceIds.join(',') } : {}), ...(municipalityCodes.length ? { municipalityCodes: municipalityCodes.join(',') } : {}), ...(months.length ? { months: months.join(',') } : {}) }), [level, provinceIds, municipalityCodes, months])
+  const key = JSON.stringify({ ...filtros, metrics })
+  const capaKey = `${provinceIds.join(',')}:${municipalityCodes.join(',')}`
+  const resumen = datos?.key === key ? datos.values[metric] ?? null : null
   const capa = capas?.key === capaKey ? capas : null
   const cargando = !resumen || !capa
-  const provincia = provincias.find(p => p.id === provinceId)
-  const titulo = municipalityCode ? displayName(municipalityCode) : provincia?.name ?? 'Cundinamarca'
+  const provincia = provinceIds.length === 1 ? provincias.find(p => p.id === provinceIds[0]) : municipalityCode ? provinceOf(municipalityCode) : undefined
+  const titulo = municipalityCode ? displayName(municipalityCode) : municipalityCodes.length ? `${municipalityCodes.length} municipios` : provinceIds.length > 1 ? `${provinceIds.length} provincias` : provincia?.name ?? 'Cundinamarca'
   const unidad = level === 'vereda' ? 'veredas' : level === 'municipality' ? 'municipios' : 'provincias'
   const etiqueta = metric === 'records' ? 'Personas sumadas' : 'Personas con referente'
+  const opcionesMunicipales = useMemo(() => provincias.filter(p => !provinceIds.length || provinceIds.includes(p.id)).flatMap(p => [...p.municipalityCodes].sort((a, b) => displayName(a).localeCompare(displayName(b), 'es')).map(code => ({ value: code, label: displayName(code), group: p.name }))), [provinceIds])
+  const opcionesMeses = useMemo(() => {
+    const now = new Date()
+    const recent = Array.from({ length: 24 }, (_, i) => { const d = new Date(now.getFullYear(), now.getMonth() - i, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` })
+    return [...new Set([...recent, ...months])].sort().reverse().map(value => ({ value, label: mesLegible(value) }))
+  }, [months])
+  const periodo = months.length === 1 ? mesLegible(months[0]!) : months.length ? `${months.length} meses seleccionados` : 'Todos los meses'
 
   useEffect(() => {
     if (!svg.current) return
@@ -77,10 +92,11 @@ export function MapaTerritorial({ scope }: { scope: Scope }): JSX.Element {
     if (!puedeVer) return
     let actual = true
     setError('')
-    void api.territorio(scope, filtros).then(value => { if (actual) setDatos({ key, value }) })
+    void Promise.all(metrics.map(async m => [m, await api.territorio(scope, { ...filtros, metric: m })] as const))
+      .then(entries => { if (actual) setDatos({ key, values: Object.fromEntries(entries) }) })
       .catch(() => { if (actual) setError('No se pudieron consultar las cifras territoriales.') })
     return () => { actual = false }
-  }, [scope, filtros, key, retry, puedeVer])
+  }, [scope, filtros, metrics, key, retry, puedeVer])
 
   useEffect(() => {
     if (!puedeVer) return
@@ -93,12 +109,12 @@ export function MapaTerritorial({ scope }: { scope: Scope }): JSX.Element {
     }
     void (async () => {
       const municipal = await leer('/geo/municipios.json')
-      const base = municipal.features.filter(f => municipalityCode ? f.properties.code === municipalityCode : provincia ? provincia.municipalityCodes.includes(f.properties.code) : true).map(paraD3)
+      const base = municipal.features.filter(f => municipalityCodes.length ? municipalityCodes.includes(f.properties.code) : provinceIds.length ? provinceIds.includes(provinceOf(f.properties.code)?.id ?? '') : true).map(paraD3)
       const features = municipalityCode ? (await leer(`/geo/veredas/${municipalityCode}.json`)).features.map(paraD3) : base
       if (!controller.signal.aborted) setCapas({ key: capaKey, base, features })
     })().catch(() => { if (!controller.signal.aborted) setError('No se pudo cargar la cartografía. Podés volver a intentarlo.') })
     return () => controller.abort()
-  }, [capaKey, municipalityCode, provincia, retry, puedeVer])
+  }, [capaKey, municipalityCode, municipalityCodes, provinceIds, retry, puedeVer])
 
   const dibujo = useMemo(() => {
     if (!capa) return null
@@ -133,11 +149,15 @@ export function MapaTerritorial({ scope }: { scope: Scope }): JSX.Element {
   const vintages = [...new Set(capa?.features.map(f => f.properties.vintage) ?? [])].sort().join(', ')
 
   function abrir(id: string): void {
-    if (level === 'province') { setProvince(id); setMunicipality('') }
-    else if (level === 'municipality') setMunicipality(id)
+    if (level === 'province') { setProvinces([id]); setMunicipalities([]) }
+    else if (level === 'municipality') { setProvinces([provinceOf(id)?.id ?? '']); setMunicipalities([id]) }
     else setSeleccion(id)
   }
-  function irAnapoima(): void { setProvince('tequendama'); setMunicipality('25035') }
+  function irAnapoima(): void { setProvinces(['tequendama']); setMunicipalities(['25035']) }
+  function cambiarProvincias(values: string[]): void {
+    setProvinces(values)
+    setMunicipalities(current => current.filter(code => !values.length || values.includes(provinceOf(code)?.id ?? '')))
+  }
   function zoom(delta: number): void {
     setVista(v => {
       const scale = Math.max(1, Math.min(5, v.scale * delta))
@@ -152,14 +172,14 @@ export function MapaTerritorial({ scope }: { scope: Scope }): JSX.Element {
       <button className="boton territorio-atajo" onClick={irAnapoima}>Ver Anapoima <IconoMapa tipo="arrow" /></button>
     </header>
     <div className="territorio-filtros">
-      <label><span>Provincia</span><select value={provinceId} onChange={e => { setProvince(e.target.value); setMunicipality('') }}><option value="">Todo Cundinamarca</option>{provincias.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
-      <label><span>Municipio / alcaldía</span><select value={municipalityCode} onChange={e => { setMunicipality(e.target.value); if (e.target.value) setProvince(provinceOf(e.target.value)?.id ?? '') }}><option value="">Todos los municipios</option>{provincias.filter(p => !provinceId || p.id === provinceId).map(p => <optgroup key={p.id} label={p.name}>{[...p.municipalityCodes].sort((a, b) => displayName(a).localeCompare(displayName(b), 'es')).map(c => <option key={c} value={c}>{displayName(c)}</option>)}</optgroup>)}</select></label>
-      <label><span>Medida</span><select value={metric} onChange={e => setMetric(e.target.value as 'records' | 'referrals')}><option value="records">Personas sumadas</option><option value="referrals">Personas con referente</option></select></label>
-      <label><span>Mes de registro</span><input type="month" value={month} onChange={e => setMonth(e.target.value)} aria-describedby="periodo-ayuda" /></label>
-      {month && <button className="boton" onClick={() => setMonth('')}>Todos los meses</button>}
+      <SelectorMultiple label="Provincias" emptyLabel="Todo Cundinamarca" options={provincias.map(p => ({ value: p.id, label: p.name }))} value={provinceIds} onChange={cambiarProvincias} />
+      <SelectorMultiple label="Municipios / alcaldías" emptyLabel="Todos los municipios" options={opcionesMunicipales} value={municipalityCodes} onChange={setMunicipalities} />
+      <SelectorMultiple label="Medidas" emptyLabel="Elegí una medida" options={medidas} value={metrics} minimum={1} onChange={values => { const chosen = values as Array<'records' | 'referrals'>; setMetrics(chosen); if (!chosen.includes(metric)) setMetric(chosen[0]!) }} />
+      <SelectorMultiple label="Meses de registro" emptyLabel="Todos los meses" options={opcionesMeses} value={months} onChange={setMonths} customMonth formatValue={mesLegible} />
     </div>
-    <p className="territorio-contexto" id="periodo-ayuda">{metric === 'records' ? 'Personas enviadas o aprobadas en este espacio.' : 'Personas enviadas o aprobadas que tienen una relación de referido registrada. Cada persona se cuenta una vez.'} {month ? `Registradas en ${month}.` : 'Todos los meses.'}</p>
-    <nav className="territorio-migas" aria-label="Ubicación territorial"><button onClick={() => { setProvince(''); setMunicipality('') }} aria-current={level === 'province' ? 'page' : undefined}>Cundinamarca</button>{provincia && <><IconoMapa tipo="arrow" /><button onClick={() => setMunicipality('')} aria-current={level === 'municipality' ? 'page' : undefined}>{provincia.name}</button></>}{municipalityCode && <><IconoMapa tipo="arrow" /><span aria-current="page">{displayName(municipalityCode)}</span></>}</nav>
+    <div className="territorio-contexto-filtros"><p className="territorio-contexto" id="periodo-ayuda">{metric === 'records' ? 'Personas enviadas o aprobadas en este espacio.' : 'Personas enviadas o aprobadas con una relación de referido registrada. Cada persona se cuenta una vez.'} {periodo}.</p>{(provinceIds.length > 0 || municipalityCodes.length > 0 || months.length > 0) && <button className="territorio-limpiar" onClick={() => { setProvinces([]); setMunicipalities([]); setMonths([]) }}>Limpiar filtros territoriales</button>}</div>
+    {metrics.length > 1 && <div className="territorio-medidas" aria-label="Medida que colorea el mapa">{metrics.map(m => <button key={m} aria-pressed={m === metric} onClick={() => setMetric(m)}><span>{medidas.find(o => o.value === m)?.label}</span><strong>{cifra(datos?.key === key ? datos.values[m]?.total : undefined)}</strong></button>)}<span>Elegí la medida del mapa. Las cifras se muestran por separado.</span></div>}
+    <nav className="territorio-migas" aria-label="Ubicación territorial"><button onClick={() => { setProvinces([]); setMunicipalities([]) }} aria-current={level === 'province' ? 'page' : undefined}>Cundinamarca</button>{(provincia || provinceIds.length > 1) && <><IconoMapa tipo="arrow" /><button onClick={() => { if (!provinceIds.length && provincia) setProvinces([provincia.id]); setMunicipalities([]) }} aria-current={!municipalityCodes.length ? 'page' : undefined}>{provinceIds.length > 1 ? `${provinceIds.length} provincias` : provincia?.name}</button></>}{municipalityCodes.length > 0 && <><IconoMapa tipo="arrow" /><span aria-current="page">{municipalityCode ? displayName(municipalityCode) : `${municipalityCodes.length} municipios`}</span></>}</nav>
     {error && <div className="territorio-error" role="alert">{error}<button className="boton" onClick={() => setRetry(r => r + 1)}>Reintentar</button></div>}
     <div className="territorio-layout">
       <section className="territorio-cartografia" aria-label={`Mapa de ${titulo}`} aria-busy={cargando}>
@@ -184,7 +204,7 @@ export function MapaTerritorial({ scope }: { scope: Scope }): JSX.Element {
         <p className="territorio-mapa-pie">{level === 'vereda' ? 'El contorno muestra el municipio. Las áreas sin polígono rural no reciben cifras de vereda.' : 'Elegí un territorio en el mapa o en la lista para explorar su detalle.'}</p>
       </section>
       <aside className="territorio-panel" aria-label="Detalle territorial">
-        <div className="territorio-resumen" aria-live="polite"><span>{etiqueta}</span><strong>{cifra(resumen?.total)}</strong><p>{titulo} · {month || 'todos los meses'}</p><div className="territorio-cobertura"><b>{resumen ? `${resumen.coveredAreas} / ${resumen.areaCount}` : '—'}</b><span>{unidad} con registros</span></div></div>
+        <div className="territorio-resumen" aria-live="polite"><span>{etiqueta}</span><strong>{cifra(resumen?.total)}</strong><p>{titulo} · {periodo.toLocaleLowerCase('es')}</p><div className="territorio-cobertura"><b>{resumen ? `${resumen.coveredAreas} / ${resumen.areaCount}` : '—'}</b><span>{unidad} con registros</span></div></div>
         {level === 'vereda' && <div className="territorio-sin-asignar"><span>Sin vereda asignada</span><strong>{cifra(resumen?.unassigned)}</strong><p>Incluye registros históricos y personas sin vereda informada. No equivale a población urbana.</p></div>}
         {selected && <div className="territorio-seleccion" aria-live="polite"><span>Vereda seleccionada</span><h3>{nombre(selected.label)}</h3><strong>{cifra(selected)}</strong><button className="boton" onClick={() => setSeleccion('')}>Quitar selección</button></div>}
         <div className="territorio-lista-cabecera"><h2>Detalle por {level === 'province' ? 'provincia' : level === 'municipality' ? 'municipio' : 'vereda'}</h2><label className="territorio-buscar"><IconoMapa tipo="search" /><input type="search" placeholder={`Buscar ${unidad}…`} value={search} onChange={e => setSearch(e.target.value)} aria-label={`Buscar ${unidad}`} /></label></div>

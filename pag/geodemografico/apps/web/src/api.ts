@@ -297,6 +297,9 @@ export interface FiltrosTerritoriales {
   provinceId?: string
   municipalityCode?: string
   month?: string
+  provinceIds?: string
+  municipalityCodes?: string
+  months?: string
   metric: 'records' | 'referrals'
 }
 export interface ResumenTerritorial {

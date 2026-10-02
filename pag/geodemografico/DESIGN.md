@@ -61,6 +61,8 @@ rounded:
   full: "999px"
   territorio-field: "6px"
   territorio-filter: "12px"
+  selector-trigger: "8px"
+  selector-chip: "5px"
 spacing:
   compact: "6px"
   control-gap: "8px"
@@ -106,6 +108,22 @@ components:
     rounded: "{rounded.full}"
     padding: "0 5px"
     height: "18px"
+  selector-multiple:
+    backgroundColor: "{colors.superficie}"
+    textColor: "{colors.tinta}"
+    rounded: "{rounded.selector-trigger}"
+    padding: "10px 12px"
+    width: "100%"
+  selector-panel:
+    backgroundColor: "{colors.superficie}"
+    textColor: "{colors.tinta}"
+    rounded: "{rounded.territorio-filter}"
+    width: "340px"
+  selector-chip:
+    backgroundColor: "{colors.acento-suave}"
+    textColor: "{colors.acento}"
+    rounded: "{rounded.selector-chip}"
+    padding: "3px 6px 3px 8px"
 ---
 
 # Design System: Geodemográfico · Kaizen
@@ -116,7 +134,7 @@ components:
 
 Este nombre descriptivo proviene del comentario del sistema de tokens; no constituye una identidad nueva ni una metáfora aprobada por entrevista. La app usa un marco neutro, tipografía Geist y un acento verde forestal para que la información territorial conserve la prioridad. Su carácter es sobrio, compacto y legible, adecuado para consultar y operar datos agregados.
 
-Este documento registra el sistema implementado de la app en modo **Operate**. La autoridad visual es el código existente y su extensión territorial, sin una comp aprobada. Las tres capturas de revisión usan datos sintéticos. El alcance visual es la app; la landing y `politica` conservan sus sistemas existentes. La composición particular del mapa y su contrato de datos viven en [.impeccable/mapa-territorial.md](.impeccable/mapa-territorial.md).
+Este documento registra el sistema implementado de la app en modo **Operate**. La autoridad visual es el código existente y su extensión territorial, sin una comp aprobada. Las capturas de revisión usan datos sintéticos. El alcance visual es la app; la landing y `politica` conservan sus sistemas existentes. La composición particular del mapa y su contrato de datos viven en [.impeccable/mapa-territorial.md](.impeccable/mapa-territorial.md).
 
 **Key Characteristics:**
 
@@ -174,6 +192,8 @@ El shell es mobile-first, con contenido centrado de 1120px y barra superior de 5
 
 La superficie territorial amplía el máximo a 1480px. En escritorio usa cartografía flexible y panel de 330px; hasta 1000px el panel baja a 290px. Hasta 760px, cartografía y panel se apilan, y los cuatro filtros forman una grilla de dos columnas. El mapa tiene altura de 560px en escritorio y 360px en teléfono. A partir de 1100px el contenido territorial usa padding de 36px 32px 60px.
 
+Los selectores múltiples conservan la grilla de cuatro columnas en escritorio y dos en teléfono; sus etiquetas seleccionadas se envuelven debajo del disparador. El desplegable es fijo: mide como máximo 340px de ancho, deja 16px a los lados y se desplaza hacia arriba cuando falta espacio inferior, reservando 96px bajo el panel. Su altura máxima es `calc(100dvh - 128px)`; la lista interna desplaza hasta 280px y la acción Aplicar queda al pie del panel. Estos valores proceden de `SelectorMultiple.tsx` y `mapa.css`; las capturas `multi-desktop.png` y `multi-mobile.png` registran la misma selección en ambos tamaños.
+
 Los grupos reutilizan separaciones pequeñas en controles y padding mayor en paneles. Evitar imponer una grilla nueva a todas las pantallas: la vista territorial es una extensión más amplia, mientras Panorama conserva el contenedor y las primitivas comunes.
 
 ## Elevation & Depth
@@ -198,7 +218,17 @@ Cápsulas compactas con texto de peso medio y altura consistente. Primario usa a
 
 ### Inputs / Fields
 
-Campos con etiqueta encima, ancho flexible y mínimo de ancho cero para contenerse. Los campos base usan fondo de superficie, borde y halo de foco; los filtros territoriales conservan controles nativos de selección y mes con altura mínima de 42px. La búsqueda territorial integra un icono y un contorno en focus-within.
+Campos con etiqueta encima, ancho flexible y mínimo de ancho cero para contenerse. Los campos base usan fondo de superficie, borde y halo de foco. La búsqueda territorial integra un icono y un contorno en focus-within. Los filtros territoriales usan el selector múltiple descrito abajo; las casillas y la entrada adicional de mes conservan controles nativos.
+
+### SelectorMultiple
+
+Componente reutilizado por provincias, municipios/alcaldías, medidas y meses. Disparador de altura mínima 44px, texto de 13px, filete de línea fuerte y radio propio; hover usa superficie-2 y borde de acento. El contador usa cifras tabulares de 11px. Se muestran dos etiquetas removibles y `+n` para el resto; cada etiqueta trunca su texto y conserva el nombre completo en title. La eliminación se aplica de inmediato, respetando el mínimo del componente.
+
+El panel elevado abre con foco en búsqueda. Busca sin distinguir mayúsculas ni tildes, también por grupo; las selecciones ya aplicadas aparecen primero. Las filas de casillas nativas tienen altura mínima 44px, casilla de 16px y fondo suave de acento al marcar. Seleccionar todos/resultados y Limpiar editan un borrador; Aplicar confirma el conjunto. Su botón tiene altura mínima 36px y usa acento, hover oscuro y opacidad reducida cuando no alcanza el mínimo. La búsqueda señala foco con un filete inferior de acento; los demás controles conservan contorno visible. La flecha gira en 160ms ease-out, sin transición con movimiento reducido.
+
+Escape descarta el borrador y devuelve foco al disparador; también lo devuelve Aplicar. Las flechas arriba/abajo recorren casillas, y Tab usa el orden nativo. Clic exterior, salida del foco, resize o scroll externo cierran el panel sin confirmar; el scroll interno permanece disponible. Al reabrir, el borrador parte de la selección aplicada.
+
+En el mapa, las provincias acotan los municipios y eliminan selecciones municipales fuera de alcance. Meses ofrece los últimos 24 meses y una entrada nativa para añadir otros. Medidas exige al menos una selección; cuando hay dos, sus totales se muestran por separado en botones de altura mínima 42px, con `aria-pressed` y acento suave para la medida que colorea el mapa. No sumar esos totales entre sí.
 
 ### Cards / Containers
 

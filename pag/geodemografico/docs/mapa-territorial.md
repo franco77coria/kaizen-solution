@@ -9,6 +9,8 @@ Ruta: `/app/mapa`. Accesible desde la navegación y Panorama para cuentas con `a
 - Municipio: polígonos rurales, detalle buscable y personas sin vereda asignada por separado.
 - Medidas: personas enviadas/aprobadas; o receptores únicos con referente enviado/aprobado de la misma finalidad. No es un recuento de enlaces ni del operador que capturó.
 - Mes: fecha de creación del registro en `America/Bogota`.
+- Los filtros usan búsqueda, casillas, etiquetas removibles y aplicación en bloque. Selección múltiple de provincias, municipios y meses: OR dentro de cada dimensión, AND entre dimensiones; duplicados se normalizan. Sin selección territorial significa todo Cundinamarca. Al cambiar provincias se retiran únicamente municipios que quedaron fuera.
+- Varios municipios se comparan por municipio; uno solo abre sus veredas. Se pueden elegir ambas medidas: cifras independientes y un botón por medida para decidir cuál colorea el mapa. Nunca se suman personas sumadas y personas con referente, porque se superponen.
 - Cero: ausencia de registros. Protegido: supresión por umbral y complemento según las reglas existentes. Ningún número reservado llega al cliente.
 
 La captura permite informar una vereda opcional. El servidor y una clave foránea compuesta exigen que corresponda al municipio. Los registros anteriores conservan `NULL`; no se deduce su ubicación ni se confunde ausencia de vereda con casco urbano. El formulario no crea relaciones de referido nuevas: la métrica consulta las relaciones ya registradas en la base.
